@@ -1,0 +1,214 @@
+#:import dp kivy.metrics.dp
+
+BoxLayout:
+    orientation: "vertical"
+    canvas.before:
+        Color:
+            rgba: 0.96, 0.97, 0.98, 1
+        Rectangle:
+            pos: self.pos
+            size: self.size
+
+    ScreenManager:
+        id: sm
+
+        HomeScreen:
+            name: "home"
+
+        RecorridosScreen:
+            name: "recorridos"
+
+        PerfilScreen:
+            name: "perfil"
+
+    MDBoxLayout:
+        size_hint_y: None
+        height: dp(56)
+        padding: dp(4)
+        spacing: dp(3)
+        md_bg_color: 1, 1, 1, 1
+
+        MDIconButton:
+            icon: "home-variant"
+            icon_color: (0.15, 0.36, 0.95, 1) if sm.current == "home" else (0.38, 0.41, 0.46, 1)
+            pos_hint: {"center_x": 0.5}
+            on_release: app.cambiar_pantalla("home")
+
+        MDIconButton:
+            icon: "bus"
+            icon_color: (0.15, 0.36, 0.95, 1) if sm.current == "recorridos" else (0.38, 0.41, 0.46, 1)
+            pos_hint: {"center_x": 0.5}
+            on_release: app.cambiar_pantalla("recorridos")
+
+        MDIconButton:
+            icon: "account"
+            icon_color: (0.15, 0.36, 0.95, 1) if sm.current == "perfil" else (0.38, 0.41, 0.46, 1)
+            pos_hint: {"center_x": 0.5}
+            on_release: app.cambiar_pantalla("perfil")
+
+
+<HomeScreen>:
+    BoxLayout:
+        orientation: "vertical"
+        padding: dp(12), dp(8), dp(12), dp(4)
+        spacing: dp(8)
+
+        MDTopAppBar:
+            type: "small"
+            md_bg_color: 0.96, 0.97, 0.98, 1
+
+            MDTopAppBarTitle:
+                text: "¿A dónde vas hoy?"
+
+        MDTextField:
+            id: search_field
+            mode: "outlined"
+            size_hint_y: None
+            height: dp(64)
+            on_text_validate: app.buscar_destino(self)
+
+            MDTextFieldHintText:
+                text: "Buscar destino o línea..."
+
+            MDTextFieldHelperText:
+                text: "Ingresa un destino o número de línea"
+                mode: "on_error"
+
+        MDButton:
+            style: "filled"
+            size_hint_y: None
+            height: dp(40)
+            pos_hint: {"center_x": 0.5}
+            on_release: app.buscar_destino(search_field)
+
+            MDButtonText:
+                text: "BUSCAR"
+
+        MapPlaceholder:
+            size_hint_y: None
+            height: dp(130)
+
+        MDLabel:
+            text: "Líneas cercanas"
+            bold: True
+            size_hint_y: None
+            height: dp(28)
+
+        MDCard:
+            style: "elevated"
+            orientation: "horizontal"
+            size_hint_y: None
+            height: dp(56)
+            padding: dp(8)
+            radius: [10]
+
+            MDLabel:
+                text: "URBAN"
+                bold: True
+                size_hint_x: None
+                width: dp(60)
+
+            BoxLayout:
+                orientation: "vertical"
+                MDLabel:
+                    text: "Lautaro -> Temuco"
+                    font_style: "Body"
+                    role: "small"
+                MDLabel:
+                    text: "Parada Balmaceda"
+                    font_style: "Body"
+                    role: "small"
+
+            MDLabel:
+                text: "50 min"
+                halign: "right"
+                text_color: 0.05, 0.62, 0.43, 1
+
+        MDCard:
+            style: "elevated"
+            orientation: "horizontal"
+            size_hint_y: None
+            height: dp(56)
+            padding: dp(8)
+            radius: [10]
+
+            MDLabel:
+                text: "URBAN"
+                bold: True
+                size_hint_x: None
+                width: dp(60)
+
+            BoxLayout:
+                orientation: "vertical"
+                MDLabel:
+                    text: "Padre Las Casas -> Temuco"
+                    font_style: "Body"
+                    role: "small"
+                MDLabel:
+                    text: "Parada Balmaceda"
+                    font_style: "Body"
+                    role: "small"
+
+            MDLabel:
+                text: "20 min"
+                halign: "right"
+                text_color: 0.05, 0.62, 0.43, 1
+
+
+<RecorridosScreen>:
+    BoxLayout:
+        orientation: "vertical"
+        padding: dp(12), dp(8), dp(12), dp(4)
+        spacing: dp(8)
+
+        MDTopAppBar:
+            type: "small"
+            md_bg_color: 0.96, 0.97, 0.98, 1
+
+            MDTopAppBarTitle:
+                text: "Recorridos"
+
+        ScrollView:
+            MDList:
+                MDListItem:
+                    MDListItemHeadlineText:
+                        text: "Lautaro -> Temuco"
+                    MDListItemSupportingText:
+                        text: "Próximo bus en 50 min"
+
+                MDListItem:
+                    MDListItemHeadlineText:
+                        text: "Padre Las Casas -> Temuco"
+                    MDListItemSupportingText:
+                        text: "Próximo bus en 20 min"
+
+                MDListItem:
+                    MDListItemHeadlineText:
+                        text: "Nueva Imperial -> Temuco"
+                    MDListItemSupportingText:
+                        text: "Próximo bus en 35 min"
+
+
+<PerfilScreen>:
+    BoxLayout:
+        orientation: "vertical"
+        padding: dp(12), dp(8), dp(12), dp(4)
+        spacing: dp(12)
+
+        MDTopAppBar:
+            type: "small"
+            md_bg_color: 0.96, 0.97, 0.98, 1
+
+            MDTopAppBarTitle:
+                text: "Mi perfil"
+
+        MDLabel:
+            text: "Nombre de usuario"
+            halign: "center"
+            bold: True
+
+        MDLabel:
+            text: "Aquí irán tus rutas favoritas y notificaciones."
+            halign: "center"
+            font_style: "Body"
+            role: "small"
