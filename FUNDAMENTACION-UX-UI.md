@@ -1,6 +1,6 @@
 # Fundamentación UX/UI — Interurbano Sur
 
-> ⚠️ Plantilla lista para rellenar con los datos reales de tu
+> Plantilla lista para rellenar con los datos reales de tu
 > investigación. Los puntos A2 y A3 de la rúbrica (15 de 30 pts de
 > este criterio) exigen evidencia verificable — sin ella se califican
 > como "no logrado".

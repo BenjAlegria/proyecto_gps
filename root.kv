@@ -18,6 +18,9 @@ BoxLayout:
         RecorridosScreen:
             name: "recorridos"
 
+        CompartirScreen:
+            name: "compartir"
+
         PerfilScreen:
             name: "perfil"
 
@@ -41,6 +44,12 @@ BoxLayout:
             on_release: app.cambiar_pantalla("recorridos")
 
         MDIconButton:
+            icon: "share-variant"
+            icon_color: (0.15, 0.36, 0.95, 1) if sm.current == "compartir" else (0.38, 0.41, 0.46, 1)
+            pos_hint: {"center_x": 0.5}
+            on_release: app.cambiar_pantalla("compartir")
+
+        MDIconButton:
             icon: "account"
             icon_color: (0.15, 0.36, 0.95, 1) if sm.current == "perfil" else (0.38, 0.41, 0.46, 1)
             pos_hint: {"center_x": 0.5}
@@ -50,109 +59,93 @@ BoxLayout:
 <HomeScreen>:
     BoxLayout:
         orientation: "vertical"
-        padding: dp(12), dp(8), dp(12), dp(4)
+        padding: dp(12), dp(10), dp(12), dp(4)
         spacing: dp(8)
 
-        MDTopAppBar:
-            type: "small"
-            md_bg_color: 0.96, 0.97, 0.98, 1
-
-            MDTopAppBarTitle:
-                text: "¿A dónde vas hoy?"
-
-        MDTextField:
-            id: search_field
-            mode: "outlined"
-            size_hint_y: None
-            height: dp(64)
-            on_text_validate: app.buscar_destino(self)
-
-            MDTextFieldHintText:
-                text: "Buscar destino o línea..."
-
-            MDTextFieldHelperText:
-                text: "Ingresa un destino o número de línea"
-                mode: "on_error"
-
         MDButton:
-            style: "filled"
+            id: origen_btn
+            style: "outlined"
             size_hint_y: None
-            height: dp(40)
+            height: dp(44)
             pos_hint: {"center_x": 0.5}
-            on_release: app.buscar_destino(search_field)
+            on_release: app.abrir_menu_origen(self)
+
+            MDButtonIcon:
+                icon: "map-marker"
 
             MDButtonText:
-                text: "BUSCAR"
+                id: origen_text
+                text: "Elegir localidad"
 
-        MapPlaceholder:
-            size_hint_y: None
-            height: dp(130)
+            MDButtonIcon:
+                icon: "menu-down"
+
+        MapView:
+            id: mapa
+            lat: -38.7359
+            lon: -72.5904
+            zoom: 10
 
         MDLabel:
-            text: "Líneas cercanas"
+            id: lineas_titulo
+            text: "Elige una localidad para ver los buses"
             bold: True
             size_hint_y: None
             height: dp(28)
 
-        MDCard:
-            style: "elevated"
-            orientation: "horizontal"
-            size_hint_y: None
-            height: dp(56)
-            padding: dp(8)
-            radius: [10]
+        MDBoxLayout:
+            id: lineas_box
+            orientation: "vertical"
+            spacing: dp(6)
+            adaptive_height: True
 
-            MDLabel:
-                text: "URBAN"
-                bold: True
-                size_hint_x: None
-                width: dp(60)
 
-            BoxLayout:
-                orientation: "vertical"
-                MDLabel:
-                    text: "Lautaro -> Temuco"
-                    font_style: "Body"
-                    role: "small"
-                MDLabel:
-                    text: "Parada Balmaceda"
-                    font_style: "Body"
-                    role: "small"
+<LineaCard>:
+    style: "elevated"
+    orientation: "horizontal"
+    size_hint_y: None
+    height: dp(68)
+    padding: dp(12), dp(8)
+    spacing: dp(10)
+    radius: [12]
+    on_release: app.mostrar_detalle(root.ruta)
 
-            MDLabel:
-                text: "50 min"
-                halign: "right"
-                text_color: 0.05, 0.62, 0.43, 1
+    MDIcon:
+        icon: "bus"
+        size_hint_x: None
+        width: dp(32)
+        pos_hint: {"center_y": 0.5}
 
-        MDCard:
-            style: "elevated"
-            orientation: "horizontal"
-            size_hint_y: None
-            height: dp(56)
-            padding: dp(8)
-            radius: [10]
+    BoxLayout:
+        orientation: "vertical"
 
-            MDLabel:
-                text: "URBAN"
-                bold: True
-                size_hint_x: None
-                width: dp(60)
+        MDLabel:
+            text: root.ruta
+            bold: True
+            font_style: "Body"
+            role: "medium"
 
-            BoxLayout:
-                orientation: "vertical"
-                MDLabel:
-                    text: "Padre Las Casas -> Temuco"
-                    font_style: "Body"
-                    role: "small"
-                MDLabel:
-                    text: "Parada Balmaceda"
-                    font_style: "Body"
-                    role: "small"
+        MDLabel:
+            text: root.detalle
+            font_style: "Body"
+            role: "small"
 
-            MDLabel:
-                text: "20 min"
-                halign: "right"
-                text_color: 0.05, 0.62, 0.43, 1
+    BoxLayout:
+        orientation: "vertical"
+        size_hint_x: None
+        width: dp(70)
+
+        MDLabel:
+            text: root.minutos
+            halign: "right"
+            bold: True
+            text_color: 0.05, 0.62, 0.43, 1
+
+        MDLabel:
+            text: "próximo bus"
+            halign: "right"
+            font_style: "Body"
+            role: "small"
 
 
 <RecorridosScreen>:
@@ -168,28 +161,24 @@ BoxLayout:
             MDTopAppBarTitle:
                 text: "Recorridos"
 
+        MDLabel:
+            id: recorridos_resumen
+            text: ""
+            font_style: "Body"
+            role: "medium"
+            size_hint_y: None
+            height: dp(24)
+
         ScrollView:
-            MDList:
-                MDListItem:
-                    MDListItemHeadlineText:
-                        text: "Lautaro -> Temuco"
-                    MDListItemSupportingText:
-                        text: "Próximo bus en 50 min"
-
-                MDListItem:
-                    MDListItemHeadlineText:
-                        text: "Padre Las Casas -> Temuco"
-                    MDListItemSupportingText:
-                        text: "Próximo bus en 20 min"
-
-                MDListItem:
-                    MDListItemHeadlineText:
-                        text: "Nueva Imperial -> Temuco"
-                    MDListItemSupportingText:
-                        text: "Próximo bus en 35 min"
+            MDBoxLayout:
+                id: recorridos_box
+                orientation: "vertical"
+                spacing: dp(8)
+                padding: 0, 0, 0, dp(8)
+                adaptive_height: True
 
 
-<PerfilScreen>:
+<CompartirScreen>:
     BoxLayout:
         orientation: "vertical"
         padding: dp(12), dp(8), dp(12), dp(4)
@@ -200,15 +189,213 @@ BoxLayout:
             md_bg_color: 0.96, 0.97, 0.98, 1
 
             MDTopAppBarTitle:
-                text: "Mi perfil"
+                text: "Compartir ubicación"
 
         MDLabel:
-            text: "Nombre de usuario"
-            halign: "center"
-            bold: True
+            text: "¿Vas en la micro? Comparte tu ubicación y ayuda a otros a saber dónde va el bus."
+            size_hint_y: None
+            height: dp(60)
+
+        MDButton:
+            id: linea_btn
+            style: "outlined"
+            size_hint_y: None
+            height: dp(40)
+            on_release: app.abrir_menu_linea(self)
+
+            MDButtonIcon:
+                icon: "bus"
+
+            MDButtonText:
+                id: linea_text
+                text: "Elegir mi línea"
+
+            MDButtonIcon:
+                icon: "menu-down"
 
         MDLabel:
-            text: "Aquí irán tus rutas favoritas y notificaciones."
+            id: linea_error
+            text: ""
+            theme_text_color: "Error"
+            size_hint_y: None
+            height: dp(20)
+
+        MDButton:
+            id: compartir_btn
+            style: "filled"
+            size_hint_y: None
+            height: dp(44)
+            pos_hint: {"center_x": 0.5}
+            on_release: app.alternar_compartir()
+
+            MDButtonText:
+                id: compartir_btn_text
+                text: "INICIAR VIAJE"
+
+        MDLabel:
+            id: estado_label
+            text: "Tu ubicación no se está compartiendo."
             halign: "center"
             font_style: "Body"
             role: "small"
+
+        Widget:
+
+
+<PerfilScreen>:
+    BoxLayout:
+        orientation: "vertical"
+        padding: dp(12), dp(8), dp(12), dp(4)
+        spacing: dp(8)
+
+        MDTopAppBar:
+            type: "small"
+            md_bg_color: 0.96, 0.97, 0.98, 1
+
+            MDTopAppBarTitle:
+                text: "Mi perfil"
+
+        ScrollView:
+            MDBoxLayout:
+                orientation: "vertical"
+                spacing: dp(10)
+                padding: 0, 0, 0, dp(8)
+                adaptive_height: True
+
+                MDCard:
+                    style: "filled"
+                    orientation: "horizontal"
+                    size_hint_y: None
+                    height: dp(88)
+                    padding: dp(14)
+                    spacing: dp(14)
+                    radius: [16]
+
+                    MDIcon:
+                        icon: "account-circle"
+                        font_size: "56sp"
+                        size_hint_x: None
+                        width: dp(64)
+                        pos_hint: {"center_y": 0.5}
+
+                    BoxLayout:
+                        orientation: "vertical"
+
+                        MDLabel:
+                            id: nombre_label
+                            text: "Usuario"
+                            bold: True
+                            font_style: "Title"
+                            role: "medium"
+
+                        MDLabel:
+                            text: "Usuario de Interurbano Sur"
+                            font_style: "Body"
+                            role: "small"
+
+                MDTextField:
+                    id: nombre_field
+                    mode: "outlined"
+                    size_hint_y: None
+                    height: dp(64)
+                    on_text_validate: app.guardar_nombre(self)
+
+                    MDTextFieldHintText:
+                        text: "Cambiar nombre"
+
+                    MDTextFieldHelperText:
+                        text: "Escribe un nombre (máx. 30 caracteres)"
+                        mode: "on_error"
+
+                MDButton:
+                    style: "tonal"
+                    size_hint_y: None
+                    height: dp(40)
+                    pos_hint: {"center_x": 0.5}
+                    on_release: app.guardar_nombre(nombre_field)
+
+                    MDButtonText:
+                        text: "GUARDAR NOMBRE"
+
+                MDBoxLayout:
+                    size_hint_y: None
+                    height: dp(84)
+                    spacing: dp(10)
+
+                    MDCard:
+                        style: "elevated"
+                        orientation: "vertical"
+                        padding: dp(8)
+                        radius: [14]
+
+                        MDLabel:
+                            id: viajes_num
+                            text: "0"
+                            halign: "center"
+                            bold: True
+                            font_style: "Headline"
+                            role: "small"
+
+                        MDLabel:
+                            text: "Viajes compartidos"
+                            halign: "center"
+                            font_style: "Body"
+                            role: "small"
+
+                    MDCard:
+                        style: "elevated"
+                        orientation: "vertical"
+                        padding: dp(8)
+                        radius: [14]
+
+                        MDLabel:
+                            id: fav_num
+                            text: "0"
+                            halign: "center"
+                            bold: True
+                            font_style: "Headline"
+                            role: "small"
+
+                        MDLabel:
+                            text: "Rutas favoritas"
+                            halign: "center"
+                            font_style: "Body"
+                            role: "small"
+
+                MDCard:
+                    style: "outlined"
+                    orientation: "horizontal"
+                    size_hint_y: None
+                    height: dp(64)
+                    padding: dp(12), dp(8)
+                    radius: [14]
+
+                    MDLabel:
+                        text: "Permitir compartir mi ubicación durante viajes"
+                        font_style: "Body"
+                        role: "medium"
+
+                    MDSwitch:
+                        id: switch_consent
+                        pos_hint: {"center_y": 0.5}
+                        on_active: app.cambiar_consentimiento(self.active)
+
+                MDLabel:
+                    text: "Mis rutas favoritas"
+                    bold: True
+                    size_hint_y: None
+                    height: dp(28)
+
+                MDLabel:
+                    id: fav_vacio
+                    text: "Aún no tienes favoritas. Toca un recorrido y agrégalo."
+                    font_style: "Body"
+                    role: "small"
+                    size_hint_y: None
+                    height: dp(40)
+
+                MDBoxLayout:
+                    id: fav_box
+                    orientation: "vertical"
+                    spacing: dp(6)
+                    adaptive_height: True
