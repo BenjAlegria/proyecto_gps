@@ -1,0 +1,115 @@
+--- 2026-09-29 20:44:42 ---
+Traceback (most recent call last):
+  File "c:\Users\kvnzz\OneDrive\Escritorio\kivy app\main.py", line 604, in _snack
+    MDSnackbar(
+  File "C:\Users\kvnzz\OneDrive\Escritorio\kivy app\myenv\lib\site-packages\kivymd\uix\snackbar\snackbar.py", line 401, in __init__
+    super().__init__(*args, **kwargs)
+  File "C:\Users\kvnzz\OneDrive\Escritorio\kivy app\myenv\lib\site-packages\kivymd\uix\card\card.py", line 705, in __init__
+    super().__init__(*args, **kwargs)
+  File "C:\Users\kvnzz\OneDrive\Escritorio\kivy app\myenv\lib\site-packages\kivymd\uix\behaviors\declarative_behavior.py", line 485, in __init__
+    super().__init__(**kwargs)
+  File "C:\Users\kvnzz\OneDrive\Escritorio\kivy app\myenv\lib\site-packages\kivymd\theming.py", line 1234, in __init__
+    super().__init__(**kwargs)
+  File "C:\Users\kvnzz\OneDrive\Escritorio\kivy app\myenv\lib\site-packages\kivymd\uix\behaviors\backgroundcolor_behavior.py", line 168, in __init__
+    super().__init__(**kwarg)
+  File "C:\Users\kvnzz\OneDrive\Escritorio\kivy app\myenv\lib\site-packages\kivymd\uix\behaviors\ripple_behavior.py", line 695, in __init__
+    self.init_fbos()
+  File "C:\Users\kvnzz\OneDrive\Escritorio\kivy app\myenv\lib\site-packages\kivymd\uix\behaviors\ripple_behavior.py", line 701, in init_fbos
+    self.fbo = Fbo(size=self.size, group="m3_ripple_behavior")
+  File "kivy\\graphics\\fbo.pyx", line 196, in kivy.graphics.fbo.Fbo.__init__
+  File "kivy\\graphics\\fbo.pyx", line 289, in kivy.graphics.fbo.Fbo.create_fbo
+  File "kivy\\graphics\\fbo.pyx", line 158, in kivy.graphics.fbo.Fbo.raise_exception
+Exception: FBO Initialization failed: Incomplete attachment (36054)
+
+--- 2026-09-29 20:45:29 ---
+Traceback (most recent call last):
+  File "c:\Users\kvnzz\OneDrive\Escritorio\kivy app\main.py", line 604, in _snack
+    MDSnackbar(
+  File "C:\Users\kvnzz\OneDrive\Escritorio\kivy app\myenv\lib\site-packages\kivymd\uix\snackbar\snackbar.py", line 401, in __init__
+    super().__init__(*args, **kwargs)
+  File "C:\Users\kvnzz\OneDrive\Escritorio\kivy app\myenv\lib\site-packages\kivymd\uix\card\card.py", line 705, in __init__
+    super().__init__(*args, **kwargs)
+  File "C:\Users\kvnzz\OneDrive\Escritorio\kivy app\myenv\lib\site-packages\kivymd\uix\behaviors\declarative_behavior.py", line 485, in __init__
+    super().__init__(**kwargs)
+  File "C:\Users\kvnzz\OneDrive\Escritorio\kivy app\myenv\lib\site-packages\kivymd\theming.py", line 1234, in __init__
+    super().__init__(**kwargs)
+  File "C:\Users\kvnzz\OneDrive\Escritorio\kivy app\myenv\lib\site-packages\kivymd\uix\behaviors\backgroundcolor_behavior.py", line 168, in __init__
+    super().__init__(**kwarg)
+  File "C:\Users\kvnzz\OneDrive\Escritorio\kivy app\myenv\lib\site-packages\kivymd\uix\behaviors\ripple_behavior.py", line 695, in __init__
+    self.init_fbos()
+  File "C:\Users\kvnzz\OneDrive\Escritorio\kivy app\myenv\lib\site-packages\kivymd\uix\behaviors\ripple_behavior.py", line 701, in init_fbos
+    self.fbo = Fbo(size=self.size, group="m3_ripple_behavior")
+  File "kivy\\graphics\\fbo.pyx", line 196, in kivy.graphics.fbo.Fbo.__init__
+  File "kivy\\graphics\\fbo.pyx", line 289, in kivy.graphics.fbo.Fbo.create_fbo
+  File "kivy\\graphics\\fbo.pyx", line 158, in kivy.graphics.fbo.Fbo.raise_exception
+Exception: FBO Initialization failed: Incomplete attachment (36054)
+
+--- 2026-09-29 20:45:33 ---
+Traceback (most recent call last):
+  File "c:\Users\kvnzz\OneDrive\Escritorio\kivy app\main.py", line 604, in _snack
+    MDSnackbar(
+  File "C:\Users\kvnzz\OneDrive\Escritorio\kivy app\myenv\lib\site-packages\kivymd\uix\snackbar\snackbar.py", line 401, in __init__
+    super().__init__(*args, **kwargs)
+  File "C:\Users\kvnzz\OneDrive\Escritorio\kivy app\myenv\lib\site-packages\kivymd\uix\card\card.py", line 705, in __init__
+    super().__init__(*args, **kwargs)
+  File "C:\Users\kvnzz\OneDrive\Escritorio\kivy app\myenv\lib\site-packages\kivymd\uix\behaviors\declarative_behavior.py", line 485, in __init__
+    super().__init__(**kwargs)
+  File "C:\Users\kvnzz\OneDrive\Escritorio\kivy app\myenv\lib\site-packages\kivymd\theming.py", line 1234, in __init__
+    super().__init__(**kwargs)
+  File "C:\Users\kvnzz\OneDrive\Escritorio\kivy app\myenv\lib\site-packages\kivymd\uix\behaviors\backgroundcolor_behavior.py", line 168, in __init__
+    super().__init__(**kwarg)
+  File "C:\Users\kvnzz\OneDrive\Escritorio\kivy app\myenv\lib\site-packages\kivymd\uix\behaviors\ripple_behavior.py", line 695, in __init__
+    self.init_fbos()
+  File "C:\Users\kvnzz\OneDrive\Escritorio\kivy app\myenv\lib\site-packages\kivymd\uix\behaviors\ripple_behavior.py", line 701, in init_fbos
+    self.fbo = Fbo(size=self.size, group="m3_ripple_behavior")
+  File "kivy\\graphics\\fbo.pyx", line 196, in kivy.graphics.fbo.Fbo.__init__
+  File "kivy\\graphics\\fbo.pyx", line 289, in kivy.graphics.fbo.Fbo.create_fbo
+  File "kivy\\graphics\\fbo.pyx", line 158, in kivy.graphics.fbo.Fbo.raise_exception
+Exception: FBO Initialization failed: Incomplete attachment (36054)
+
+--- 2026-09-29 20:45:43 ---
+Traceback (most recent call last):
+  File "c:\Users\kvnzz\OneDrive\Escritorio\kivy app\main.py", line 604, in _snack
+    MDSnackbar(
+  File "C:\Users\kvnzz\OneDrive\Escritorio\kivy app\myenv\lib\site-packages\kivymd\uix\snackbar\snackbar.py", line 401, in __init__
+    super().__init__(*args, **kwargs)
+  File "C:\Users\kvnzz\OneDrive\Escritorio\kivy app\myenv\lib\site-packages\kivymd\uix\card\card.py", line 705, in __init__
+    super().__init__(*args, **kwargs)
+  File "C:\Users\kvnzz\OneDrive\Escritorio\kivy app\myenv\lib\site-packages\kivymd\uix\behaviors\declarative_behavior.py", line 485, in __init__
+    super().__init__(**kwargs)
+  File "C:\Users\kvnzz\OneDrive\Escritorio\kivy app\myenv\lib\site-packages\kivymd\theming.py", line 1234, in __init__
+    super().__init__(**kwargs)
+  File "C:\Users\kvnzz\OneDrive\Escritorio\kivy app\myenv\lib\site-packages\kivymd\uix\behaviors\backgroundcolor_behavior.py", line 168, in __init__
+    super().__init__(**kwarg)
+  File "C:\Users\kvnzz\OneDrive\Escritorio\kivy app\myenv\lib\site-packages\kivymd\uix\behaviors\ripple_behavior.py", line 695, in __init__
+    self.init_fbos()
+  File "C:\Users\kvnzz\OneDrive\Escritorio\kivy app\myenv\lib\site-packages\kivymd\uix\behaviors\ripple_behavior.py", line 701, in init_fbos
+    self.fbo = Fbo(size=self.size, group="m3_ripple_behavior")
+  File "kivy\\graphics\\fbo.pyx", line 196, in kivy.graphics.fbo.Fbo.__init__
+  File "kivy\\graphics\\fbo.pyx", line 289, in kivy.graphics.fbo.Fbo.create_fbo
+  File "kivy\\graphics\\fbo.pyx", line 158, in kivy.graphics.fbo.Fbo.raise_exception
+Exception: FBO Initialization failed: Incomplete attachment (36054)
+
+--- 2026-09-29 20:46:14 ---
+Traceback (most recent call last):
+  File "c:\Users\kvnzz\OneDrive\Escritorio\kivy app\main.py", line 604, in _snack
+    MDSnackbar(
+  File "C:\Users\kvnzz\OneDrive\Escritorio\kivy app\myenv\lib\site-packages\kivymd\uix\snackbar\snackbar.py", line 401, in __init__
+    super().__init__(*args, **kwargs)
+  File "C:\Users\kvnzz\OneDrive\Escritorio\kivy app\myenv\lib\site-packages\kivymd\uix\card\card.py", line 705, in __init__
+    super().__init__(*args, **kwargs)
+  File "C:\Users\kvnzz\OneDrive\Escritorio\kivy app\myenv\lib\site-packages\kivymd\uix\behaviors\declarative_behavior.py", line 485, in __init__
+    super().__init__(**kwargs)
+  File "C:\Users\kvnzz\OneDrive\Escritorio\kivy app\myenv\lib\site-packages\kivymd\theming.py", line 1234, in __init__
+    super().__init__(**kwargs)
+  File "C:\Users\kvnzz\OneDrive\Escritorio\kivy app\myenv\lib\site-packages\kivymd\uix\behaviors\backgroundcolor_behavior.py", line 168, in __init__
+    super().__init__(**kwarg)
+  File "C:\Users\kvnzz\OneDrive\Escritorio\kivy app\myenv\lib\site-packages\kivymd\uix\behaviors\ripple_behavior.py", line 695, in __init__
+    self.init_fbos()
+  File "C:\Users\kvnzz\OneDrive\Escritorio\kivy app\myenv\lib\site-packages\kivymd\uix\behaviors\ripple_behavior.py", line 701, in init_fbos
+    self.fbo = Fbo(size=self.size, group="m3_ripple_behavior")
+  File "kivy\\graphics\\fbo.pyx", line 196, in kivy.graphics.fbo.Fbo.__init__
+  File "kivy\\graphics\\fbo.pyx", line 289, in kivy.graphics.fbo.Fbo.create_fbo
+  File "kivy\\graphics\\fbo.pyx", line 158, in kivy.graphics.fbo.Fbo.raise_exception
+Exception: FBO Initialization failed: Incomplete attachment (36054)
+

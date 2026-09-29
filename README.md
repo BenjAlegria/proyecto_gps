@@ -1,4 +1,4 @@
-# Interurbano Sur
+# EnRuta Ya!
 
 App móvil para consultar la hora de llegada de los buses interurbanos
 y ver su ubicación en un mapa (Lautaro, Nueva Imperial, Carahue, Padre
@@ -14,7 +14,7 @@ interurbanos en la Araucanía se informa hoy por memoria o
 preguntándole al conductor, no por un canal oficial confiable, y el
 71% ha quedado con el bus lleno sin poder subir. La utilidad percibida
 de una app que muestre horarios y ubicación en vivo fue de 4.7/5.
-Interurbano Sur resuelve esa falta de información centralizando
+EnRuta Ya! resuelve esa falta de información centralizando
 horarios y mostrando la ubicación real del bus en un mapa, aportada
 por los propios pasajeros ante la ausencia de GPS en los buses.
 
@@ -169,5 +169,3 @@ información real].
       `main.py` (diccionario `LOCALIDADES`) siguen siendo de ejemplo;
       reemplazar por los datos del socio comunitario antes de la
       demo.
-- [ ] **Presentación oral (D):** preparar demo en vivo y respuestas
-      sobre las decisiones de diseño — no depende del código.

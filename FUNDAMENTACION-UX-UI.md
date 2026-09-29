@@ -1,4 +1,4 @@
-# Fundamentación UX/UI — Interurbano Sur
+# Fundamentación UX/UI — EnRuta Ya!
 
 ## a) Metodología de investigación
 - **Encuestas aplicadas:** 17 respuestas, recolectadas mediante un

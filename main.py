@@ -1,16 +1,19 @@
 """
-Interurbano Sur - App móvil para consultar horarios y llegada
+EnRuta Ya! - App móvil para consultar horarios y llegada
 de buses interurbanos mediante un mapa.
 
 Evaluación: Kivy + KivyMD 2.0, ScreenManager, KV Language.
 Separación estricta: la interfaz vive en root.kv, la lógica aquí.
 """
 
+import os
 import random
 import threading
 import time
+import traceback
 
 from kivy.animation import Animation
+from kivy.base import ExceptionHandler, ExceptionManager
 from kivy.clock import Clock
 from kivy.lang import Builder
 from kivy.metrics import dp
@@ -43,6 +46,38 @@ from kivymd.uix.dialog import (
 )
 from kivymd.uix.menu import MDDropdownMenu
 from kivymd.uix.snackbar import MDSnackbar, MDSnackbarText
+
+
+# ------------------------------------------------------------
+# Registro de errores: si algo falla dentro de la app, en vez de cerrarse
+# se guarda el detalle completo en crash_log.txt (junto a main.py) y la
+# app sigue funcionando.
+# ------------------------------------------------------------
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+LOG_ERRORES = os.path.join(BASE_DIR, "crash_log.txt")
+ICONO_BUS = os.path.join(BASE_DIR, "bus_marker.png")
+
+
+def registrar_error(exc):
+    """Imprime el error en la consola y lo guarda con su traza completa."""
+    texto = "".join(traceback.format_exception(type(exc), exc, exc.__traceback__))
+    print(texto)
+    try:
+        with open(LOG_ERRORES, "a", encoding="utf-8") as f:
+            f.write(f"--- {time.strftime('%Y-%m-%d %H:%M:%S')} ---\n{texto}\n")
+    except OSError:
+        pass
+
+
+class ManejadorErrores(ExceptionHandler):
+    def handle_exception(self, inst):
+        if not isinstance(inst, Exception):  # Ctrl+C, cerrar la ventana, etc.
+            return ExceptionManager.RAISE
+        registrar_error(inst)
+        return ExceptionManager.PASS
+
+
+ExceptionManager.add_handler(ManejadorErrores())
 
 
 # ------------------------------------------------------------
@@ -164,6 +199,42 @@ class AjustesScreen(Screen):
 # ------------------------------------------------------------
 # Aplicación
 # ------------------------------------------------------------
+class AvisoSnackbar(MDSnackbar):
+    """MDSnackbar que no revienta al crearse.
+
+    En KivyMD 2.0.0 el snackbar nace con altura 0 (su alto es
+    'minimum_height' y aún no tiene hijos cuando RippleBehavior crea su FBO).
+    Un FBO de alto 0 es inválido y en Windows/ANGLE lanza
+    'FBO Initialization failed: Incomplete attachment (36054)'.
+    Aquí forzamos un tamaño mínimo de 1x1 antes de crear el FBO; después el
+    alto real se recalcula solo al agregar el texto."""
+
+    def init_fbos(self):
+        self.size = self._clamp_size(*self.size)
+        super().init_fbos()
+
+
+class MarcadorBus(MapMarker):
+    """MapMarker cuyo tamaño depende del zoom del mapa.
+
+    Los marcadores de MapView viven en una capa sin escala y por defecto
+    miden 100x100 px siempre; al alejar el mapa el icono quedaba enorme
+    comparado con el mapa y tapaba todo. Aquí va de dp(16) (mapa lejos)
+    a dp(40) (mapa cerca)."""
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.size_hint = (None, None)
+        self.fit_mode = "contain"
+
+    def ajustar_zoom(self, zoom):
+        lado = dp(min(40, max(16, 16 + (zoom - 10) * 4)))
+        self.size = (lado, lado)
+        capa = self._layer
+        if capa is not None and capa.parent is not None:
+            capa.set_marker_position(capa.parent, self)
+
+
 class InterurbanoApp(MDApp):
     menu_origen = None
     menu_linea = None
@@ -187,13 +258,26 @@ class InterurbanoApp(MDApp):
     def build(self):
         self.theme_cls.primary_palette = "Blue"
         self.theme_cls.theme_style = "Light"
-        self.title = "Interurbano Sur"
+        self.title = "EnRuta Ya!"
         self.favoritas = []
         self.avisos = []
         self._ultimo_aviso = {}
-        return Builder.load_file("root.kv")
+        return Builder.load_file(os.path.join(BASE_DIR, "root.kv"))
+
+    def _ajustar_marcadores(self, *args):
+        """Achica/agranda los iconos de bus según el zoom actual del mapa."""
+        try:
+            zoom = self.root.ids.sm.get_screen("home").ids.mapa.zoom
+        except Exception:
+            return
+        buses = [m for m in self._marcadores if isinstance(m, MarcadorBus)]
+        if self.marcador_yo:
+            buses.append(self.marcador_yo)
+        for m in buses:
+            m.ajustar_zoom(zoom)
 
     def on_start(self):
+        self.root.ids.sm.get_screen("home").ids.mapa.bind(zoom=self._ajustar_marcadores)
         self.cargar_avisos_ejemplo()
         self.refrescar_avisos()
         # Cada minuto se actualizan los "hace X min" y se descartan avisos vencidos.
@@ -271,13 +355,14 @@ class InterurbanoApp(MDApp):
 
         if lugar != "Temuco":
             tlat, tlon = COORDENADAS["Temuco"]
-            bus = MapMarker(lat=(lat + tlat) / 2, lon=(lon + tlon) / 2,
+            bus = MarcadorBus(lat=(lat + tlat) / 2, lon=(lon + tlon) / 2,
                             source="atlas://data/images/defaulttheme/checkbox_on")
             mapa.add_marker(bus)
             self._marcadores.append(bus)
 
         mapa.zoom = 11
         mapa.center_on(lat, lon)
+        self._ajustar_marcadores()
 
     # --------------------------------------------------------
     # Botón "reubicarme" del mapa: centra en mi posición GPS real
@@ -327,14 +412,16 @@ class InterurbanoApp(MDApp):
         mapa = home.ids.mapa
         if self.marcador_yo:
             mapa.remove_marker(self.marcador_yo)
-        self.marcador_yo = MapMarker(
+        self.marcador_yo = MarcadorBus(
             lat=lat, lon=lon,
-            source="assets/bus_marker.png",
+            source=ICONO_BUS if os.path.exists(ICONO_BUS)
+                   else "atlas://data/images/defaulttheme/checkbox_on",
             anchor_x=0.5, anchor_y=0.5,
         )
         mapa.add_marker(self.marcador_yo)
         mapa.center_on(lat, lon)
         mapa.zoom = 15
+        self._ajustar_marcadores()
 
     def detener_gps(self):
         if self.gps_activo and gps is not None:
@@ -564,12 +651,15 @@ class InterurbanoApp(MDApp):
         return " · ".join(partes), color
 
     def _snack(self, texto):
-        MDSnackbar(
-            MDSnackbarText(text=texto),
-            y=dp(80),  # por encima de la barra de navegación
-            pos_hint={"center_x": 0.5},
-            size_hint_x=0.9,
-        ).open()
+        try:
+            AvisoSnackbar(
+                MDSnackbarText(text=texto),
+                y=dp(80),  # por encima de la barra de navegación
+                pos_hint={"center_x": 0.5},
+                size_hint_x=0.9,
+            ).open()
+        except Exception as e:  # un aviso visual nunca debe tumbar la app
+            registrar_error(e)
 
     def notificar(self, titulo, mensaje):
         """Notificación dentro de la app y, si el dispositivo lo permite,
@@ -578,7 +668,7 @@ class InterurbanoApp(MDApp):
         if notification is not None:
             try:
                 notification.notify(title=titulo, message=mensaje,
-                                    app_name="Interurbano Sur", timeout=8)
+                                    app_name="EnRuta Ya!", timeout=8)
             except Exception as e:
                 print("No se pudo mostrar la notificación del sistema:", e)
 
@@ -624,11 +714,14 @@ class InterurbanoApp(MDApp):
             self.notificar(ruta, self._titulo_aviso(aviso))
 
     def refrescar_avisos(self):
-        """Redibuja todo lo que muestra el estado de las líneas."""
-        self._llenar_lineas_home()
-        self.poblar_recorridos()
-        self.refrescar_favoritos()
-        self.poblar_avisos()
+        """Redibuja todo lo que muestra el estado de las líneas. Cada paso
+        va aparte: si uno falla, los demás igual se actualizan."""
+        for paso in (self._llenar_lineas_home, self.poblar_recorridos,
+                     self.refrescar_favoritos, self.poblar_avisos):
+            try:
+                paso()
+            except Exception as e:
+                registrar_error(e)
 
     def poblar_avisos(self):
         pantalla = self.root.ids.sm.get_screen("avisos")
