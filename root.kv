@@ -1,10 +1,14 @@
 #:import dp kivy.metrics.dp
 
+# Azul principal (más amigable) y su variante oscura para el tema oscuro
+#:set AZUL_CLARO (0.16, 0.45, 0.87, 1)
+#:set AZUL_OSCURO (0.05, 0.09, 0.20, 1)
+
 BoxLayout:
     orientation: "vertical"
     canvas.before:
         Color:
-            rgba: 0.96, 0.97, 0.98, 1
+            rgba: (0.07, 0.08, 0.10, 1) if app.theme_cls.theme_style == "Dark" else (0.96, 0.97, 0.98, 1)
         Rectangle:
             pos: self.pos
             size: self.size
@@ -21,90 +25,256 @@ BoxLayout:
         CompartirScreen:
             name: "compartir"
 
+        AvisosScreen:
+            name: "avisos"
+
+        AjustesScreen:
+            name: "ajustes"
+
         PerfilScreen:
             name: "perfil"
 
+    # ----------------------------------------------------------
+    # Barra de navegación inferior (azul, iconos blancos)
+    # ----------------------------------------------------------
     MDBoxLayout:
         size_hint_y: None
-        height: dp(56)
-        padding: dp(4)
-        spacing: dp(3)
-        md_bg_color: 1, 1, 1, 1
+        height: dp(64)
+        padding: dp(6), dp(6)
+        spacing: dp(4)
+        md_bg_color: AZUL_OSCURO if app.theme_cls.theme_style == "Dark" else AZUL_CLARO
 
-        MDIconButton:
-            icon: "home-variant"
-            icon_color: (0.15, 0.36, 0.95, 1) if sm.current == "home" else (0.38, 0.41, 0.46, 1)
-            pos_hint: {"center_x": 0.5}
+        NavItem:
+            icono_activo: "home"
+            icono_inactivo: "home-outline"
+            etiqueta: "Inicio"
+            activo: sm.current == "home"
             on_release: app.cambiar_pantalla("home")
 
-        MDIconButton:
-            icon: "bus"
-            icon_color: (0.15, 0.36, 0.95, 1) if sm.current == "recorridos" else (0.38, 0.41, 0.46, 1)
-            pos_hint: {"center_x": 0.5}
+        NavItem:
+            icono_activo: "bus"
+            icono_inactivo: "bus-side"
+            etiqueta: "Recorridos"
+            activo: sm.current == "recorridos"
             on_release: app.cambiar_pantalla("recorridos")
 
-        MDIconButton:
-            icon: "share-variant"
-            icon_color: (0.15, 0.36, 0.95, 1) if sm.current == "compartir" else (0.38, 0.41, 0.46, 1)
-            pos_hint: {"center_x": 0.5}
+        NavItem:
+            icono_activo: "map-marker-radius"
+            icono_inactivo: "map-marker-radius-outline"
+            etiqueta: "Compartir"
+            activo: sm.current == "compartir"
             on_release: app.cambiar_pantalla("compartir")
 
-        MDIconButton:
-            icon: "account"
-            icon_color: (0.15, 0.36, 0.95, 1) if sm.current == "perfil" else (0.38, 0.41, 0.46, 1)
-            pos_hint: {"center_x": 0.5}
-            on_release: app.cambiar_pantalla("perfil")
+        NavItem:
+            icono_activo: "bell"
+            icono_inactivo: "bell-outline"
+            etiqueta: "Avisos"
+            activo: sm.current == "avisos"
+            on_release: app.cambiar_pantalla("avisos")
+
+        NavItem:
+            icono_activo: "cog"
+            icono_inactivo: "cog-outline"
+            etiqueta: "Ajustes"
+            activo: sm.current == "ajustes"
+            on_release: app.cambiar_pantalla("ajustes")
+
+
+<NavItem@ButtonBehavior+BoxLayout>:
+    icono_activo: ""
+    icono_inactivo: ""
+    etiqueta: ""
+    activo: False
+    orientation: "vertical"
+    padding: 0, dp(4)
+
+    AnchorLayout:
+        anchor_x: "center"
+        anchor_y: "center"
+        size_hint_y: None
+        height: dp(30)
+
+        BoxLayout:
+            size_hint: None, None
+            size: dp(52), dp(28)
+
+            canvas.before:
+                Color:
+                    rgba: (1, 1, 1, 0.22) if root.activo else (0, 0, 0, 0)
+                RoundedRectangle:
+                    pos: self.pos
+                    size: self.size
+                    radius: [dp(14)]
+
+            AnchorLayout:
+                anchor_x: "center"
+                anchor_y: "center"
+
+                MDIcon:
+                    icon: root.icono_activo if root.activo else root.icono_inactivo
+                    icon_color: 1, 1, 1, 1
+                    adaptive_size: True
+
+    AnchorLayout:
+        anchor_x: "center"
+        anchor_y: "center"
+        size_hint_y: None
+        height: dp(16)
+
+        MDLabel:
+            text: root.etiqueta
+            halign: "center"
+            font_style: "Label"
+            role: "small"
+            theme_text_color: "Custom"
+            text_color: 1, 1, 1, 1
+            adaptive_size: True
+
+
+# ----------------------------------------------------------
+# Barra superior azul reutilizable (avatar + contenido)
+# ----------------------------------------------------------
+<TopBar@MDBoxLayout>:
+    size_hint_y: None
+    height: dp(58)
+    padding: dp(6), 0
+    spacing: dp(6)
+    md_bg_color: AZUL_OSCURO if app.theme_cls.theme_style == "Dark" else AZUL_CLARO
+
+    MDIconButton:
+        icon: "account-circle"
+        icon_color: 1, 1, 1, 1
+        pos_hint: {"center_y": 0.5}
+        on_release: app.cambiar_pantalla("perfil")
+        canvas.before:
+            Color:
+                rgba: 1, 1, 1, 0.18
+            Ellipse:
+                pos: self.pos
+                size: self.size
+
+
+<PanelHeader@ButtonBehavior+BoxLayout>:
+    orientation: "horizontal"
+
+
+<LocalidadChip@ButtonBehavior+BoxLayout>:
+    orientation: "horizontal"
+    padding: dp(14), 0
+    spacing: dp(6)
+    canvas.before:
+        Color:
+            rgba: (0.16, 0.18, 0.24, 1) if app.theme_cls.theme_style == "Dark" else (1, 1, 1, 1)
+        RoundedRectangle:
+            pos: self.pos
+            size: self.size
+            radius: [dp(20)]
 
 
 <HomeScreen>:
-    BoxLayout:
-        orientation: "vertical"
-        padding: dp(12), dp(10), dp(12), dp(4)
-        spacing: dp(8)
-
-        MDButton:
-            id: origen_btn
-            style: "outlined"
-            size_hint_y: None
-            height: dp(44)
-            pos_hint: {"center_x": 0.5}
-            on_release: app.abrir_menu_origen(self)
-
-            MDButtonIcon:
-                icon: "map-marker"
-
-            MDButtonText:
-                id: origen_text
-                text: "Elegir localidad"
-
-            MDButtonIcon:
-                icon: "menu-down"
+    FloatLayout:
 
         MapView:
             id: mapa
             lat: -38.7359
             lon: -72.5904
             zoom: 10
+            size_hint: 1, 1
+            pos_hint: {"x": 0, "y": 0}
 
-        MDLabel:
-            id: lineas_titulo
-            text: "Elige una localidad para ver los buses"
-            bold: True
-            size_hint_y: None
-            height: dp(28)
+        TopBar:
+            pos_hint: {"top": 1}
+
+            LocalidadChip:
+                id: origen_btn
+                on_release: app.abrir_menu_origen(self)
+
+                MDIcon:
+                    icon: "map-marker"
+                    theme_text_color: "Custom"
+                    text_color: (1, 1, 1, 1) if app.theme_cls.theme_style == "Dark" else AZUL_CLARO
+                    pos_hint: {"center_y": 0.5}
+
+                MDLabel:
+                    id: origen_text
+                    text: "Elegir localidad"
+                    theme_text_color: "Custom"
+                    text_color: (0.95, 0.96, 0.98, 1) if app.theme_cls.theme_style == "Dark" else (0.10, 0.12, 0.15, 1)
+                    bold: True
+
+                MDIcon:
+                    icon: "menu-down"
+                    theme_text_color: "Custom"
+                    text_color: (1, 1, 1, 1) if app.theme_cls.theme_style == "Dark" else AZUL_CLARO
+                    pos_hint: {"center_y": 0.5}
+
+            MDIconButton:
+                icon: "share-variant"
+                icon_color: 1, 1, 1, 1
+                pos_hint: {"center_y": 0.5}
+                on_release: app.cambiar_pantalla("compartir")
+                canvas.before:
+                    Color:
+                        rgba: 1, 1, 1, 0.18
+                    Ellipse:
+                        pos: self.pos
+                        size: self.size
+
+        MDIconButton:
+            style: "filled"
+            icon: "crosshairs-gps"
+            pos_hint: {"right": 0.96, "top": 0.86}
+            on_release: app.localizarme()
 
         MDBoxLayout:
-            id: lineas_box
+            id: panel_buses
             orientation: "vertical"
-            spacing: dp(6)
-            adaptive_height: True
+            size_hint: 1, None
+            height: dp(48)
+            pos_hint: {"x": 0, "y": 0}
+            padding: dp(4), 0
+            spacing: dp(2)
+
+            canvas.before:
+                Color:
+                    rgba: (0.11, 0.12, 0.15, 0.96) if app.theme_cls.theme_style == "Dark" else (1, 1, 1, 0.94)
+                RoundedRectangle:
+                    pos: self.pos
+                    size: self.size
+                    radius: [dp(18), dp(18), 0, 0]
+
+            PanelHeader:
+                size_hint_y: None
+                height: dp(46)
+                padding: dp(12), 0
+                on_release: app.alternar_panel_buses()
+
+                MDLabel:
+                    id: lineas_titulo
+                    text: "Elige una localidad para ver los buses"
+                    bold: True
+
+                MDIcon:
+                    id: panel_icono
+                    icon: "chevron-up"
+                    adaptive_size: True
+                    pos_hint: {"center_y": 0.5}
+
+            ScrollView:
+                size_hint_y: 1
+                MDBoxLayout:
+                    id: lineas_box
+                    orientation: "vertical"
+                    spacing: dp(6)
+                    padding: dp(8), 0, dp(8), dp(8)
+                    adaptive_height: True
 
 
 <LineaCard>:
     style: "elevated"
     orientation: "horizontal"
     size_hint_y: None
-    height: dp(68)
+    height: dp(84)
     padding: dp(12), dp(8)
     spacing: dp(10)
     radius: [12]
@@ -130,6 +300,14 @@ BoxLayout:
             font_style: "Body"
             role: "small"
 
+        MDLabel:
+            text: root.aviso
+            bold: True
+            font_style: "Body"
+            role: "small"
+            theme_text_color: "Custom"
+            text_color: root.aviso_color
+
     BoxLayout:
         orientation: "vertical"
         size_hint_x: None
@@ -148,118 +326,354 @@ BoxLayout:
             role: "small"
 
 
+<AvisoCard>:
+    style: "outlined"
+    orientation: "horizontal"
+    size_hint_y: None
+    height: dp(68)
+    padding: dp(12), dp(8)
+    spacing: dp(10)
+    radius: [12]
+
+    MDIcon:
+        icon: root.icono
+        theme_text_color: "Custom"
+        text_color: root.color
+        size_hint_x: None
+        width: dp(32)
+        pos_hint: {"center_y": 0.5}
+
+    BoxLayout:
+        orientation: "vertical"
+
+        MDLabel:
+            text: root.titulo
+            bold: True
+            font_style: "Body"
+            role: "medium"
+            theme_text_color: "Custom"
+            text_color: root.color
+
+        MDLabel:
+            text: root.detalle
+            font_style: "Body"
+            role: "small"
+
+
 <RecorridosScreen>:
     BoxLayout:
         orientation: "vertical"
-        padding: dp(12), dp(8), dp(12), dp(4)
-        spacing: dp(8)
 
-        MDTopAppBar:
-            type: "small"
-            md_bg_color: 0.96, 0.97, 0.98, 1
-
-            MDTopAppBarTitle:
+        TopBar:
+            MDLabel:
                 text: "Recorridos"
+                bold: True
+                theme_text_color: "Custom"
+                text_color: 1, 1, 1, 1
+                pos_hint: {"center_y": 0.5}
 
-        MDLabel:
-            id: recorridos_resumen
-            text: ""
-            font_style: "Body"
-            role: "medium"
-            size_hint_y: None
-            height: dp(24)
+        BoxLayout:
+            orientation: "vertical"
+            padding: dp(12), dp(8), dp(12), dp(4)
+            spacing: dp(8)
 
-        ScrollView:
-            MDBoxLayout:
-                id: recorridos_box
-                orientation: "vertical"
-                spacing: dp(8)
-                padding: 0, 0, 0, dp(8)
-                adaptive_height: True
+            MDLabel:
+                id: recorridos_resumen
+                text: ""
+                font_style: "Body"
+                role: "medium"
+                size_hint_y: None
+                height: dp(24)
+
+            ScrollView:
+                MDBoxLayout:
+                    id: recorridos_box
+                    orientation: "vertical"
+                    spacing: dp(8)
+                    padding: 0, 0, 0, dp(8)
+                    adaptive_height: True
 
 
 <CompartirScreen>:
     BoxLayout:
         orientation: "vertical"
-        padding: dp(12), dp(8), dp(12), dp(4)
-        spacing: dp(12)
 
-        MDTopAppBar:
-            type: "small"
-            md_bg_color: 0.96, 0.97, 0.98, 1
-
-            MDTopAppBarTitle:
+        TopBar:
+            MDLabel:
                 text: "Compartir ubicación"
+                bold: True
+                theme_text_color: "Custom"
+                text_color: 1, 1, 1, 1
+                pos_hint: {"center_y": 0.5}
 
-        MDLabel:
-            text: "¿Vas en la micro? Comparte tu ubicación y ayuda a otros a saber dónde va el bus."
-            size_hint_y: None
-            height: dp(60)
+        ScrollView:
+            MDBoxLayout:
+                orientation: "vertical"
+                padding: dp(12), dp(8), dp(12), dp(12)
+                spacing: dp(12)
+                adaptive_height: True
 
-        MDButton:
-            id: linea_btn
-            style: "outlined"
-            size_hint_y: None
-            height: dp(40)
-            on_release: app.abrir_menu_linea(self)
+                MDLabel:
+                    text: "¿Vas en la micro? Comparte tu ubicación y ayuda a otros a saber dónde va el bus."
+                    size_hint_y: None
+                    height: dp(60)
 
-            MDButtonIcon:
-                icon: "bus"
+                MDButton:
+                    id: linea_btn
+                    style: "outlined"
+                    size_hint_y: None
+                    height: dp(40)
+                    on_release: app.abrir_menu_linea(self)
 
-            MDButtonText:
-                id: linea_text
-                text: "Elegir mi línea"
+                    MDButtonIcon:
+                        icon: "bus"
 
-            MDButtonIcon:
-                icon: "menu-down"
+                    MDButtonText:
+                        id: linea_text
+                        text: "Elegir mi línea"
 
-        MDLabel:
-            id: linea_error
-            text: ""
-            theme_text_color: "Error"
-            size_hint_y: None
-            height: dp(20)
+                    MDButtonIcon:
+                        icon: "menu-down"
 
-        MDButton:
-            id: compartir_btn
-            style: "filled"
-            size_hint_y: None
-            height: dp(44)
-            pos_hint: {"center_x": 0.5}
-            on_release: app.alternar_compartir()
+                MDLabel:
+                    id: linea_error
+                    text: ""
+                    theme_text_color: "Error"
+                    size_hint_y: None
+                    height: dp(20)
 
-            MDButtonText:
-                id: compartir_btn_text
-                text: "INICIAR VIAJE"
+                MDButton:
+                    id: compartir_btn
+                    style: "filled"
+                    size_hint_y: None
+                    height: dp(44)
+                    pos_hint: {"center_x": 0.5}
+                    on_release: app.alternar_compartir()
 
-        MDLabel:
-            id: estado_label
-            text: "Tu ubicación no se está compartiendo."
-            halign: "center"
-            font_style: "Body"
-            role: "small"
+                    MDButtonText:
+                        id: compartir_btn_text
+                        text: "INICIAR VIAJE"
 
-        Widget:
+                MDLabel:
+                    id: estado_label
+                    text: "Tu ubicación no se está compartiendo."
+                    halign: "center"
+                    font_style: "Body"
+                    role: "small"
+                    size_hint_y: None
+                    height: dp(24)
+
+                MDLabel:
+                    text: "Avisar a otros pasajeros"
+                    bold: True
+                    size_hint_y: None
+                    height: dp(28)
+
+                MDLabel:
+                    text: "Usa la línea elegida arriba. Tu aviso le llega a quienes esperan ese bus."
+                    font_style: "Body"
+                    role: "small"
+                    size_hint_y: None
+                    height: dp(36)
+
+                GridLayout:
+                    cols: 2
+                    spacing: dp(8)
+                    size_hint_y: None
+                    height: dp(96)
+                    row_default_height: dp(44)
+                    row_force_default: True
+
+                    MDButton:
+                        style: "tonal"
+                        theme_width: "Custom"
+                        size_hint_x: 1
+                        on_release: app.enviar_aviso("lleno")
+
+                        MDButtonIcon:
+                            icon: "account-group"
+
+                        MDButtonText:
+                            text: "Bus lleno"
+
+                    MDButton:
+                        style: "tonal"
+                        theme_width: "Custom"
+                        size_hint_x: 1
+                        on_release: app.enviar_aviso("asientos")
+
+                        MDButtonIcon:
+                            icon: "seat-passenger"
+
+                        MDButtonText:
+                            text: "Hay asientos"
+
+                    MDButton:
+                        style: "tonal"
+                        theme_width: "Custom"
+                        size_hint_x: 1
+                        on_release: app.abrir_menu_atraso(self)
+
+                        MDButtonIcon:
+                            icon: "clock-alert"
+
+                        MDButtonText:
+                            text: "Atrasado"
+
+                    MDButton:
+                        style: "tonal"
+                        theme_width: "Custom"
+                        size_hint_x: 1
+                        on_release: app.enviar_aviso("cambio_ruta")
+
+                        MDButtonIcon:
+                            icon: "map-marker-alert"
+
+                        MDButtonText:
+                            text: "Cambio de ruta"
+
+
+<AvisosScreen>:
+    BoxLayout:
+        orientation: "vertical"
+
+        TopBar:
+            MDLabel:
+                text: "Avisos"
+                bold: True
+                theme_text_color: "Custom"
+                text_color: 1, 1, 1, 1
+                pos_hint: {"center_y": 0.5}
+
+        BoxLayout:
+            orientation: "vertical"
+            padding: dp(12), dp(8), dp(12), dp(4)
+            spacing: dp(8)
+
+            MDCard:
+                style: "outlined"
+                orientation: "horizontal"
+                size_hint_y: None
+                height: dp(56)
+                padding: dp(12), dp(6)
+                radius: [14]
+
+                MDLabel:
+                    text: "Solo mis rutas favoritas"
+                    font_style: "Body"
+                    role: "medium"
+
+                MDSwitch:
+                    pos_hint: {"center_y": 0.5}
+                    on_active: app.alternar_solo_favoritas(self.active)
+
+            MDLabel:
+                id: avisos_vacio
+                text: ""
+                font_style: "Body"
+                role: "small"
+                size_hint_y: None
+                height: dp(40)
+
+            ScrollView:
+                MDBoxLayout:
+                    id: avisos_box
+                    orientation: "vertical"
+                    spacing: dp(8)
+                    padding: 0, 0, 0, dp(8)
+                    adaptive_height: True
+
+
+<AjustesScreen>:
+    BoxLayout:
+        orientation: "vertical"
+
+        TopBar:
+            MDLabel:
+                text: "Ajustes"
+                bold: True
+                theme_text_color: "Custom"
+                text_color: 1, 1, 1, 1
+                pos_hint: {"center_y": 0.5}
+
+        BoxLayout:
+            orientation: "vertical"
+            padding: dp(12), dp(10)
+            spacing: dp(10)
+
+            MDCard:
+                style: "outlined"
+                orientation: "horizontal"
+                size_hint_y: None
+                height: dp(64)
+                padding: dp(12), dp(8)
+                radius: [14]
+
+                MDLabel:
+                    text: "Tema oscuro"
+                    font_style: "Body"
+                    role: "medium"
+
+                MDSwitch:
+                    on_active: app.cambiar_tema(self.active)
+
+            MDCard:
+                style: "outlined"
+                orientation: "horizontal"
+                size_hint_y: None
+                height: dp(72)
+                padding: dp(12), dp(8)
+                radius: [14]
+
+                MDLabel:
+                    text: "Avisarme de atrasos y buses llenos en mis rutas favoritas"
+                    font_style: "Body"
+                    role: "medium"
+
+                MDSwitch:
+                    active: True
+                    pos_hint: {"center_y": 0.5}
+                    on_active: app.cambiar_notificaciones(self.active)
+
+            MDButton:
+                style: "outlined"
+                size_hint_y: None
+                height: dp(40)
+                pos_hint: {"center_x": 0.5}
+                on_release: app.simular_aviso()
+
+                MDButtonIcon:
+                    icon: "flask-outline"
+
+                MDButtonText:
+                    text: "Simular aviso de otro pasajero (demo)"
+
+            MDLabel:
+                text: "Interurbano Sur v1.1"
+                halign: "center"
+                font_style: "Body"
+                role: "small"
+
+            Widget:
 
 
 <PerfilScreen>:
     BoxLayout:
         orientation: "vertical"
-        padding: dp(12), dp(8), dp(12), dp(4)
-        spacing: dp(8)
 
-        MDTopAppBar:
-            type: "small"
-            md_bg_color: 0.96, 0.97, 0.98, 1
-
-            MDTopAppBarTitle:
+        TopBar:
+            MDLabel:
                 text: "Mi perfil"
+                bold: True
+                theme_text_color: "Custom"
+                text_color: 1, 1, 1, 1
+                pos_hint: {"center_y": 0.5}
 
         ScrollView:
             MDBoxLayout:
                 orientation: "vertical"
                 spacing: dp(10)
-                padding: 0, 0, 0, dp(8)
+                padding: dp(12), dp(10), dp(12), dp(8)
                 adaptive_height: True
 
                 MDCard:
@@ -377,7 +791,6 @@ BoxLayout:
 
                     MDSwitch:
                         id: switch_consent
-                        pos_hint: {"center_y": 0.5}
                         on_active: app.cambiar_consentimiento(self.active)
 
                 MDLabel:
