@@ -94,11 +94,6 @@ interurbano_app/
 └── investigacion/
     └── Encuesta sobre Uso de Transporte Público e Interurbano.csv
 ```
-
-## Capturas de pantalla
-[COMPLETAR: agregar una captura por pantalla — Inicio, Recorridos,
-Compartir, Ajustes y Perfil]
-
 ## Limitaciones conocidas (fuera del alcance de esta evaluación)
 - La ubicación que ve cada usuario es local a su propia app: aún no
   hay un servidor que reciba la posición de quien comparte y se la
