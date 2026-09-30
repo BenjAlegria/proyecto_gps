@@ -8,6 +8,7 @@ Separación estricta: la interfaz vive en root.kv, la lógica aquí.
 
 import os
 import random
+import re
 import threading
 import time
 import traceback
@@ -90,6 +91,7 @@ COORDENADAS = {
     "Carahue": (-38.7103, -73.1561),
     "Padre Las Casas": (-38.7683, -72.5975),
     "Temuco": (-38.7359, -72.5904),
+    "Victoria": (-38.2333, -72.3333),
 }
 
 LOCALIDADES = {
@@ -220,7 +222,7 @@ class MarcadorBus(MapMarker):
     Los marcadores de MapView viven en una capa sin escala y por defecto
     miden 100x100 px siempre; al alejar el mapa el icono quedaba enorme
     comparado con el mapa y tapaba todo. Aquí va de dp(16) (mapa lejos)
-    a dp(40) (mapa cerca)."""
+    a dp(44) (mapa cerca)."""
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -228,7 +230,7 @@ class MarcadorBus(MapMarker):
         self.fit_mode = "contain"
 
     def ajustar_zoom(self, zoom):
-        lado = dp(min(40, max(16, 16 + (zoom - 10) * 4)))
+        lado = dp(min(44, max(16, 24 + (zoom - 10) * 4)))
         self.size = (lado, lado)
         capa = self._layer
         if capa is not None and capa.parent is not None:
@@ -342,8 +344,17 @@ class InterurbanoApp(MDApp):
         Animation(height=alto, d=0.18, t="out_quad").start(home.ids.panel_buses)
         home.ids.panel_icono.icon = "chevron-down" if self.panel_expandido else "chevron-up"
 
+    @staticmethod
+    def _minutos(texto):
+        """'1 h 20 min' -> 80, '15 min' -> 15 (para ubicar buses de demo)."""
+        horas = re.search(r"(\d+)\s*h", texto)
+        mins = re.search(r"(\d+)\s*min", texto)
+        return (int(horas.group(1)) * 60 if horas else 0) + (int(mins.group(1)) if mins else 0)
+
     def actualizar_mapa(self, mapa, lugar):
-        """Centra el mapa en la localidad y dibuja parada + bus (simulado)."""
+        """Centra el mapa en la localidad, dibuja la parada y un bus (simulado)
+        por cada línea que sale de ahí. Cada bus se ubica sobre el recorrido
+        hacia su destino, más cerca de la parada mientras menos minutos falten."""
         lat, lon = COORDENADAS[lugar]
         for m in self._marcadores:
             mapa.remove_marker(m)
@@ -353,14 +364,24 @@ class InterurbanoApp(MDApp):
         mapa.add_marker(parada)
         self._marcadores.append(parada)
 
-        if lugar != "Temuco":
-            tlat, tlon = COORDENADAS["Temuco"]
-            bus = MarcadorBus(lat=(lat + tlat) / 2, lon=(lon + tlon) / 2,
-                            source="atlas://data/images/defaulttheme/checkbox_on")
+        for d in LOCALIDADES[lugar]:
+            destino = d["ruta"].split("->")[-1].strip()
+            if destino not in COORDENADAS:
+                continue
+            dlat, dlon = COORDENADAS[destino]
+            dur = max(self._minutos(d["duracion"]), 1)
+            frac = min(0.8, max(0.15, self._minutos(d["minutos"]) / dur))
+            bus = MarcadorBus(
+                lat=lat + (dlat - lat) * frac,
+                lon=lon + (dlon - lon) * frac,
+                source=ICONO_BUS if os.path.exists(ICONO_BUS)
+                       else "atlas://data/images/defaulttheme/checkbox_on",
+                anchor_x=0.5, anchor_y=0.5,
+            )
             mapa.add_marker(bus)
             self._marcadores.append(bus)
 
-        mapa.zoom = 11
+        mapa.zoom = 10
         mapa.center_on(lat, lon)
         self._ajustar_marcadores()
 
