@@ -1,0 +1,10 @@
+{
+  "benjamin": {
+    "nombre": "benjamin",
+    "favoritas": [],
+    "viajes": 0,
+    "tema_oscuro": true,
+    "notificar_favoritas": true,
+    "consentimiento": true
+  }
+}
