@@ -16,6 +16,12 @@ BoxLayout:
     ScreenManager:
         id: sm
 
+        LoginScreen:
+            name: "login"
+
+        RegistroScreen:
+            name: "registro"
+
         HomeScreen:
             name: "home"
 
@@ -38,8 +44,11 @@ BoxLayout:
     # Barra de navegación inferior (azul, iconos blancos)
     # ----------------------------------------------------------
     MDBoxLayout:
+        id: nav_bar
         size_hint_y: None
-        height: dp(64)
+        height: 0 if sm.current in ("login", "registro") else dp(64)
+        opacity: 0 if sm.current in ("login", "registro") else 1
+        disabled: sm.current in ("login", "registro")
         padding: dp(6), dp(6)
         spacing: dp(4)
         md_bg_color: AZUL_OSCURO if app.theme_cls.theme_style == "Dark" else AZUL_CLARO
@@ -220,10 +229,43 @@ BoxLayout:
                         pos: self.pos
                         size: self.size
 
+        MDBoxLayout:
+            id: banner
+            size_hint: 0.92, None
+            height: dp(38)
+            padding: dp(12), 0
+            spacing: dp(8)
+            opacity: 0
+            pos_hint: {"center_x": 0.5}
+            y: self.parent.height - dp(58) - dp(8) - self.height
+            canvas.before:
+                Color:
+                    rgba: (0.11, 0.12, 0.15, 0.94) if app.theme_cls.theme_style == "Dark" else (1, 1, 1, 0.94)
+                RoundedRectangle:
+                    pos: self.pos
+                    size: self.size
+                    radius: [dp(12)]
+
+            MDIcon:
+                icon: "cloud-check-outline"
+                adaptive_size: True
+                pos_hint: {"center_y": 0.5}
+                theme_text_color: "Custom"
+                text_color: AZUL_CLARO
+
+            MDLabel:
+                id: banner_texto
+                text: ""
+                shorten: True
+                shorten_from: "right"
+                font_style: "Body"
+                role: "small"
+                valign: "center"
+
         MDIconButton:
             style: "filled"
             icon: "crosshairs-gps"
-            pos_hint: {"right": 0.96, "top": 0.86}
+            pos_hint: {"right": 0.96, "top": 0.79}
             on_release: app.localizarme()
 
         MDBoxLayout:
@@ -615,6 +657,8 @@ BoxLayout:
                     role: "medium"
 
                 MDSwitch:
+                    id: switch_tema
+                    pos_hint: {"center_y": 0.5}
                     on_active: app.cambiar_tema(self.active)
 
             MDCard:
@@ -631,6 +675,7 @@ BoxLayout:
                     role: "medium"
 
                 MDSwitch:
+                    id: switch_notif
                     active: True
                     pos_hint: {"center_y": 0.5}
                     on_active: app.cambiar_notificaciones(self.active)
@@ -648,11 +693,61 @@ BoxLayout:
                 MDButtonText:
                     text: "Simular aviso de otro pasajero (demo)"
 
+            MDCard:
+                style: "outlined"
+                orientation: "vertical"
+                size_hint_y: None
+                height: dp(150)
+                padding: dp(12), dp(8)
+                spacing: dp(4)
+                radius: [14]
+
+                MDLabel:
+                    text: "Configuración remota"
+                    bold: True
+                    font_style: "Body"
+                    role: "medium"
+                    size_hint_y: None
+                    height: dp(24)
+
+                MDLabel:
+                    id: cfg_estado
+                    text: ""
+                    font_style: "Body"
+                    role: "small"
+
+                MDButton:
+                    style: "text"
+                    size_hint_y: None
+                    height: dp(36)
+                    on_release: app.actualizar_config_remota()
+
+                    MDButtonIcon:
+                        icon: "cloud-refresh-outline"
+
+                    MDButtonText:
+                        text: "Actualizar"
+
+            MDButton:
+                style: "outlined"
+                size_hint_y: None
+                height: dp(40)
+                pos_hint: {"center_x": 0.5}
+                on_release: app.cerrar_sesion()
+
+                MDButtonIcon:
+                    icon: "logout"
+
+                MDButtonText:
+                    text: "Cerrar sesión"
+
             MDLabel:
-                text: "EnRuta Ya! v1.1"
+                text: "EnRuta Ya! v2.0"
                 halign: "center"
                 font_style: "Body"
                 role: "small"
+                size_hint_y: None
+                height: dp(20)
 
             Widget:
 
@@ -703,7 +798,8 @@ BoxLayout:
                             role: "medium"
 
                         MDLabel:
-                            text: "Usuario de EnRuta Ya!"
+                            id: usuario_label
+                            text: ""
                             font_style: "Body"
                             role: "small"
 
@@ -812,3 +908,249 @@ BoxLayout:
                     orientation: "vertical"
                     spacing: dp(6)
                     adaptive_height: True
+
+
+# ----------------------------------------------------------
+# Autenticación: login y registro
+# ----------------------------------------------------------
+<LoginScreen>:
+    ScrollView:
+        MDBoxLayout:
+            orientation: "vertical"
+            adaptive_height: True
+            padding: dp(24), dp(48), dp(24), dp(24)
+            spacing: dp(10)
+
+            MDIcon:
+                icon: "bus"
+                font_size: "64sp"
+                halign: "center"
+                pos_hint: {"center_x": 0.5}
+                theme_text_color: "Custom"
+                text_color: AZUL_CLARO
+                size_hint_y: None
+                height: dp(72)
+
+            MDLabel:
+                text: "EnRuta Ya!"
+                halign: "center"
+                bold: True
+                font_style: "Headline"
+                role: "medium"
+                size_hint_y: None
+                height: dp(40)
+
+            MDLabel:
+                text: "Inicia sesión para ver tus rutas y avisos"
+                halign: "center"
+                font_style: "Body"
+                role: "medium"
+                size_hint_y: None
+                height: dp(28)
+
+            Widget:
+                size_hint_y: None
+                height: dp(12)
+
+            MDTextField:
+                id: usuario
+                mode: "outlined"
+                size_hint_y: None
+                height: dp(64)
+                multiline: False
+                write_tab: False
+                on_text: self.error = False
+                on_text_validate: clave.focus = True
+
+                MDTextFieldLeadingIcon:
+                    icon: "account-outline"
+
+                MDTextFieldHintText:
+                    text: "Usuario"
+
+            MDLabel:
+                id: err_usuario
+                text: ""
+                theme_text_color: "Error"
+                font_style: "Body"
+                role: "small"
+                size_hint_y: None
+                height: dp(18)
+
+            MDTextField:
+                id: clave
+                mode: "outlined"
+                size_hint_y: None
+                height: dp(64)
+                password: True
+                multiline: False
+                write_tab: False
+                on_text_validate: app.hacer_login()
+
+                MDTextFieldLeadingIcon:
+                    icon: "lock-outline"
+
+                MDTextFieldHintText:
+                    text: "Contraseña"
+
+            MDLabel:
+                id: err_general
+                text: ""
+                theme_text_color: "Error"
+                font_style: "Body"
+                role: "small"
+                size_hint_y: None
+                height: dp(24)
+
+            MDButton:
+                style: "filled"
+                size_hint_y: None
+                height: dp(48)
+                pos_hint: {"center_x": 0.5}
+                on_release: app.hacer_login()
+
+                MDButtonText:
+                    text: "INGRESAR"
+
+            MDButton:
+                style: "text"
+                size_hint_y: None
+                height: dp(40)
+                pos_hint: {"center_x": 0.5}
+                on_release: app.cambiar_pantalla("registro")
+
+                MDButtonText:
+                    text: "¿No tienes cuenta? Regístrate"
+
+
+<RegistroScreen>:
+    ScrollView:
+        MDBoxLayout:
+            orientation: "vertical"
+            adaptive_height: True
+            padding: dp(24), dp(36), dp(24), dp(24)
+            spacing: dp(8)
+
+            MDLabel:
+                text: "Crear cuenta"
+                halign: "center"
+                bold: True
+                font_style: "Headline"
+                role: "medium"
+                size_hint_y: None
+                height: dp(44)
+
+            MDLabel:
+                text: "Tus favoritas, viajes y ajustes se guardan en tu cuenta"
+                halign: "center"
+                font_style: "Body"
+                role: "medium"
+                size_hint_y: None
+                height: dp(28)
+
+            Widget:
+                size_hint_y: None
+                height: dp(10)
+
+            MDTextField:
+                id: usuario
+                mode: "outlined"
+                size_hint_y: None
+                height: dp(64)
+                multiline: False
+                write_tab: False
+                on_text_validate: clave.focus = True
+
+                MDTextFieldLeadingIcon:
+                    icon: "account-outline"
+
+                MDTextFieldHintText:
+                    text: "Usuario (3 a 20 caracteres)"
+
+            MDLabel:
+                id: err_usuario
+                text: ""
+                theme_text_color: "Error"
+                font_style: "Body"
+                role: "small"
+                size_hint_y: None
+                height: dp(18)
+
+            MDTextField:
+                id: clave
+                mode: "outlined"
+                size_hint_y: None
+                height: dp(64)
+                password: True
+                multiline: False
+                write_tab: False
+                on_text_validate: repetir.focus = True
+
+                MDTextFieldLeadingIcon:
+                    icon: "lock-outline"
+
+                MDTextFieldHintText:
+                    text: "Contraseña (mín. 6, con letra y número)"
+
+            MDLabel:
+                id: err_clave
+                text: ""
+                theme_text_color: "Error"
+                font_style: "Body"
+                role: "small"
+                size_hint_y: None
+                height: dp(18)
+
+            MDTextField:
+                id: repetir
+                mode: "outlined"
+                size_hint_y: None
+                height: dp(64)
+                password: True
+                multiline: False
+                write_tab: False
+                on_text_validate: app.hacer_registro()
+
+                MDTextFieldLeadingIcon:
+                    icon: "lock-check-outline"
+
+                MDTextFieldHintText:
+                    text: "Repetir contraseña"
+
+            MDLabel:
+                id: err_repetir
+                text: ""
+                theme_text_color: "Error"
+                font_style: "Body"
+                role: "small"
+                size_hint_y: None
+                height: dp(18)
+
+            MDLabel:
+                id: err_general
+                text: ""
+                theme_text_color: "Error"
+                font_style: "Body"
+                role: "small"
+                size_hint_y: None
+                height: dp(18)
+
+            MDButton:
+                style: "filled"
+                size_hint_y: None
+                height: dp(48)
+                pos_hint: {"center_x": 0.5}
+                on_release: app.hacer_registro()
+
+                MDButtonText:
+                    text: "CREAR CUENTA"
+
+            MDButton:
+                style: "text"
+                size_hint_y: None
+                height: dp(40)
+                pos_hint: {"center_x": 0.5}
+                on_release: app.cambiar_pantalla("login")
+
+                MDButtonText:
+                    text: "¿Ya tienes cuenta? Inicia sesión"
