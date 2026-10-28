@@ -2,3 +2,4 @@ myenv/
 cache/
 crash_log.txt
 __pycache__/
+data/

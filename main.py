@@ -1,11 +1,3 @@
-"""
-EnRuta Ya! - App móvil para consultar horarios y llegada
-de buses interurbanos mediante un mapa.
-
-Evaluación: Kivy + KivyMD 2.0, ScreenManager, KV Language.
-Separación estricta: la interfaz vive en root.kv, la lógica aquí.
-"""
-
 import os
 import random
 import re
@@ -24,17 +16,8 @@ from kivy_garden.mapview import MapView, MapMarker, MapMarkerPopup  # noqa: F401
 try:
     from plyer import gps
 except Exception:
-    # plyer.gps no está disponible en este sistema (falta un proveedor de
-    # GPS para esta plataforma, ej. Windows/Linux de escritorio). La app
-    # sigue funcionando: el botón de ubicación usará una posición de prueba.
-    gps = None
 
-try:
-    from plyer import notification
-except Exception:
-    # Sin proveedor de notificaciones del sistema (ej. PC de escritorio):
-    # los avisos igual se muestran dentro de la app (snackbar + pantalla Avisos).
-    notification = None
+    gps = None
 
 from kivymd.app import MDApp
 from kivymd.uix.button import MDButton, MDButtonText
@@ -48,17 +31,22 @@ from kivymd.uix.dialog import (
 from kivymd.uix.menu import MDDropdownMenu
 from kivymd.uix.snackbar import MDSnackbar, MDSnackbarText
 
+from config import (CONFIG_REMOTA_DEFECTO, HISTORIAL_S, ICONO_BUS, LOG_ERRORES,
+                    OPCIONES_ATRASO)
+from datos_rutas import (COORDENADAS, GRIS, LOCALIDADES, NARANJA, ROJO, RUTAS,
+                         TIPOS_AVISO, VERDE)
+from servicios import almacenamiento, autenticacion, config_remota
+from servicios.autenticacion import ErrorAutenticacion
+from servicios.notificaciones import notificar as enviar_notificacion
+
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
 
 # ------------------------------------------------------------
 # Registro de errores: si algo falla dentro de la app, en vez de cerrarse
 # se guarda el detalle completo en crash_log.txt (junto a main.py) y la
 # app sigue funcionando.
 # ------------------------------------------------------------
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-LOG_ERRORES = os.path.join(BASE_DIR, "crash_log.txt")
-ICONO_BUS = os.path.join(BASE_DIR, "bus_marker.png")
-
-
 def registrar_error(exc):
     """Imprime el error en la consola y lo guarda con su traza completa."""
     texto = "".join(traceback.format_exception(type(exc), exc, exc.__traceback__))
@@ -82,81 +70,6 @@ ExceptionManager.add_handler(ManejadorErrores())
 
 
 # ------------------------------------------------------------
-# Datos de ejemplo (frecuencias, tarifas y horarios son referenciales:
-# reemplazar por los datos reales del socio comunitario)
-# ------------------------------------------------------------
-COORDENADAS = {
-    "Nueva Imperial": (-38.7442, -72.9503),
-    "Lautaro": (-38.5285, -72.4318),
-    "Carahue": (-38.7103, -73.1561),
-    "Padre Las Casas": (-38.7683, -72.5975),
-    "Temuco": (-38.7359, -72.5904),
-    "Victoria": (-38.2333, -72.3333),
-}
-
-LOCALIDADES = {
-    "Nueva Imperial": [
-        {"ruta": "Nueva Imperial -> Temuco", "parada": "Terminal Nueva Imperial",
-         "minutos": "15 min", "frecuencia": "Cada 20 min", "tarifa": "$1.500", "duracion": "50 min"},
-        {"ruta": "Nueva Imperial -> Carahue", "parada": "Terminal Nueva Imperial",
-         "minutos": "40 min", "frecuencia": "Cada 45 min", "tarifa": "$1.200", "duracion": "35 min"},
-    ],
-    "Lautaro": [
-        {"ruta": "Lautaro -> Temuco", "parada": "Parada Balmaceda",
-         "minutos": "50 min", "frecuencia": "Cada 30 min", "tarifa": "$1.800", "duracion": "1 h"},
-        {"ruta": "Lautaro -> Victoria", "parada": "Terminal Lautaro",
-         "minutos": "25 min", "frecuencia": "Cada 40 min", "tarifa": "$1.000", "duracion": "35 min"},
-    ],
-    "Carahue": [
-        {"ruta": "Carahue -> Temuco", "parada": "Terminal Carahue",
-         "minutos": "30 min", "frecuencia": "Cada 30 min", "tarifa": "$2.500", "duracion": "1 h 20 min"},
-        {"ruta": "Carahue -> Nueva Imperial", "parada": "Terminal Carahue",
-         "minutos": "10 min", "frecuencia": "Cada 45 min", "tarifa": "$1.200", "duracion": "35 min"},
-    ],
-    "Padre Las Casas": [
-        {"ruta": "Padre Las Casas -> Temuco", "parada": "Parada Balmaceda",
-         "minutos": "20 min", "frecuencia": "Cada 10 min", "tarifa": "$700", "duracion": "20 min"},
-    ],
-    "Temuco": [
-        {"ruta": "Temuco -> Lautaro", "parada": "Terminal Rodoviario",
-         "minutos": "5 min", "frecuencia": "Cada 30 min", "tarifa": "$1.800", "duracion": "1 h"},
-        {"ruta": "Temuco -> Nueva Imperial", "parada": "Terminal Rodoviario",
-         "minutos": "12 min", "frecuencia": "Cada 20 min", "tarifa": "$1.500", "duracion": "50 min"},
-    ],
-}
-
-# Índice por nombre de ruta: {ruta: {..., "origen": localidad}}
-RUTAS = {
-    d["ruta"]: {**d, "origen": lugar}
-    for lugar, lista in LOCALIDADES.items()
-    for d in lista
-}
-
-
-# ------------------------------------------------------------
-# Avisos de pasajeros (pedidos en la encuesta: 71% quedó sin poder subir
-# por bus lleno, 41% sufrió buses que no pasaron a la hora, 59% quiere
-# notificaciones de retrasos y 65% ver la capacidad de asientos).
-# ------------------------------------------------------------
-ROJO = (0.80, 0.18, 0.18, 1)
-NARANJA = (0.90, 0.50, 0.05, 1)
-VERDE = (0.05, 0.62, 0.43, 1)
-GRIS = (0.50, 0.52, 0.58, 1)
-
-TIPOS_AVISO = {
-    "lleno": {"texto": "Bus lleno", "icono": "account-group", "color": ROJO},
-    "asientos": {"texto": "Hay asientos", "icono": "seat-passenger", "color": VERDE},
-    "atrasado": {"texto": "Bus atrasado", "icono": "clock-alert", "color": NARANJA},
-    "cambio_ruta": {"texto": "Cambio de ruta", "icono": "map-marker-alert", "color": NARANJA},
-}
-
-VIGENCIA_S = 30 * 60        # un aviso cuenta como "estado actual" por 30 min
-HISTORIAL_S = 2 * 60 * 60   # la pantalla Avisos muestra hasta las últimas 2 h
-ANTISPAM_S = 2 * 60         # mismo aviso, misma línea: máximo 1 cada 2 min
-OPCIONES_ATRASO = (5, 10, 15, 20)
-
-
-# ------------------------------------------------------------
 # Widgets propios (su diseño está en root.kv)
 # ------------------------------------------------------------
 class LineaCard(MDCard):
@@ -172,6 +85,14 @@ class AvisoCard(MDCard):
     titulo = StringProperty("")
     detalle = StringProperty("")
     color = ListProperty(GRIS)
+
+
+class LoginScreen(Screen):
+    pass
+
+
+class RegistroScreen(Screen):
+    pass
 
 
 class HomeScreen(Screen):
@@ -198,9 +119,6 @@ class AjustesScreen(Screen):
     pass
 
 
-# ------------------------------------------------------------
-# Aplicación
-# ------------------------------------------------------------
 class AvisoSnackbar(MDSnackbar):
     """MDSnackbar que no revienta al crearse.
 
@@ -237,6 +155,9 @@ class MarcadorBus(MapMarker):
             capa.set_marker_position(capa.parent, self)
 
 
+# ------------------------------------------------------------
+# Aplicación
+# ------------------------------------------------------------
 class InterurbanoApp(MDApp):
     menu_origen = None
     menu_linea = None
@@ -250,12 +171,18 @@ class InterurbanoApp(MDApp):
     linea_actual = ""
     favoritas = []
     viajes = 0
-    avisos = []               # más nuevo primero: {ruta, tipo, minutos, ts, propio}
+    avisos = []               # más nuevo primero: {ruta, tipo, minutos, ts, propio, autor}
     origen_actual = ""
     menu_atraso = None
     notificar_favoritas = True
     solo_favoritas = False
     _ultimo_aviso = {}
+
+    usuario_actual = ""       # "" = nadie ha iniciado sesión
+    nombre_visible = ""
+    _cargando = False         # True mientras se aplica el perfil a la interfaz
+    config = {}               # valores de la configuración remota
+    fuente_config = ""        # "remota" | "caché" | "valor por defecto"
 
     def build(self):
         self.theme_cls.primary_palette = "Blue"
@@ -264,7 +191,18 @@ class InterurbanoApp(MDApp):
         self.favoritas = []
         self.avisos = []
         self._ultimo_aviso = {}
+        # Configuración inmediata (caché o valores por defecto); la remota
+        # llega después, en on_start, sin bloquear la interfaz.
+        self.config, self.fuente_config = config_remota.cargar_local()
         return Builder.load_file(os.path.join(BASE_DIR, "root.kv"))
+
+    def on_start(self):
+        self.root.ids.sm.get_screen("home").ids.mapa.bind(zoom=self._ajustar_marcadores)
+        self.cargar_avisos()
+        self._aplicar_config(self.config, self.fuente_config)
+        self.actualizar_config_remota()
+        # Cada minuto se actualizan los "hace X min" y se descartan avisos vencidos.
+        Clock.schedule_interval(lambda dt: self.refrescar_avisos(), 60)
 
     def _ajustar_marcadores(self, *args):
         """Achica/agranda los iconos de bus según el zoom actual del mapa."""
@@ -278,18 +216,11 @@ class InterurbanoApp(MDApp):
         for m in buses:
             m.ajustar_zoom(zoom)
 
-    def on_start(self):
-        self.root.ids.sm.get_screen("home").ids.mapa.bind(zoom=self._ajustar_marcadores)
-        self.cargar_avisos_ejemplo()
-        self.refrescar_avisos()
-        # Cada minuto se actualizan los "hace X min" y se descartan avisos vencidos.
-        Clock.schedule_interval(lambda dt: self.refrescar_avisos(), 60)
-
     def cambiar_pantalla(self, nombre):
         self.root.ids.sm.current = nombre
 
-    def cambiar_tema(self, oscuro):
-        self.theme_cls.theme_style = "Dark" if oscuro else "Light"
+    def _pantalla(self, nombre):
+        return self.root.ids.sm.get_screen(nombre)
 
     def _tarjeta(self, ruta):
         d = RUTAS[ruta]
@@ -301,6 +232,175 @@ class InterurbanoApp(MDApp):
             aviso=texto,
             aviso_color=list(color),
         )
+
+    # --------------------------------------------------------
+    # Autenticación: registro, login y cierre de sesión
+    # (la validación y el hash viven en servicios/autenticacion.py)
+    # --------------------------------------------------------
+    def _mostrar_errores_auth(self, pantalla, error):
+        """Muestra el mensaje bajo el campo que corresponde."""
+        etiquetas = {"usuario": "err_usuario", "clave": "err_clave",
+                     "repetir": "err_repetir", "general": "err_general"}
+        for nombre in etiquetas.values():
+            if nombre in pantalla.ids:
+                pantalla.ids[nombre].text = ""
+        destino = etiquetas.get(error.campo, "err_general")
+        if destino not in pantalla.ids:
+            destino = "err_general"
+        pantalla.ids[destino].text = error.mensaje
+
+    def _limpiar_formularios(self):
+        for nombre in ("login", "registro"):
+            p = self._pantalla(nombre)
+            for campo in ("usuario", "clave", "repetir"):
+                if campo in p.ids:
+                    p.ids[campo].text = ""
+            for err in ("err_usuario", "err_clave", "err_repetir", "err_general"):
+                if err in p.ids:
+                    p.ids[err].text = ""
+
+    def hacer_login(self):
+        p = self._pantalla("login")
+        try:
+            usuario = autenticacion.iniciar_sesion(p.ids.usuario.text, p.ids.clave.text)
+        except ErrorAutenticacion as e:
+            self._mostrar_errores_auth(p, e)
+            return
+        self._entrar(usuario)
+
+    def hacer_registro(self):
+        p = self._pantalla("registro")
+        try:
+            usuario = autenticacion.registrar(
+                p.ids.usuario.text, p.ids.clave.text, p.ids.repetir.text)
+        except ErrorAutenticacion as e:
+            self._mostrar_errores_auth(p, e)
+            return
+        self._entrar(usuario, nuevo=True)
+
+    def _entrar(self, usuario, nuevo=False):
+        """Sesión iniciada: se carga el perfil guardado en perfiles.json y se
+        aplica a la interfaz."""
+        self.usuario_actual = usuario
+        perfil = almacenamiento.cargar_perfil(usuario)
+        self._cargando = True
+        try:
+            self.nombre_visible = perfil["nombre"]
+            self.favoritas = list(perfil["favoritas"])
+            self.viajes = perfil["viajes"]
+            self.notificar_favoritas = perfil["notificar_favoritas"]
+            self.consentimiento = perfil["consentimiento"]
+            self.theme_cls.theme_style = "Dark" if perfil["tema_oscuro"] else "Light"
+            aj = self._pantalla("ajustes").ids
+            aj.switch_tema.active = perfil["tema_oscuro"]
+            aj.switch_notif.active = perfil["notificar_favoritas"]
+            pf = self._pantalla("perfil").ids
+            pf.nombre_label.text = self.nombre_visible
+            pf.usuario_label.text = f"@{usuario}"
+            pf.viajes_num.text = str(self.viajes)
+            pf.switch_consent.active = self.consentimiento
+        finally:
+            self._cargando = False
+        self._limpiar_formularios()
+        self.refrescar_avisos()
+        self.cambiar_pantalla("home")
+        self._snack(f"¡Cuenta creada! Hola, {self.nombre_visible}" if nuevo
+                    else f"Hola de nuevo, {self.nombre_visible}")
+
+    def cerrar_sesion(self):
+        if self.compartiendo:
+            self.detener_compartir()
+        self._guardar_perfil()
+        self.usuario_actual = ""
+        self.linea_actual = ""
+        p = self._pantalla("compartir").ids
+        p.linea_text.text = "Elegir mi línea"
+        self.cambiar_pantalla("login")
+
+    # --------------------------------------------------------
+    # Persistencia (servicios/almacenamiento.py -> data/*.json)
+    # --------------------------------------------------------
+    def _guardar_perfil(self):
+        """Guarda en perfiles.json lo que cambió del usuario actual."""
+        if not self.usuario_actual or self._cargando:
+            return
+        try:
+            almacenamiento.guardar_perfil(self.usuario_actual, {
+                "nombre": self.nombre_visible,
+                "favoritas": list(self.favoritas),
+                "viajes": self.viajes,
+                "tema_oscuro": self.theme_cls.theme_style == "Dark",
+                "notificar_favoritas": self.notificar_favoritas,
+                "consentimiento": self.consentimiento,
+            })
+        except OSError as e:
+            registrar_error(e)
+
+    def cargar_avisos(self):
+        """Recupera los avisos guardados; la primera vez (no existe
+        avisos.json) crea unos de ejemplo para la demo."""
+        guardados = almacenamiento.cargar_avisos()
+        if guardados is None:
+            self.avisos = almacenamiento.avisos_de_ejemplo([
+                ("Temuco -> Nueva Imperial", "asientos", 0, 3),
+                ("Nueva Imperial -> Temuco", "lleno", 0, 6),
+                ("Lautaro -> Temuco", "atrasado", 10, 12),
+            ])
+            self._guardar_avisos()
+        else:
+            self.avisos = guardados
+
+    def _guardar_avisos(self):
+        try:
+            almacenamiento.guardar_avisos(self.avisos)
+        except OSError as e:
+            registrar_error(e)
+
+    # --------------------------------------------------------
+    # Configuración remota (servicios/config_remota.py)
+    # --------------------------------------------------------
+    @property
+    def antispam_s(self):
+        return self.config.get("antispam_segundos", CONFIG_REMOTA_DEFECTO["antispam_segundos"])
+
+    @property
+    def vigencia_s(self):
+        return self.config.get("vigencia_aviso_min", CONFIG_REMOTA_DEFECTO["vigencia_aviso_min"]) * 60
+
+    def actualizar_config_remota(self):
+        """Pide la configuración a internet en segundo plano."""
+        self._pantalla("ajustes").ids.cfg_estado.text = "Consultando configuración remota…"
+        config_remota.descargar_en_hilo(
+            lambda cfg, fuente: Clock.schedule_once(
+                lambda dt: self._aplicar_config(cfg, fuente)))
+
+    def _aplicar_config(self, cfg, fuente):
+        """Refleja los valores remotos en la app: banner de Inicio, reglas
+        de avisos y el resumen de Ajustes."""
+        self.config, self.fuente_config = cfg, fuente
+        mensaje = cfg["mensaje_inicio"]
+        home = self._pantalla("home").ids
+        home.banner_texto.text = mensaje
+        home.banner.opacity = 1 if mensaje else 0
+        self._pantalla("ajustes").ids.cfg_estado.text = (
+            f'Fuente: {fuente}\n'
+            f'Mensaje de Inicio: "{mensaje}"\n'
+            f'Anti-spam de avisos: {cfg["antispam_segundos"]} s · '
+            f'Vigencia de un aviso: {cfg["vigencia_aviso_min"]} min'
+        )
+        if self.root:
+            self.refrescar_avisos()
+
+    # --------------------------------------------------------
+    # Ajustes
+    # --------------------------------------------------------
+    def cambiar_tema(self, oscuro):
+        self.theme_cls.theme_style = "Dark" if oscuro else "Light"
+        self._guardar_perfil()
+
+    def cambiar_notificaciones(self, activo):
+        self.notificar_favoritas = activo
+        self._guardar_perfil()
 
     # --------------------------------------------------------
     # Inicio: localidad + mapa
@@ -316,7 +416,7 @@ class InterurbanoApp(MDApp):
     def seleccionar_origen(self, lugar):
         if self.menu_origen:
             self.menu_origen.dismiss()
-        home = self.root.ids.sm.get_screen("home")
+        home = self._pantalla("home")
         home.ids.origen_text.text = lugar
         home.ids.lineas_titulo.text = f"Buses desde {lugar} (toca uno para ver más)"
         self.origen_actual = lugar
@@ -329,7 +429,7 @@ class InterurbanoApp(MDApp):
         """Redibuja las tarjetas del panel 'Buses desde...' de Inicio."""
         if not self.origen_actual:
             return
-        home = self.root.ids.sm.get_screen("home")
+        home = self._pantalla("home")
         caja = home.ids.lineas_box
         caja.clear_widgets()
         for d in LOCALIDADES[self.origen_actual]:
@@ -338,7 +438,7 @@ class InterurbanoApp(MDApp):
     def alternar_panel_buses(self):
         """Expande o colapsa el panel de 'Buses desde...' para estorbar
         menos la vista del mapa."""
-        home = self.root.ids.sm.get_screen("home")
+        home = self._pantalla("home")
         self.panel_expandido = not self.panel_expandido
         alto = dp(260) if self.panel_expandido else dp(48)
         Animation(height=alto, d=0.18, t="out_quad").start(home.ids.panel_buses)
@@ -429,7 +529,7 @@ class InterurbanoApp(MDApp):
         print(f"GPS [{stype}]: {status}")
 
     def actualizar_mi_ubicacion(self, lat, lon):
-        home = self.root.ids.sm.get_screen("home")
+        home = self._pantalla("home")
         mapa = home.ids.mapa
         if self.marcador_yo:
             mapa.remove_marker(self.marcador_yo)
@@ -451,6 +551,8 @@ class InterurbanoApp(MDApp):
 
     def on_stop(self):
         self.detener_gps()
+        self._guardar_perfil()
+        self._guardar_avisos()
 
     # --------------------------------------------------------
     # Detalle de una línea (al tocar cualquier tarjeta)
@@ -500,6 +602,7 @@ class InterurbanoApp(MDApp):
         else:
             self.favoritas.append(ruta)
         self.dialogo.dismiss()
+        self._guardar_perfil()
         self.refrescar_favoritos()
         self.poblar_avisos()
 
@@ -507,7 +610,7 @@ class InterurbanoApp(MDApp):
     # Recorridos y Perfil
     # --------------------------------------------------------
     def poblar_recorridos(self):
-        pantalla = self.root.ids.sm.get_screen("recorridos")
+        pantalla = self._pantalla("recorridos")
         caja = pantalla.ids.recorridos_box
         caja.clear_widgets()
         for ruta in RUTAS:
@@ -517,7 +620,7 @@ class InterurbanoApp(MDApp):
         )
 
     def refrescar_favoritos(self):
-        p = self.root.ids.sm.get_screen("perfil")
+        p = self._pantalla("perfil")
         p.ids.fav_box.clear_widgets()
         for ruta in self.favoritas:
             p.ids.fav_box.add_widget(self._tarjeta(ruta))
@@ -533,14 +636,16 @@ class InterurbanoApp(MDApp):
             campo.error = True
             return
         campo.error = False
-        p = self.root.ids.sm.get_screen("perfil")
-        p.ids.nombre_label.text = texto
+        self.nombre_visible = texto
+        self._pantalla("perfil").ids.nombre_label.text = texto
         campo.text = ""
+        self._guardar_perfil()
 
     def cambiar_consentimiento(self, activo):
         self.consentimiento = activo
         if not activo and self.compartiendo:
             self.detener_compartir()
+        self._guardar_perfil()
 
     # --------------------------------------------------------
     # Compartir ubicación (el usuario "es" el bus en el mapa)
@@ -556,13 +661,13 @@ class InterurbanoApp(MDApp):
     def seleccionar_linea(self, ruta):
         if self.menu_linea:
             self.menu_linea.dismiss()
-        pantalla = self.root.ids.sm.get_screen("compartir")
+        pantalla = self._pantalla("compartir")
         self.linea_actual = ruta
         pantalla.ids.linea_text.text = ruta
         pantalla.ids.linea_error.text = ""
 
     def alternar_compartir(self):
-        pantalla = self.root.ids.sm.get_screen("compartir")
+        pantalla = self._pantalla("compartir")
         if self.compartiendo:
             self.detener_compartir()
             return
@@ -594,7 +699,7 @@ class InterurbanoApp(MDApp):
 
     def aceptar_consentimiento(self, *args):
         self.consentimiento = True
-        self.root.ids.sm.get_screen("perfil").ids.switch_consent.active = True
+        self._pantalla("perfil").ids.switch_consent.active = True
         self.dialogo.dismiss()
         self.iniciar_compartir()
 
@@ -603,23 +708,25 @@ class InterurbanoApp(MDApp):
         # para que otros usuarios la vean en su propio mapa.
         self.compartiendo = True
         self.localizarme()
-        p = self.root.ids.sm.get_screen("compartir")
+        p = self._pantalla("compartir")
         p.ids.compartir_btn_text.text = "DETENER VIAJE"
         p.ids.estado_label.text = f"Compartiendo tu ubicación en {self.linea_actual}"
 
     def detener_compartir(self):
         self.compartiendo = False
         self.detener_gps()
-        home = self.root.ids.sm.get_screen("home")
+        home = self._pantalla("home")
         if self.marcador_yo:
             home.ids.mapa.remove_marker(self.marcador_yo)
             self.marcador_yo = None
         self.viajes += 1
-        self.root.ids.sm.get_screen("perfil").ids.viajes_num.text = str(self.viajes)
-        p = self.root.ids.sm.get_screen("compartir")
+        self._pantalla("perfil").ids.viajes_num.text = str(self.viajes)
+        self._guardar_perfil()
+        p = self._pantalla("compartir")
         p.ids.compartir_btn_text.text = "INICIAR VIAJE"
         p.ids.estado_label.text = "Tu ubicación no se está compartiendo."
-
+        # Evento de la app -> notificación
+        self.notificar("Viaje finalizado", f"Llevas {self.viajes} viaje(s) compartido(s). ¡Gracias!")
 
     # --------------------------------------------------------
     # Avisos de pasajeros: bus lleno / con asientos / atrasado /
@@ -645,7 +752,7 @@ class InterurbanoApp(MDApp):
         reciente de cada tipo para esa línea, o None si no hay."""
         ahora = time.time()
         vigentes = [a for a in self.avisos
-                    if a["ruta"] == ruta and ahora - a["ts"] <= VIGENCIA_S]
+                    if a["ruta"] == ruta and ahora - a["ts"] <= self.vigencia_s]
         ocupacion = next((a for a in vigentes if a["tipo"] in ("lleno", "asientos")), None)
         atraso = next((a for a in vigentes if a["tipo"] == "atrasado"), None)
         cambio = next((a for a in vigentes if a["tipo"] == "cambio_ruta"), None)
@@ -683,15 +790,11 @@ class InterurbanoApp(MDApp):
             registrar_error(e)
 
     def notificar(self, titulo, mensaje):
-        """Notificación dentro de la app y, si el dispositivo lo permite,
-        también del sistema (Android/iOS vía plyer)."""
-        self._snack(f"{titulo}: {mensaje}")
-        if notification is not None:
-            try:
-                notification.notify(title=titulo, message=mensaje,
-                                    app_name="EnRuta Ya!", timeout=8)
-            except Exception as e:
-                print("No se pudo mostrar la notificación del sistema:", e)
+        """QUÉ DISPARA LA NOTIFICACIÓN: este método lo llaman los eventos de
+        la app (aviso en una ruta favorita, viaje finalizado, aviso simulado).
+        Delega en servicios/notificaciones.py: snackbar dentro de la app y,
+        si el dispositivo lo permite, notificación del sistema (plyer)."""
+        enviar_notificacion(titulo, mensaje, mostrar_en_app=self._snack)
 
     def abrir_menu_atraso(self, boton):
         """Botón 'Bus atrasado': pregunta cuántos minutos."""
@@ -710,14 +813,15 @@ class InterurbanoApp(MDApp):
 
     def enviar_aviso(self, tipo, minutos=0):
         """Un pasajero avisa el estado de su línea (validaciones: línea
-        elegida y no repetir el mismo aviso en menos de 2 minutos)."""
-        pantalla = self.root.ids.sm.get_screen("compartir")
+        elegida y no repetir el mismo aviso antes del tiempo anti-spam, que
+        viene de la configuración remota)."""
+        pantalla = self._pantalla("compartir")
         if not self.linea_actual:
             pantalla.ids.linea_error.text = "Primero elige la línea en la que vas"
             return
         ahora = time.time()
         clave = (self.linea_actual, tipo)
-        if ahora - self._ultimo_aviso.get(clave, 0) < ANTISPAM_S:
+        if ahora - self._ultimo_aviso.get(clave, 0) < self.antispam_s:
             self._snack("Ya enviaste este aviso hace un momento. ¡Gracias!")
             return
         self._ultimo_aviso[clave] = ahora
@@ -726,10 +830,12 @@ class InterurbanoApp(MDApp):
 
     def publicar_aviso(self, ruta, tipo, minutos=0, propio=True):
         # TODO: enviar el aviso a un servidor y recibir los de otros usuarios
-        # (hoy queda solo en este dispositivo, igual que la ubicación).
+        # (hoy queda solo en este dispositivo, guardado en data/avisos.json).
         aviso = {"ruta": ruta, "tipo": tipo, "minutos": minutos,
-                 "ts": time.time(), "propio": propio}
+                 "ts": time.time(), "propio": propio,
+                 "autor": self.usuario_actual if propio else ""}
         self.avisos.insert(0, aviso)
+        self._guardar_avisos()
         self.refrescar_avisos()
         if not propio and self.notificar_favoritas and ruta in self.favoritas:
             self.notificar(ruta, self._titulo_aviso(aviso))
@@ -745,11 +851,14 @@ class InterurbanoApp(MDApp):
                 registrar_error(e)
 
     def poblar_avisos(self):
-        pantalla = self.root.ids.sm.get_screen("avisos")
+        pantalla = self._pantalla("avisos")
         caja = pantalla.ids.avisos_box
         caja.clear_widgets()
         ahora = time.time()
+        antes = len(self.avisos)
         self.avisos = [a for a in self.avisos if ahora - a["ts"] <= HISTORIAL_S]
+        if len(self.avisos) != antes:
+            self._guardar_avisos()
         visibles = [a for a in self.avisos
                     if not self.solo_favoritas or a["ruta"] in self.favoritas]
         for a in visibles:
@@ -771,32 +880,19 @@ class InterurbanoApp(MDApp):
         self.solo_favoritas = activo
         self.poblar_avisos()
 
-    def cambiar_notificaciones(self, activo):
-        self.notificar_favoritas = activo
-
-    def cargar_avisos_ejemplo(self):
-        """Avisos de ejemplo para la demo (como los horarios, son
-        referenciales hasta que exista el servidor)."""
-        ahora = time.time()
-        ejemplo = [
-            ("Temuco -> Nueva Imperial", "asientos", 0, 3),
-            ("Nueva Imperial -> Temuco", "lleno", 0, 6),
-            ("Lautaro -> Temuco", "atrasado", 10, 12),
-        ]
-        self.avisos = [
-            {"ruta": r, "tipo": t, "minutos": m, "ts": ahora - hace * 60, "propio": False}
-            for r, t, m, hace in ejemplo
-        ]
-
     def simular_aviso(self):
         """Solo para la demo: simula que otro pasajero envió un aviso
-        (prefiere una ruta favorita para mostrar la notificación)."""
+        (prefiere una ruta favorita) y dispara la notificación siempre
+        que el interruptor de Ajustes esté activo."""
         ruta = random.choice(self.favoritas or list(RUTAS))
         tipo = random.choice(list(TIPOS_AVISO))
         minutos = random.choice(OPCIONES_ATRASO) if tipo == "atrasado" else 0
         self.publicar_aviso(ruta, tipo, minutos, propio=False)
-        if not (self.notificar_favoritas and ruta in self.favoritas):
-            self._snack("Aviso simulado agregado en la pantalla Avisos.")
+        if ruta not in self.favoritas:
+            if self.notificar_favoritas:
+                self.notificar(f"{ruta} (demo)", self._titulo_aviso(self.avisos[0]))
+            else:
+                self._snack("Aviso simulado agregado en la pantalla Avisos.")
 
 
 if __name__ == "__main__":

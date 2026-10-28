@@ -1,0 +1,5 @@
+{
+  "mensaje_inicio": "Hoy: revisa los avisos de tus rutas antes de salir",
+  "antispam_segundos": 120,
+  "vigencia_aviso_min": 30
+}
