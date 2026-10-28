@@ -1,7 +1,4 @@
 """Configuración central del proyecto: rutas de archivos y valores por defecto.
-
-Si el profesor pide cambiar un valor por defecto de la configuración
-remota, se cambia en CONFIG_REMOTA_DEFECTO (más abajo).
 """
 
 import os
