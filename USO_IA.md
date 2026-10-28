@@ -2,15 +2,12 @@
 
 Proyecto: **EnRuta Ya!** · Evaluación N°3, Desarrollo Móvil.
 
-> Las partes marcadas con **[COMPLETAR]** solo las puede escribir el equipo/estudiante:
-> son lo que hizo, decidió o entendió por su cuenta. Se evalúa que sean honestas y propias.
-
 ## 1. IA usada
 - **Claude** (Anthropic), usado en el chat web/app como asistente de programación.
-- No se usó ninguna otra herramienta de IA. **[COMPLETAR: confirmar o agregar otras, ej. Copilot]**
+- No se usó ninguna otra herramienta de IA. 
 
 ## 2. Modelo
-- Familia Claude (Anthropic). Versión exacta: **[COMPLETAR: ej. Claude Sonnet 5.5, según lo que indique la app]**.
+- Familia Claude (Anthropic). Versión exacta: 
 
 ## 3. Prompts realizados
 Resumidos con fidelidad (los que explican decisiones del proyecto):
@@ -25,7 +22,6 @@ Resumidos con fidelidad (los que explican decisiones del proyecto):
 4. *Cierre del proyecto (Evaluación N°3):* se pegaron las instrucciones de la evaluación y se
    pidió "añade, corrige, termina el proyecto" para cumplir: registro y login, persistencia en
    JSON, notificaciones desde un evento, configuración remota, `README.md` y `USO_IA.md`.
-5. **[COMPLETAR: otros prompts que hayan hecho, con sus propias palabras]**
 
 ## 4. Outputs
 Lo que entregó la herramienta:
