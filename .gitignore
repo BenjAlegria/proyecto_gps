@@ -3,3 +3,25 @@ cache/
 crash_log.txt
 __pycache__/
 data/
+
+# Entornos, configuraciones locales y credenciales
+.venv/
+venv/
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.jks
+*.keystore
+
+# Artefactos temporales y empaquetado
+*.py[cod]
+*.log
+.pytest_cache/
+.buildozer/
+bin/
+build/
+dist/
+*.apk
+*.aab
