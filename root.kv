@@ -146,21 +146,34 @@ BoxLayout:
                 pos: self.pos
                 size: self.size
 
+        # Cabecera: identidad breve para dejar espacio al mapa.
         BoxLayout:
             id: home_header
             size_hint_y: None
-            height: dp(64)
-            padding: dp(20), dp(8), dp(16), dp(4)
-            spacing: dp(12)
+            height: dp(76)
+            padding: dp(18), dp(12), dp(16), dp(8)
+            spacing: dp(11)
+            HomeSurface:
+                size_hint: None, None
+                size: dp(44), dp(44)
+                pos_hint: {"center_y": .5}
+                radius: [dp(14)]
+                -md_bg_color: app.ui.suave
+                AnchorLayout:
+                    HomeIcon:
+                        icon: "bus-side"
+                        font_size: "25sp"
+                        size: dp(29), dp(29)
+                        -text_color: app.ui.azul
             BoxLayout:
                 orientation: "vertical"
                 HomeText:
                     text: "EnRuta Ya!"
-                    font_size: "23sp"
+                    font_size: "20sp"
                     bold: True
                     -color: app.ui.texto
                 HomeText:
-                    text: "Tu viaje, mejor informado"
+                    text: "Rutas de La Araucanía"
                     font_size: "11sp"
                     size_hint_y: None
                     height: dp(18)
@@ -168,49 +181,66 @@ BoxLayout:
             HomeAction:
                 id: home_perfil
                 pos_hint: {"center_y": .5}
-                -md_bg_color: .157, .404, .910, 1
+                size: dp(44), dp(44)
+                radius: [dp(15)]
+                -md_bg_color: app.ui.tarjeta
                 on_release: app.cambiar_pantalla("perfil")
                 AnchorLayout:
                     HomeIcon:
-                        icon: "account-outline"
-                        -text_color: 1, 1, 1, 1
+                        icon: "account-circle-outline"
+                        font_size: "25sp"
+                        -text_color: app.ui.texto
 
+        # Selector de ruta: un solo control visual con dos zonas pulsables.
         BoxLayout:
             id: home_selectors
             size_hint_y: None
-            height: dp(64)
-            padding: dp(16), dp(4), dp(16), dp(12)
+            height: dp(80)
+            padding: dp(16), dp(2), dp(16), dp(12)
             HomeSurface:
                 -md_bg_color: app.ui.tarjeta
-                radius: [dp(14)]
+                -stroke: app.ui.borde
+                radius: [dp(18)]
+                padding: dp(3), 0
                 HomeSelector:
                     id: origen_btn
+                    padding: dp(10), dp(9)
                     on_release: app.abrir_menu_origen(self)
                     HomeText:
-                        text: "ORIGEN"
+                        text: "SALIDA"
                         -color: app.ui.secundario
                         font_size: "9sp"
+                        bold: True
                         size_hint_y: None
-                        height: dp(14)
+                        height: dp(16)
                     HomeText:
                         id: origen_text
                         text: "Elegir localidad"
                         -color: app.ui.texto
                         font_size: "12sp"
                         bold: True
-                HomeIcon:
-                    icon: "arrow-right"
-                    -text_color: app.ui.azul
-                    size: dp(20), dp(24)
+                HomeSurface:
+                    size_hint: None, None
+                    size: dp(32), dp(32)
+                    pos_hint: {"center_y": .5}
+                    radius: [dp(16)]
+                    -md_bg_color: app.ui.fondo
+                    AnchorLayout:
+                        HomeIcon:
+                            icon: "arrow-right"
+                            font_size: "18sp"
+                            -text_color: app.ui.azul
                 HomeSelector:
                     id: recorrido_btn
+                    padding: dp(10), dp(9)
                     on_release: app.abrir_recorrido_home(self)
                     HomeText:
                         text: "DESTINO"
                         -color: app.ui.secundario
                         font_size: "9sp"
+                        bold: True
                         size_hint_y: None
-                        height: dp(14)
+                        height: dp(16)
                     HomeText:
                         id: recorrido_text
                         text: "Todos los destinos"
@@ -220,20 +250,37 @@ BoxLayout:
                 HomeIcon:
                     icon: "chevron-down"
                     -text_color: app.ui.secundario
-                    size: dp(20), dp(24)
+                    size: dp(16), dp(22)
+                    font_size: "17sp"
+                    pos_hint: {"center_y": .5}
 
+        # Mensaje de la configuración remota. Sigue siendo un elemento independiente
+        # para que la altura del mapa se ajuste cuando no hay banner.
         BoxLayout:
             id: banner
             size_hint_y: None
-            height: dp(24) if banner_texto.text else 0
+            height: dp(30) if banner_texto.text else 0
             padding: dp(20), 0
+            spacing: dp(7)
             opacity: 0
+            canvas.before:
+                Color:
+                    rgba: app.ui.suave
+                Rectangle:
+                    pos: self.pos
+                    size: self.size
+            HomeIcon:
+                icon: "information-outline"
+                size: dp(16), dp(20)
+                font_size: "14sp"
+                -text_color: app.ui.azul
             HomeText:
                 id: banner_texto
                 text: ""
-                -color: app.ui.secundario
+                -color: app.ui.texto
                 font_size: "10sp"
 
+        # El mapa conserva todos los identificadores y eventos originales.
         RelativeLayout:
             id: map_container
             size_hint_y: 1
@@ -244,67 +291,80 @@ BoxLayout:
                 zoom: 10
                 size_hint: 1, 1
 
+            # Las posiciones y tiempos aún son simulados: aviso destacado.
             HomeSurface:
                 id: demo_chip
                 size_hint: None, None
-                size: dp(190), dp(28)
+                size: dp(192), dp(32)
                 pos_hint: {"x": .04}
                 y: self.parent.height - self.height - dp(12)
-                padding: dp(10), 0
-                spacing: dp(6)
-                radius: [dp(14)]
+                padding: dp(11), 0
+                spacing: dp(7)
+                radius: [dp(16)]
+                -md_bg_color: app.ui.marino
                 HomeIcon:
                     icon: "flask-outline"
                     font_size: "16sp"
                     size: dp(18), dp(20)
+                    -text_color: 1, 1, 1, 1
                 HomeText:
-                    text: "Demo · posiciones y tiempos"
+                    text: "VISTA DEMOSTRATIVA"
+                    -color: 1, 1, 1, 1
                     font_size: "10sp"
                     bold: True
 
             HomeSurface:
                 id: location_chip
                 size_hint: None, None
-                width: min(dp(220), self.parent.width - dp(32))
-                height: dp(28)
+                width: min(dp(242), self.parent.width - dp(32))
+                height: dp(32)
                 pos_hint: {"x": .04}
-                y: self.parent.height - dp(76)
-                padding: dp(10), 0
-                spacing: dp(6)
-                radius: [dp(14)]
+                y: self.parent.height - dp(88)
+                padding: dp(11), 0
+                spacing: dp(7)
+                radius: [dp(16)]
+                -md_bg_color: app.ui.fondo
+                -stroke: app.ui.borde
                 HomeIcon:
-                    icon: "map-marker-outline"
+                    icon: "crosshairs"
                     font_size: "16sp"
                     size: dp(18), dp(20)
+                    -text_color: app.ui.azul
                 HomeText:
                     id: ubicacion_estado
                     text: "Tu ubicación: sin consultar"
+                    -color: app.ui.texto
                     font_size: "10sp"
 
             HomeAction:
                 id: localizar_btn
                 pos_hint: {"right": .96}
                 y: dp(16)
+                radius: [dp(18)]
                 -md_bg_color: .157, .404, .910, 1
                 on_release: app.localizarme()
                 canvas.before:
                     Color:
-                        rgba: .07, .17, .28, .12
-                    Ellipse:
+                        rgba: .07, .17, .28, .15
+                    RoundedRectangle:
                         pos: self.x - dp(3), self.y - dp(4)
-                        size: self.width + dp(6), self.height + dp(6)
+                        size: self.width + dp(6), self.height + dp(7)
+                        radius: [dp(20)]
                 AnchorLayout:
                     HomeIcon:
                         icon: "crosshairs-gps"
+                        font_size: "24sp"
                         -text_color: 1, 1, 1, 1
 
+        # Panel plegable, más claro y preparado para mostrar las rutas.
         HomeSurface:
             id: panel_buses
             orientation: "vertical"
             size_hint_y: None
             height: dp(48)
             padding: dp(16), 0
-            radius: [dp(24), dp(24), 0, 0]
+            radius: [dp(22), dp(22), 0, 0]
+            -md_bg_color: app.ui.fondo
 
             PanelHeader:
                 id: panel_header
@@ -314,27 +374,38 @@ BoxLayout:
                 on_release: app.alternar_panel_buses()
                 AnchorLayout:
                     size_hint_y: None
-                    height: dp(13)
+                    height: dp(12)
                     Widget:
                         size_hint: None, None
-                        size: dp(32), dp(3)
+                        size: dp(34), dp(4)
                         canvas:
                             Color:
-                                rgba: .72, .77, .83, 1
+                                rgba: app.ui.borde
                             RoundedRectangle:
                                 pos: self.pos
                                 size: self.size
-                                radius: [dp(2)]
+                                radius: [dp(3)]
                 BoxLayout:
+                    spacing: dp(9)
+                    HomeIcon:
+                        icon: "bus-clock"
+                        size: dp(22), dp(22)
+                        font_size: "20sp"
+                        -text_color: app.ui.azul
                     HomeText:
                         id: lineas_titulo
-                        text: "Buses en tu ruta"
-                        font_size: "16sp"
+                        text: "Rutas disponibles"
+                        font_size: "15sp"
                         bold: True
+                    HomeText:
+                        text: "Ver recorridos"
+                        font_size: "10sp"
+                        halign: "right"
+                        -color: app.ui.secundario
                     HomeIcon:
                         id: panel_icono
                         icon: "chevron-up"
-                        -text_color: app.ui.secundario
+                        -text_color: app.ui.azul
 
             ScrollView:
                 id: buses_scroll
@@ -881,31 +952,125 @@ BoxLayout:
 <LoginScreen>:
     UiScroll:
         MDBoxLayout:
+            orientation: "vertical"
             adaptive_height: True
+            # Hero azul marino: marca y propósito antes del formulario.
+            BoxLayout:
+                orientation: "vertical"
+                size_hint_y: None
+                height: dp(238)
+                padding: dp(24), dp(21), dp(24), dp(20)
+                spacing: dp(12)
+                canvas.before:
+                    Color:
+                        rgba: app.ui.marino
+                    Rectangle:
+                        pos: self.pos
+                        size: self.size
+                    Color:
+                        rgba: .20, .43, .85, .28
+                    Ellipse:
+                        pos: self.right - dp(170), self.top - dp(165)
+                        size: dp(186), dp(186)
+                    Color:
+                        rgba: .44, .70, 1, .16
+                    Ellipse:
+                        pos: self.right - dp(113), self.top - dp(218)
+                        size: dp(126), dp(126)
+                BoxLayout:
+                    size_hint_y: None
+                    height: dp(44)
+                    spacing: dp(11)
+                    UiSurface:
+                        size_hint: None, None
+                        size: dp(44), dp(44)
+                        corners: [dp(14)]
+                        -bg: .157, .404, .910, 1
+                        -stroke: 0, 0, 0, 0
+                        padding: 0
+                        AnchorLayout:
+                            UiIcon:
+                                icon: "bus-side"
+                                font_size: "27sp"
+                                size: dp(30), dp(30)
+                                -icon_color: 1, 1, 1, 1
+                    BoxLayout:
+                        orientation: "vertical"
+                        UiText:
+                            text: "EnRuta Ya!"
+                            font_size: "19sp"
+                            bold: True
+                            -color: 1, 1, 1, 1
+                        UiText:
+                            text: "RUTAS DE LA ARAUCANÍA"
+                            font_size: "9sp"
+                            bold: True
+                            -color: .72, .83, 1, 1
+                Widget:
+                    size_hint_y: None
+                    height: dp(2)
+                UiText:
+                    text: "Tu próximo viaje\ncomienza aquí."
+                    shorten: False
+                    font_size: "27sp"
+                    bold: True
+                    size_hint_y: None
+                    height: dp(74)
+                    -color: 1, 1, 1, 1
+                UiParagraph:
+                    text: "Encuentra tus recorridos, consulta el mapa y viaja mejor informado."
+                    -color: .85, .90, .99, 1
+                    font_size: "11sp"
+
+            # Tarjeta de acceso: conserva los IDs utilizados en main.py.
             AnchorLayout:
                 size_hint_y: None
-                height: login_form.height + dp(40)
-                UiBody:
-                    id: login_form
-                    spacing: dp(8)
-                    size_hint_x: None
-                    width: min(dp(420), self.parent.width)
-                    UiBrand:
+                height: login_card.height + dp(38)
+                UiSurface:
+                    id: login_card
+                    orientation: "vertical"
+                    size_hint: None, None
+                    width: min(dp(430), self.parent.width - dp(24))
+                    height: self.minimum_height
+                    corners: [dp(20)]
+                    -bg: app.ui.fondo
+                    -stroke: app.ui.borde
+                    padding: dp(20), dp(22)
+                    spacing: dp(10)
+
                     UiSection:
-                        text: "Bienvenido de nuevo"
+                        text: "¡Qué bueno verte!"
+                        font_size: "21sp"
+                        height: dp(32)
                     UiParagraph:
-                        text: "Inicia sesión para consultar tus rutas y guardar favoritas."
+                        text: "Ingresa a tu cuenta para continuar tu viaje."
                         font_size: "12sp"
+
+                    UiText:
+                        text: "TU USUARIO"
+                        bold: True
+                        font_size: "10sp"
+                        -color: app.ui.secundario
+                        size_hint_y: None
+                        height: dp(23)
                     UiField:
                         id: usuario
                         on_text_validate: clave.focus = True
                         MDTextFieldLeadingIcon:
                             icon: "account-outline"
                         MDTextFieldHintText:
-                            text: "Usuario"
+                            text: "Nombre de usuario"
                     UiError:
                         id: err_usuario
                         text: ""
+
+                    UiText:
+                        text: "CONTRASEÑA"
+                        bold: True
+                        font_size: "10sp"
+                        -color: app.ui.secundario
+                        size_hint_y: None
+                        height: dp(23)
                     UiField:
                         id: clave
                         password: True
@@ -913,22 +1078,32 @@ BoxLayout:
                         MDTextFieldLeadingIcon:
                             icon: "lock-outline"
                         MDTextFieldHintText:
-                            text: "Contraseña"
+                            text: "Tu contraseña"
                     UiError:
                         id: err_general
                         text: ""
+
                     UiButton:
                         id: ingresar_btn
-                        text: "Iniciar sesión"
-                        icon: "login"
+                        text: "Entrar a EnRuta"
+                        icon: "arrow-right"
                         on_release: app.hacer_login()
+
+                    UiText:
+                        text: "¿Aún no tienes cuenta?"
+                        font_size: "11sp"
+                        halign: "center"
+                        -color: app.ui.secundario
+                        size_hint_y: None
+                        height: dp(26)
                     UiButton:
                         primary: False
-                        text: "Crear una cuenta"
+                        text: "Crear cuenta gratis"
                         icon: "account-plus-outline"
                         on_release: app.cambiar_pantalla("registro")
+
                     UiNotice:
-                        text: "Tu ubicación solo se utiliza con tu permiso. Esta versión guarda los datos en el dispositivo."
+                        text: "Tu GPS solo se utiliza con permiso. Por ahora, los datos se guardan en este dispositivo."
                         icon: "shield-check-outline"
 
 <RegistroScreen>:
