@@ -626,14 +626,32 @@ BoxLayout:
         orientation: "vertical"
         UiHeader:
             titulo: "Recorridos"
-            subtitulo: "Encuentra tu próxima conexión"
+            subtitulo: "Conexiones de La Araucanía"
         UiScroll:
             UiBody:
+                UiJourneyHero:
+                    etiqueta: "01  /  EXPLORAR"
+                    titulo: "¿Hacia dónde vamos?"
+                    descripcion: "Encuentra las rutas de la región y elige tu próxima conexión."
+                    icono: "routes"
                 UiNotice:
-                    text: "Horarios, tarifas y posiciones de ejemplo. Toca una ruta para ver sus detalles o guardarla."
-                    icon: "bus-clock"
-                UiSection:
-                    text: "Explora las rutas"
+                    text: "Horarios, tarifas y tiempos referenciales. Los buses del mapa todavía son una demostración."
+                    icon: "information-outline"
+                BoxLayout:
+                    size_hint_y: None
+                    height: dp(36)
+                    spacing: dp(8)
+                    UiIcon:
+                        icon: "bus-multiple"
+                        size: dp(24), dp(24)
+                        font_size: "21sp"
+                        -icon_color: app.ui.azul
+                    UiSection:
+                        text: "Rutas disponibles"
+                    UiIcon:
+                        icon: "arrow-down"
+                        font_size: "17sp"
+                        -icon_color: app.ui.secundario
                 UiParagraph:
                     id: recorridos_resumen
                     text: ""
@@ -644,38 +662,87 @@ BoxLayout:
                     adaptive_height: True
                     spacing: dp(12)
 
+
+
 <CompartirScreen>:
     BoxLayout:
         orientation: "vertical"
         UiHeader:
-            titulo: "Compartir mi viaje"
-            subtitulo: "Tú decides cuándo iniciar y detener"
+            titulo: "Compartir viaje"
+            subtitulo: "El control de tu ubicación es tuyo"
         UiScroll:
             UiBody:
+                UiJourneyHero:
+                    etiqueta: "02  /  COLABORAR"
+                    titulo: "Viaja y ayuda a otros"
+                    descripcion: "Activa tu ubicación voluntariamente y comparte el estado de tu recorrido."
+                    icono: "map-marker-radius-outline"
                 UiNotice:
-                    text: "Privacidad primero. Tu permiso es necesario para iniciar; puedes detener la ubicación en cualquier momento."
+                    text: "Modo local de prueba: el GPS se muestra solo en tu teléfono. Aún no se envía a otros pasajeros."
                     icon: "shield-check-outline"
-                UiSection:
-                    text: "Selecciona tu recorrido"
+
+                BoxLayout:
+                    size_hint_y: None
+                    height: dp(35)
+                    spacing: dp(9)
+                    UiSurface:
+                        size_hint: None, None
+                        size: dp(30), dp(30)
+                        corners: [dp(10)]
+                        -bg: app.ui.suave
+                        -stroke: 0, 0, 0, 0
+                        padding: 0
+                        AnchorLayout:
+                            UiIcon:
+                                icon: "numeric-1-circle-outline"
+                                font_size: "21sp"
+                                -icon_color: app.ui.azul
+                    UiSection:
+                        text: "Elige tu línea"
                 UiAction:
                     id: linea_btn
-                    -bg: app.ui.tarjeta
+                    height: dp(58)
+                    corners: [dp(15)]
+                    -bg: app.ui.fondo
                     -stroke: app.ui.borde
                     on_release: app.abrir_menu_linea(self)
                     UiIcon:
                         icon: "bus-side"
+                        -icon_color: app.ui.azul
                     UiText:
                         id: linea_text
                         text: "Elegir mi línea"
                         bold: True
-                        font_size: "12sp"
+                        font_size: "13sp"
                     UiIcon:
                         icon: "chevron-down"
+                        -icon_color: app.ui.secundario
                 UiError:
                     id: linea_error
                     text: ""
+
+                BoxLayout:
+                    size_hint_y: None
+                    height: dp(35)
+                    spacing: dp(9)
+                    UiSurface:
+                        size_hint: None, None
+                        size: dp(30), dp(30)
+                        corners: [dp(10)]
+                        -bg: app.ui.suave
+                        -stroke: 0, 0, 0, 0
+                        padding: 0
+                        AnchorLayout:
+                            UiIcon:
+                                icon: "numeric-2-circle-outline"
+                                font_size: "21sp"
+                                -icon_color: app.ui.azul
+                    UiSection:
+                        text: "Comparte durante el viaje"
                 UiAction:
                     id: compartir_btn
+                    height: dp(54)
+                    corners: [dp(15)]
                     -bg: (.72, .16, .16, 1) if app.compartiendo else (.157, .404, .910, 1)
                     on_release: app.alternar_compartir()
                     UiIcon:
@@ -687,9 +754,16 @@ BoxLayout:
                         -color: 1, 1, 1, 1
                         bold: True
                         halign: "center"
+                        font_size: "12sp"
+                    UiIcon:
+                        icon: "arrow-right" if not app.compartiendo else "close-circle-outline"
+                        -icon_color: 1, 1, 1, 1
                 UiSurface:
                     size_hint_y: None
-                    height: max(dp(60), estado_label.texture_size[1] + dp(24))
+                    height: max(dp(70), estado_label.texture_size[1] + dp(34))
+                    corners: [dp(15)]
+                    -bg: app.ui.suave if app.compartiendo else app.ui.tarjeta
+                    -stroke: 0, 0, 0, 0
                     UiIcon:
                         icon: "broadcast" if app.compartiendo else "map-marker-off-outline"
                         -icon_color: app.ui.exito if app.compartiendo else app.ui.secundario
@@ -700,13 +774,30 @@ BoxLayout:
                         font_size: "12sp"
                         pos_hint: {"center_y": .5}
                 UiParagraph:
-                    text: "Modo local: todavía no hay sincronización entre teléfonos. La ubicación y los avisos quedan en este dispositivo."
+                    text: "Puedes detener el viaje cuando quieras. Tu consentimiento es necesario para iniciar."
                     font_size: "11sp"
-                UiSection:
-                    text: "¿Cómo está el bus?"
+
+                BoxLayout:
+                    size_hint_y: None
+                    height: dp(35)
+                    spacing: dp(9)
+                    UiSurface:
+                        size_hint: None, None
+                        size: dp(30), dp(30)
+                        corners: [dp(10)]
+                        -bg: app.ui.suave
+                        -stroke: 0, 0, 0, 0
+                        padding: 0
+                        AnchorLayout:
+                            UiIcon:
+                                icon: "numeric-3-circle-outline"
+                                font_size: "21sp"
+                                -icon_color: app.ui.azul
+                    UiSection:
+                        text: "Reporta lo que ocurre"
                 UiParagraph:
-                    text: "Reporta una novedad del recorrido seleccionado."
-                    font_size: "12sp"
+                    text: "Selecciona un estado para agregar un aviso local a este recorrido."
+                    font_size: "11sp"
                 GridLayout:
                     cols: 1 if self.width < dp(290) else 2
                     size_hint_y: None
@@ -737,30 +828,70 @@ BoxLayout:
                         icon: "map-marker-alert-outline"
                         on_release: app.enviar_aviso("cambio_ruta")
 
+
+
 <AvisosScreen>:
     BoxLayout:
         orientation: "vertical"
         UiHeader:
-            titulo: "Avisos de viaje"
-            subtitulo: "Ocupación, atrasos y cambios de ruta"
+            titulo: "Avisos"
+            subtitulo: "Novedades en tus recorridos"
         UiScroll:
             UiBody:
+                UiJourneyHero:
+                    etiqueta: "03  /  COMUNIDAD"
+                    titulo: "Mantente al tanto"
+                    descripcion: "Consulta reportes de ocupación, atrasos y cambios de ruta."
+                    icono: "bell-badge-outline"
+                UiNotice:
+                    text: "Estos reportes se guardan solo en este dispositivo; no son avisos oficiales ni llegan desde otros teléfonos."
+                    icon: "flask-outline"
                 UiSurface:
                     size_hint_y: None
-                    height: dp(64)
-                    UiIcon:
-                        icon: "star-outline"
-                    UiParagraph:
-                        text: "Solo mis rutas favoritas"
-                        -color: app.ui.texto
-                        bold: True
-                        font_size: "12sp"
+                    height: dp(70)
+                    corners: [dp(16)]
+                    -bg: app.ui.fondo
+                    -stroke: app.ui.borde
+                    UiSurface:
+                        size_hint: None, None
+                        size: dp(36), dp(36)
                         pos_hint: {"center_y": .5}
+                        padding: 0
+                        corners: [dp(12)]
+                        -bg: app.ui.suave
+                        -stroke: 0, 0, 0, 0
+                        AnchorLayout:
+                            UiIcon:
+                                icon: "star-outline"
+                                font_size: "20sp"
+                                -icon_color: app.ui.azul
+                    BoxLayout:
+                        orientation: "vertical"
+                        UiText:
+                            text: "Solo mis favoritas"
+                            -color: app.ui.texto
+                            bold: True
+                            font_size: "13sp"
+                        UiText:
+                            text: "Filtra los reportes por tus rutas"
+                            -color: app.ui.secundario
+                            font_size: "10sp"
                     UiSwitch:
                         id: filtro_favoritas
                         on_active: app.alternar_solo_favoritas(self.active)
+                BoxLayout:
+                    size_hint_y: None
+                    height: dp(34)
+                    spacing: dp(8)
+                    UiIcon:
+                        icon: "history"
+                        size: dp(23), dp(23)
+                        font_size: "20sp"
+                        -icon_color: app.ui.azul
+                    UiSection:
+                        text: "Reportes recientes"
                 UiParagraph:
-                    text: "Reportes locales, no información oficial. Los vencidos se conservan en el historial por hasta 2 horas."
+                    text: "Los reportes vencidos se mantienen en el historial hasta 2 horas."
                     font_size: "11sp"
                 UiParagraph:
                     id: avisos_vacio
@@ -771,6 +902,8 @@ BoxLayout:
                     adaptive_height: True
                     orientation: "vertical"
                     spacing: dp(12)
+
+
 
 <AjustesScreen>:
     BoxLayout:
