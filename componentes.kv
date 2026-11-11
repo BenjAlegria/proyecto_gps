@@ -153,12 +153,7 @@
             height: dp(18)
     UiAvatar:
         pos_hint: {"center_y": .5}
-        -bg: app.ui.tarjeta
         on_release: app.cambiar_pantalla("perfil")
-        AnchorLayout:
-            UiIcon:
-                icon: "account-circle-outline"
-                -icon_color: app.ui.texto
 
 # Tarjeta introductoria común a las secciones. Títulos y textos son
 # propiedades configurables desde cada pantalla, sin lógica de negocio.
