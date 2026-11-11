@@ -1,1156 +1,999 @@
 #:import dp kivy.metrics.dp
 
-# Azul principal (más amigable) y su variante oscura para el tema oscuro
-#:set AZUL_CLARO (0.16, 0.45, 0.87, 1)
-#:set AZUL_OSCURO (0.05, 0.09, 0.20, 1)
-
 BoxLayout:
     orientation: "vertical"
     canvas.before:
         Color:
-            rgba: (0.07, 0.08, 0.10, 1) if app.theme_cls.theme_style == "Dark" else (0.96, 0.97, 0.98, 1)
+            rgba: app.ui.fondo
         Rectangle:
             pos: self.pos
             size: self.size
-
     ScreenManager:
         id: sm
-
+        size_hint_y: 1
         LoginScreen:
             name: "login"
-
         RegistroScreen:
             name: "registro"
-
         HomeScreen:
             name: "home"
-
         RecorridosScreen:
             name: "recorridos"
-
         CompartirScreen:
             name: "compartir"
-
         AvisosScreen:
             name: "avisos"
-
         AjustesScreen:
             name: "ajustes"
-
         PerfilScreen:
             name: "perfil"
 
-    # ----------------------------------------------------------
-    # Barra de navegación inferior (azul, iconos blancos)
-    # ----------------------------------------------------------
+    # Hermana del ScreenManager: nunca vive dentro de mapas ni scrolls.
     MDBoxLayout:
         id: nav_bar
+        theme_bg_color: "Custom"
+        -md_bg_color: app.ui.fondo
         size_hint_y: None
-        height: 0 if sm.current in ("login", "registro") else dp(64)
+        height: 0 if sm.current in ("login", "registro") else dp(64) + app.safe_bottom
         opacity: 0 if sm.current in ("login", "registro") else 1
         disabled: sm.current in ("login", "registro")
-        padding: dp(6), dp(6)
-        spacing: dp(4)
-        md_bg_color: AZUL_OSCURO if app.theme_cls.theme_style == "Dark" else AZUL_CLARO
-
+        padding: dp(4), dp(4), dp(4), dp(4) + app.safe_bottom
+        canvas.before:
+            Color:
+                rgba: app.ui.borde
+            Line:
+                points: self.x, self.top, self.right, self.top
+                width: .7
         NavItem:
+            inicio: sm.current == "home"
             icono_activo: "home"
             icono_inactivo: "home-outline"
             etiqueta: "Inicio"
             activo: sm.current == "home"
             on_release: app.cambiar_pantalla("home")
-
         NavItem:
+            inicio: sm.current == "home"
             icono_activo: "bus"
             icono_inactivo: "bus-side"
             etiqueta: "Recorridos"
             activo: sm.current == "recorridos"
             on_release: app.cambiar_pantalla("recorridos")
-
         NavItem:
+            inicio: sm.current == "home"
             icono_activo: "map-marker-radius"
             icono_inactivo: "map-marker-radius-outline"
             etiqueta: "Compartir"
             activo: sm.current == "compartir"
             on_release: app.cambiar_pantalla("compartir")
-
         NavItem:
+            inicio: sm.current == "home"
             icono_activo: "bell"
             icono_inactivo: "bell-outline"
             etiqueta: "Avisos"
             activo: sm.current == "avisos"
             on_release: app.cambiar_pantalla("avisos")
-
         NavItem:
+            inicio: sm.current == "home"
             icono_activo: "cog"
             icono_inactivo: "cog-outline"
             etiqueta: "Ajustes"
             activo: sm.current == "ajustes"
             on_release: app.cambiar_pantalla("ajustes")
 
-
 <NavItem@ButtonBehavior+BoxLayout>:
-    icono_activo: ""
-    icono_inactivo: ""
-    etiqueta: ""
+    icono_activo: "home"
+    icono_inactivo: "home-outline"
+    etiqueta: "Inicio"
     activo: False
+    inicio: False
+    color_nav: app.ui.azul if self.activo else app.ui.secundario
     orientation: "vertical"
-    padding: 0, dp(4)
-
+    padding: 0, dp(3)
     AnchorLayout:
-        anchor_x: "center"
-        anchor_y: "center"
         size_hint_y: None
         height: dp(30)
-
-        BoxLayout:
+        UiSurface:
             size_hint: None, None
-            size: dp(52), dp(28)
-
-            canvas.before:
-                Color:
-                    rgba: (1, 1, 1, 0.22) if root.activo else (0, 0, 0, 0)
-                RoundedRectangle:
-                    pos: self.pos
-                    size: self.size
-                    radius: [dp(14)]
-
+            size: dp(48), dp(30)
+            -bg: app.ui.suave if root.activo else app.ui.fondo
+            -stroke: 0, 0, 0, 0
+            corners: [dp(15)]
+            padding: 0
             AnchorLayout:
-                anchor_x: "center"
-                anchor_y: "center"
-
-                MDIcon:
+                UiIcon:
                     icon: root.icono_activo if root.activo else root.icono_inactivo
-                    icon_color: 1, 1, 1, 1
-                    adaptive_size: True
+                    -icon_color: root.color_nav
+    UiText:
+        text: root.etiqueta
+        -color: root.color_nav
+        font_size: "10sp"
+        halign: "center"
+        bold: root.activo
 
-    AnchorLayout:
-        anchor_x: "center"
-        anchor_y: "center"
-        size_hint_y: None
-        height: dp(16)
+<PanelHeader@ButtonBehavior+BoxLayout>:
 
-        MDLabel:
-            text: root.etiqueta
-            halign: "center"
-            font_style: "Label"
-            role: "small"
-            theme_text_color: "Custom"
-            text_color: 1, 1, 1, 1
-            adaptive_size: True
+<HomeSurface@UiSurface>:
+    -md_bg_color: app.ui.fondo
+    -bg: self.md_bg_color
+    -stroke: 0, 0, 0, 0
+    radius: [dp(16)]
+    corners: self.radius
+    padding: 0
 
+<HomeText@UiText>:
 
-# ----------------------------------------------------------
-# Barra superior azul reutilizable (avatar + contenido)
-# ----------------------------------------------------------
-<TopBar@MDBoxLayout>:
-    size_hint_y: None
-    height: dp(58)
-    padding: dp(6), 0
-    spacing: dp(6)
-    md_bg_color: AZUL_OSCURO if app.theme_cls.theme_style == "Dark" else AZUL_CLARO
+<HomeIcon@UiIcon>:
+    -text_color: app.ui.azul
+    -icon_color: self.text_color
 
-    MDIconButton:
-        icon: "account-circle"
-        icon_color: 1, 1, 1, 1
-        pos_hint: {"center_y": 0.5}
-        on_release: app.cambiar_pantalla("perfil")
+<HomeAction@ButtonBehavior+HomeSurface>:
+    size_hint: None, None
+    size: dp(48), dp(48)
+    radius: [dp(24)]
+
+<HomeSelector@ButtonBehavior+BoxLayout>:
+    orientation: "vertical"
+    padding: dp(12), dp(6)
+
+<HomeScreen>:
+    on_size: if app.root: app.ajustar_panel_home()
+    BoxLayout:
+        orientation: "vertical"
         canvas.before:
             Color:
-                rgba: 1, 1, 1, 0.18
-            Ellipse:
+                rgba: app.ui.fondo
+            Rectangle:
                 pos: self.pos
                 size: self.size
 
-
-<PanelHeader@ButtonBehavior+BoxLayout>:
-    orientation: "horizontal"
-
-
-<LocalidadChip@ButtonBehavior+BoxLayout>:
-    orientation: "horizontal"
-    padding: dp(14), 0
-    spacing: dp(6)
-    canvas.before:
-        Color:
-            rgba: (0.16, 0.18, 0.24, 1) if app.theme_cls.theme_style == "Dark" else (1, 1, 1, 1)
-        RoundedRectangle:
-            pos: self.pos
-            size: self.size
-            radius: [dp(20)]
-
-
-<HomeScreen>:
-    FloatLayout:
-
-        MapView:
-            id: mapa
-            lat: -38.7359
-            lon: -72.5904
-            zoom: 10
-            size_hint: 1, 1
-            pos_hint: {"x": 0, "y": 0}
-
-        TopBar:
-            pos_hint: {"top": 1}
-
-            LocalidadChip:
-                id: origen_btn
-                on_release: app.abrir_menu_origen(self)
-
-                MDIcon:
-                    icon: "map-marker"
-                    theme_text_color: "Custom"
-                    text_color: (1, 1, 1, 1) if app.theme_cls.theme_style == "Dark" else AZUL_CLARO
-                    pos_hint: {"center_y": 0.5}
-
-                MDLabel:
-                    id: origen_text
-                    text: "Elegir localidad"
-                    theme_text_color: "Custom"
-                    text_color: (0.95, 0.96, 0.98, 1) if app.theme_cls.theme_style == "Dark" else (0.10, 0.12, 0.15, 1)
+        BoxLayout:
+            id: home_header
+            size_hint_y: None
+            height: dp(64)
+            padding: dp(20), dp(8), dp(16), dp(4)
+            spacing: dp(12)
+            BoxLayout:
+                orientation: "vertical"
+                HomeText:
+                    text: "EnRuta Ya!"
+                    font_size: "23sp"
                     bold: True
+                    -color: app.ui.texto
+                HomeText:
+                    text: "Tu viaje, mejor informado"
+                    font_size: "11sp"
+                    size_hint_y: None
+                    height: dp(18)
+                    -color: app.ui.secundario
+            HomeAction:
+                id: home_perfil
+                pos_hint: {"center_y": .5}
+                -md_bg_color: .157, .404, .910, 1
+                on_release: app.cambiar_pantalla("perfil")
+                AnchorLayout:
+                    HomeIcon:
+                        icon: "account-outline"
+                        -text_color: 1, 1, 1, 1
 
-                MDIcon:
-                    icon: "menu-down"
-                    theme_text_color: "Custom"
-                    text_color: (1, 1, 1, 1) if app.theme_cls.theme_style == "Dark" else AZUL_CLARO
-                    pos_hint: {"center_y": 0.5}
+        BoxLayout:
+            id: home_selectors
+            size_hint_y: None
+            height: dp(64)
+            padding: dp(16), dp(4), dp(16), dp(12)
+            HomeSurface:
+                -md_bg_color: app.ui.tarjeta
+                radius: [dp(14)]
+                HomeSelector:
+                    id: origen_btn
+                    on_release: app.abrir_menu_origen(self)
+                    HomeText:
+                        text: "ORIGEN"
+                        -color: app.ui.secundario
+                        font_size: "9sp"
+                        size_hint_y: None
+                        height: dp(14)
+                    HomeText:
+                        id: origen_text
+                        text: "Elegir localidad"
+                        -color: app.ui.texto
+                        font_size: "12sp"
+                        bold: True
+                HomeIcon:
+                    icon: "arrow-right"
+                    -text_color: app.ui.azul
+                    size: dp(20), dp(24)
+                HomeSelector:
+                    id: recorrido_btn
+                    on_release: app.abrir_recorrido_home(self)
+                    HomeText:
+                        text: "DESTINO"
+                        -color: app.ui.secundario
+                        font_size: "9sp"
+                        size_hint_y: None
+                        height: dp(14)
+                    HomeText:
+                        id: recorrido_text
+                        text: "Todos los destinos"
+                        -color: app.ui.texto
+                        font_size: "12sp"
+                        bold: True
+                HomeIcon:
+                    icon: "chevron-down"
+                    -text_color: app.ui.secundario
+                    size: dp(20), dp(24)
 
-            MDIconButton:
-                icon: "share-variant"
-                icon_color: 1, 1, 1, 1
-                pos_hint: {"center_y": 0.5}
-                on_release: app.cambiar_pantalla("compartir")
-                canvas.before:
-                    Color:
-                        rgba: 1, 1, 1, 0.18
-                    Ellipse:
-                        pos: self.pos
-                        size: self.size
-
-        MDBoxLayout:
+        BoxLayout:
             id: banner
-            size_hint: 0.92, None
-            height: dp(38)
-            padding: dp(12), 0
-            spacing: dp(8)
+            size_hint_y: None
+            height: dp(24) if banner_texto.text else 0
+            padding: dp(20), 0
             opacity: 0
-            pos_hint: {"center_x": 0.5}
-            y: self.parent.height - dp(58) - dp(8) - self.height
-            canvas.before:
-                Color:
-                    rgba: (0.11, 0.12, 0.15, 0.94) if app.theme_cls.theme_style == "Dark" else (1, 1, 1, 0.94)
-                RoundedRectangle:
-                    pos: self.pos
-                    size: self.size
-                    radius: [dp(12)]
-
-            MDIcon:
-                icon: "cloud-check-outline"
-                adaptive_size: True
-                pos_hint: {"center_y": 0.5}
-                theme_text_color: "Custom"
-                text_color: AZUL_CLARO
-
-            MDLabel:
+            HomeText:
                 id: banner_texto
                 text: ""
-                shorten: True
-                shorten_from: "right"
-                font_style: "Body"
-                role: "small"
-                valign: "center"
+                -color: app.ui.secundario
+                font_size: "10sp"
 
-        MDIconButton:
-            style: "filled"
-            icon: "crosshairs-gps"
-            pos_hint: {"right": 0.96, "top": 0.79}
-            on_release: app.localizarme()
+        RelativeLayout:
+            id: map_container
+            size_hint_y: 1
+            MapView:
+                id: mapa
+                lat: -38.7359
+                lon: -72.5904
+                zoom: 10
+                size_hint: 1, 1
 
-        MDBoxLayout:
-            id: panel_buses
-            orientation: "vertical"
-            size_hint: 1, None
-            height: dp(48)
-            pos_hint: {"x": 0, "y": 0}
-            padding: dp(4), 0
-            spacing: dp(2)
-
-            canvas.before:
-                Color:
-                    rgba: (0.11, 0.12, 0.15, 0.96) if app.theme_cls.theme_style == "Dark" else (1, 1, 1, 0.94)
-                RoundedRectangle:
-                    pos: self.pos
-                    size: self.size
-                    radius: [dp(18), dp(18), 0, 0]
-
-            PanelHeader:
-                size_hint_y: None
-                height: dp(46)
-                padding: dp(12), 0
-                on_release: app.alternar_panel_buses()
-
-                MDLabel:
-                    id: lineas_titulo
-                    text: "Elige una localidad para ver los buses"
+            HomeSurface:
+                id: demo_chip
+                size_hint: None, None
+                size: dp(190), dp(28)
+                pos_hint: {"x": .04}
+                y: self.parent.height - self.height - dp(12)
+                padding: dp(10), 0
+                spacing: dp(6)
+                radius: [dp(14)]
+                HomeIcon:
+                    icon: "flask-outline"
+                    font_size: "16sp"
+                    size: dp(18), dp(20)
+                HomeText:
+                    text: "Demo · posiciones y tiempos"
+                    font_size: "10sp"
                     bold: True
 
-                MDIcon:
-                    id: panel_icono
-                    icon: "chevron-up"
-                    adaptive_size: True
-                    pos_hint: {"center_y": 0.5}
+            HomeSurface:
+                id: location_chip
+                size_hint: None, None
+                width: min(dp(220), self.parent.width - dp(32))
+                height: dp(28)
+                pos_hint: {"x": .04}
+                y: self.parent.height - dp(76)
+                padding: dp(10), 0
+                spacing: dp(6)
+                radius: [dp(14)]
+                HomeIcon:
+                    icon: "map-marker-outline"
+                    font_size: "16sp"
+                    size: dp(18), dp(20)
+                HomeText:
+                    id: ubicacion_estado
+                    text: "Tu ubicación: sin consultar"
+                    font_size: "10sp"
+
+            HomeAction:
+                id: localizar_btn
+                pos_hint: {"right": .96}
+                y: dp(16)
+                -md_bg_color: .157, .404, .910, 1
+                on_release: app.localizarme()
+                canvas.before:
+                    Color:
+                        rgba: .07, .17, .28, .12
+                    Ellipse:
+                        pos: self.x - dp(3), self.y - dp(4)
+                        size: self.width + dp(6), self.height + dp(6)
+                AnchorLayout:
+                    HomeIcon:
+                        icon: "crosshairs-gps"
+                        -text_color: 1, 1, 1, 1
+
+        HomeSurface:
+            id: panel_buses
+            orientation: "vertical"
+            size_hint_y: None
+            height: dp(48)
+            padding: dp(16), 0
+            radius: [dp(24), dp(24), 0, 0]
+
+            PanelHeader:
+                id: panel_header
+                orientation: "vertical"
+                size_hint_y: None
+                height: dp(48)
+                on_release: app.alternar_panel_buses()
+                AnchorLayout:
+                    size_hint_y: None
+                    height: dp(13)
+                    Widget:
+                        size_hint: None, None
+                        size: dp(32), dp(3)
+                        canvas:
+                            Color:
+                                rgba: .72, .77, .83, 1
+                            RoundedRectangle:
+                                pos: self.pos
+                                size: self.size
+                                radius: [dp(2)]
+                BoxLayout:
+                    HomeText:
+                        id: lineas_titulo
+                        text: "Buses en tu ruta"
+                        font_size: "16sp"
+                        bold: True
+                    HomeIcon:
+                        id: panel_icono
+                        icon: "chevron-up"
+                        -text_color: app.ui.secundario
 
             ScrollView:
-                size_hint_y: 1
+                id: buses_scroll
+                opacity: 1 if panel_buses.height > dp(50) else 0
+                disabled: panel_buses.height <= dp(50)
+                do_scroll_x: False
+                bar_width: dp(2)
                 MDBoxLayout:
                     id: lineas_box
                     orientation: "vertical"
-                    spacing: dp(6)
-                    padding: dp(8), 0, dp(8), dp(8)
+                    spacing: dp(10)
+                    padding: 0, dp(8), 0, dp(12)
                     adaptive_height: True
+
+<HomeBusCard>:
+    style: "outlined"
+    orientation: "vertical"
+    size_hint_y: None
+    height: dp(160)
+    padding: dp(12), dp(10)
+    spacing: dp(6)
+    radius: [dp(16)]
+    theme_bg_color: "Custom"
+    -md_bg_color: app.ui.tarjeta
+    theme_line_color: "Custom"
+    -line_color: app.ui.borde
+    on_release: app.mostrar_detalle(root.ruta)
+
+    BoxLayout:
+        size_hint_y: None
+        height: dp(36)
+        spacing: dp(10)
+        HomeSurface:
+            size_hint_x: None
+            width: dp(36)
+            radius: [dp(10)]
+            -md_bg_color: .157, .404, .910, .12
+            AnchorLayout:
+                HomeIcon:
+                    icon: "bus-side"
+        BoxLayout:
+            orientation: "vertical"
+            HomeText:
+                text: root.ruta.split("->")[0].strip()
+                bold: True
+                font_size: "14sp"
+            BoxLayout:
+                spacing: dp(4)
+                HomeIcon:
+                    icon: "arrow-right"
+                    size: dp(16), dp(16)
+                    font_size: "14sp"
+                HomeText:
+                    text: root.ruta.split("->")[-1].strip()
+                    font_size: "12sp"
+        BoxLayout:
+            orientation: "vertical"
+            size_hint_x: None
+            width: dp(64)
+            HomeText:
+                text: root.minutos
+                font_size: "19sp"
+                bold: True
+                halign: "right"
+                -color: app.ui.azul
+            HomeText:
+                text: "ETA · demo"
+                font_size: "9sp"
+                halign: "right"
+                -color: app.ui.secundario
+
+    HomeSurface:
+        size_hint_y: None
+        height: dp(25)
+        padding: dp(8), 0
+        spacing: dp(6)
+        radius: [dp(8)]
+        -md_bg_color: app.ui.estado(root.aviso_color, app.ui.texto)[:3] + [.10]
+        HomeIcon:
+            icon: root.estado_icono
+            size: dp(16), dp(18)
+            font_size: "14sp"
+            -text_color: app.ui.estado(root.aviso_color, app.ui.texto)
+        HomeText:
+            text: root.aviso
+            -color: app.ui.estado(root.aviso_color, app.ui.texto)
+            font_size: "10sp"
+            bold: True
+    BoxLayout:
+        HomeText:
+            text: "Ocupación"
+            -color: app.ui.secundario
+            font_size: "10sp"
+        HomeText:
+            text: root.ocupacion
+            bold: True
+            font_size: "11sp"
+            halign: "right"
+    HomeText:
+        text: root.actualizacion
+        -color: app.ui.secundario
+        font_size: "10sp"
+    HomeText:
+        text: "Datos locales / demo · sin seguimiento en vivo"
+        -color: app.ui.secundario
+        font_size: "9sp"
 
 
 <LineaCard>:
-    style: "elevated"
-    orientation: "horizontal"
+    style: "outlined"
+    theme_bg_color: "Custom"
+    -md_bg_color: app.ui.tarjeta
+    theme_line_color: "Custom"
+    -line_color: app.ui.borde
+    orientation: "vertical"
     size_hint_y: None
-    height: dp(84)
-    padding: dp(12), dp(8)
-    spacing: dp(10)
-    radius: [12]
+    height: dp(140)
+    radius: [dp(16)]
+    padding: dp(14)
+    spacing: dp(5)
     on_release: app.mostrar_detalle(root.ruta)
-
-    MDIcon:
-        icon: "bus"
-        size_hint_x: None
-        width: dp(32)
-        pos_hint: {"center_y": 0.5}
-
     BoxLayout:
-        orientation: "vertical"
-
-        MDLabel:
-            text: root.ruta
-            bold: True
-            font_style: "Body"
-            role: "medium"
-
-        MDLabel:
-            text: root.detalle
-            font_style: "Body"
-            role: "small"
-
-        MDLabel:
-            text: root.aviso
-            bold: True
-            font_style: "Body"
-            role: "small"
-            theme_text_color: "Custom"
-            text_color: root.aviso_color
-
-    BoxLayout:
-        orientation: "vertical"
-        size_hint_x: None
-        width: dp(70)
-
-        MDLabel:
-            text: root.minutos
-            halign: "right"
-            bold: True
-            text_color: 0.05, 0.62, 0.43, 1
-
-        MDLabel:
-            text: "próximo bus"
-            halign: "right"
-            font_style: "Body"
-            role: "small"
-
+        size_hint_y: None
+        height: dp(40)
+        spacing: dp(10)
+        UiIcon:
+            icon: "bus-side"
+        BoxLayout:
+            orientation: "vertical"
+            UiText:
+                text: root.ruta.split("->")[0].strip()
+                bold: True
+                font_size: "15sp"
+            BoxLayout:
+                spacing: dp(4)
+                UiIcon:
+                    icon: "arrow-right"
+                    size: dp(16), dp(18)
+                    font_size: "14sp"
+                UiText:
+                    text: root.ruta.split("->")[-1].strip()
+                    font_size: "12sp"
+        BoxLayout:
+            orientation: "vertical"
+            size_hint_x: None
+            width: dp(72)
+            UiText:
+                text: root.minutos
+                bold: True
+                font_size: "18sp"
+                -color: app.ui.azul
+                halign: "right"
+            UiText:
+                text: "ETA · demo"
+                -color: app.ui.secundario
+                font_size: "10sp"
+                halign: "right"
+    UiText:
+        text: root.detalle
+        font_size: "11sp"
+        -color: app.ui.secundario
+    UiText:
+        text: root.aviso
+        -color: app.ui.estado(root.aviso_color, app.ui.texto)
+        font_size: "11sp"
+        bold: True
+    UiText:
+        text: "Ver detalle y favoritos"
+        -color: app.ui.azul
+        font_size: "10sp"
 
 <AvisoCard>:
     style: "outlined"
+    theme_bg_color: "Custom"
+    -md_bg_color: app.ui.tarjeta
+    theme_line_color: "Custom"
+    -line_color: app.ui.borde
     orientation: "horizontal"
     size_hint_y: None
-    height: dp(68)
-    padding: dp(12), dp(8)
+    height: dp(110)
+    radius: [dp(16)]
+    padding: dp(12)
     spacing: dp(10)
-    radius: [12]
-
-    MDIcon:
-        icon: root.icono
-        theme_text_color: "Custom"
-        text_color: root.color
+    Widget:
         size_hint_x: None
-        width: dp(32)
-        pos_hint: {"center_y": 0.5}
-
+        width: dp(4)
+        canvas:
+            Color:
+                rgba: app.ui.estado(root.color, app.ui.texto)
+            RoundedRectangle:
+                pos: self.pos
+                size: self.size
+                radius: [dp(2)]
+    UiIcon:
+        icon: root.icono
+        -icon_color: app.ui.estado(root.color, app.ui.texto)
     BoxLayout:
         orientation: "vertical"
-
-        MDLabel:
+        UiText:
             text: root.titulo
             bold: True
-            font_style: "Body"
-            role: "medium"
-            theme_text_color: "Custom"
-            text_color: root.color
-
-        MDLabel:
-            text: root.detalle
-            font_style: "Body"
-            role: "small"
-
+            font_size: "14sp"
+        UiText:
+            text: root.detalle.split(" · ")[0].replace("->", "a")
+            font_size: "11sp"
+            -color: app.ui.secundario
+        UiText:
+            text: root.antiguedad
+            font_size: "11sp"
+            -color: app.ui.secundario
+        UiText:
+            text: "Vencido · solo historial" if root.vencido else "Reporte local / demo"
+            -color: app.ui.aviso if root.vencido else app.ui.secundario
+            font_size: "10sp"
 
 <RecorridosScreen>:
     BoxLayout:
         orientation: "vertical"
-
-        TopBar:
-            MDLabel:
-                text: "Recorridos"
-                bold: True
-                theme_text_color: "Custom"
-                text_color: 1, 1, 1, 1
-                pos_hint: {"center_y": 0.5}
-
-        BoxLayout:
-            orientation: "vertical"
-            padding: dp(12), dp(8), dp(12), dp(4)
-            spacing: dp(8)
-
-            MDLabel:
-                id: recorridos_resumen
-                text: ""
-                font_style: "Body"
-                role: "medium"
-                size_hint_y: None
-                height: dp(24)
-
-            ScrollView:
+        UiHeader:
+            titulo: "Recorridos"
+            subtitulo: "Encuentra tu próxima conexión"
+        UiScroll:
+            UiBody:
+                UiNotice:
+                    text: "Horarios, tarifas y posiciones de ejemplo. Toca una ruta para ver sus detalles o guardarla."
+                    icon: "bus-clock"
+                UiSection:
+                    text: "Explora las rutas"
+                UiParagraph:
+                    id: recorridos_resumen
+                    text: ""
+                    font_size: "11sp"
                 MDBoxLayout:
                     id: recorridos_box
                     orientation: "vertical"
-                    spacing: dp(8)
-                    padding: 0, 0, 0, dp(8)
                     adaptive_height: True
-
+                    spacing: dp(12)
 
 <CompartirScreen>:
     BoxLayout:
         orientation: "vertical"
-
-        TopBar:
-            MDLabel:
-                text: "Compartir ubicación"
-                bold: True
-                theme_text_color: "Custom"
-                text_color: 1, 1, 1, 1
-                pos_hint: {"center_y": 0.5}
-
-        ScrollView:
-            MDBoxLayout:
-                orientation: "vertical"
-                padding: dp(12), dp(8), dp(12), dp(12)
-                spacing: dp(12)
-                adaptive_height: True
-
-                MDLabel:
-                    text: "¿Vas en la micro? Comparte tu ubicación y ayuda a otros a saber dónde va el bus."
-                    size_hint_y: None
-                    height: dp(60)
-
-                MDButton:
+        UiHeader:
+            titulo: "Compartir mi viaje"
+            subtitulo: "Tú decides cuándo iniciar y detener"
+        UiScroll:
+            UiBody:
+                UiNotice:
+                    text: "Privacidad primero. Tu permiso es necesario para iniciar; puedes detener la ubicación en cualquier momento."
+                    icon: "shield-check-outline"
+                UiSection:
+                    text: "Selecciona tu recorrido"
+                UiAction:
                     id: linea_btn
-                    style: "outlined"
-                    size_hint_y: None
-                    height: dp(40)
+                    -bg: app.ui.tarjeta
+                    -stroke: app.ui.borde
                     on_release: app.abrir_menu_linea(self)
-
-                    MDButtonIcon:
-                        icon: "bus"
-
-                    MDButtonText:
+                    UiIcon:
+                        icon: "bus-side"
+                    UiText:
                         id: linea_text
                         text: "Elegir mi línea"
-
-                    MDButtonIcon:
-                        icon: "menu-down"
-
-                MDLabel:
+                        bold: True
+                        font_size: "12sp"
+                    UiIcon:
+                        icon: "chevron-down"
+                UiError:
                     id: linea_error
                     text: ""
-                    theme_text_color: "Error"
-                    size_hint_y: None
-                    height: dp(20)
-
-                MDButton:
+                UiAction:
                     id: compartir_btn
-                    style: "filled"
-                    size_hint_y: None
-                    height: dp(44)
-                    pos_hint: {"center_x": 0.5}
+                    -bg: (.72, .16, .16, 1) if app.compartiendo else (.157, .404, .910, 1)
                     on_release: app.alternar_compartir()
-
-                    MDButtonText:
+                    UiIcon:
+                        icon: "stop-circle-outline" if app.compartiendo else "map-marker-radius-outline"
+                        -icon_color: 1, 1, 1, 1
+                    UiText:
                         id: compartir_btn_text
                         text: "INICIAR VIAJE"
-
-                MDLabel:
-                    id: estado_label
-                    text: "Tu ubicación no se está compartiendo."
-                    halign: "center"
-                    font_style: "Body"
-                    role: "small"
+                        -color: 1, 1, 1, 1
+                        bold: True
+                        halign: "center"
+                UiSurface:
                     size_hint_y: None
-                    height: dp(24)
-
-                MDLabel:
-                    text: "Avisar a otros pasajeros"
-                    bold: True
-                    size_hint_y: None
-                    height: dp(28)
-
-                MDLabel:
-                    text: "Usa la línea elegida arriba. Tu aviso le llega a quienes esperan ese bus."
-                    font_style: "Body"
-                    role: "small"
-                    size_hint_y: None
-                    height: dp(36)
-
+                    height: max(dp(60), estado_label.texture_size[1] + dp(24))
+                    UiIcon:
+                        icon: "broadcast" if app.compartiendo else "map-marker-off-outline"
+                        -icon_color: app.ui.exito if app.compartiendo else app.ui.secundario
+                    UiParagraph:
+                        id: estado_label
+                        text: "Tu ubicación no se está compartiendo."
+                        -color: app.ui.texto
+                        font_size: "12sp"
+                        pos_hint: {"center_y": .5}
+                UiParagraph:
+                    text: "Modo local: todavía no hay sincronización entre teléfonos. La ubicación y los avisos quedan en este dispositivo."
+                    font_size: "11sp"
+                UiSection:
+                    text: "¿Cómo está el bus?"
+                UiParagraph:
+                    text: "Reporta una novedad del recorrido seleccionado."
+                    font_size: "12sp"
                 GridLayout:
-                    cols: 2
-                    spacing: dp(8)
+                    cols: 1 if self.width < dp(290) else 2
                     size_hint_y: None
-                    height: dp(96)
-                    row_default_height: dp(44)
-                    row_force_default: True
-
-                    MDButton:
-                        style: "tonal"
-                        theme_width: "Custom"
-                        size_hint_x: 1
+                    height: dp(222) if self.cols == 1 else dp(108)
+                    spacing: dp(10)
+                    UiButton:
+                        primary: False
+                        text: "Bus lleno"
+                        -tinta: app.ui.rojo
+                        icon: "account-group-outline"
                         on_release: app.enviar_aviso("lleno")
-
-                        MDButtonIcon:
-                            icon: "account-group"
-
-                        MDButtonText:
-                            text: "Bus lleno"
-
-                    MDButton:
-                        style: "tonal"
-                        theme_width: "Custom"
-                        size_hint_x: 1
+                    UiButton:
+                        primary: False
+                        text: "Hay asientos"
+                        -tinta: app.ui.exito
+                        icon: "seat-passenger"
                         on_release: app.enviar_aviso("asientos")
-
-                        MDButtonIcon:
-                            icon: "seat-passenger"
-
-                        MDButtonText:
-                            text: "Hay asientos"
-
-                    MDButton:
-                        style: "tonal"
-                        theme_width: "Custom"
-                        size_hint_x: 1
+                    UiButton:
+                        primary: False
+                        text: "Atraso"
+                        -tinta: app.ui.aviso
+                        icon: "clock-alert-outline"
                         on_release: app.abrir_menu_atraso(self)
-
-                        MDButtonIcon:
-                            icon: "clock-alert"
-
-                        MDButtonText:
-                            text: "Atrasado"
-
-                    MDButton:
-                        style: "tonal"
-                        theme_width: "Custom"
-                        size_hint_x: 1
+                    UiButton:
+                        primary: False
+                        text: "Desvío"
+                        -tinta: app.ui.aviso
+                        icon: "map-marker-alert-outline"
                         on_release: app.enviar_aviso("cambio_ruta")
-
-                        MDButtonIcon:
-                            icon: "map-marker-alert"
-
-                        MDButtonText:
-                            text: "Cambio de ruta"
-
 
 <AvisosScreen>:
     BoxLayout:
         orientation: "vertical"
-
-        TopBar:
-            MDLabel:
-                text: "Avisos"
-                bold: True
-                theme_text_color: "Custom"
-                text_color: 1, 1, 1, 1
-                pos_hint: {"center_y": 0.5}
-
-        BoxLayout:
-            orientation: "vertical"
-            padding: dp(12), dp(8), dp(12), dp(4)
-            spacing: dp(8)
-
-            MDCard:
-                style: "outlined"
-                orientation: "horizontal"
-                size_hint_y: None
-                height: dp(56)
-                padding: dp(12), dp(6)
-                radius: [14]
-
-                MDLabel:
-                    text: "Solo mis rutas favoritas"
-                    font_style: "Body"
-                    role: "medium"
-
-                MDSwitch:
-                    pos_hint: {"center_y": 0.5}
-                    on_active: app.alternar_solo_favoritas(self.active)
-
-            MDLabel:
-                id: avisos_vacio
-                text: ""
-                font_style: "Body"
-                role: "small"
-                size_hint_y: None
-                height: dp(40)
-
-            ScrollView:
+        UiHeader:
+            titulo: "Avisos de viaje"
+            subtitulo: "Ocupación, atrasos y cambios de ruta"
+        UiScroll:
+            UiBody:
+                UiSurface:
+                    size_hint_y: None
+                    height: dp(64)
+                    UiIcon:
+                        icon: "star-outline"
+                    UiParagraph:
+                        text: "Solo mis rutas favoritas"
+                        -color: app.ui.texto
+                        bold: True
+                        font_size: "12sp"
+                        pos_hint: {"center_y": .5}
+                    UiSwitch:
+                        id: filtro_favoritas
+                        on_active: app.alternar_solo_favoritas(self.active)
+                UiParagraph:
+                    text: "Reportes locales, no información oficial. Los vencidos se conservan en el historial por hasta 2 horas."
+                    font_size: "11sp"
+                UiParagraph:
+                    id: avisos_vacio
+                    -height: dp(40)
+                    text: ""
                 MDBoxLayout:
                     id: avisos_box
-                    orientation: "vertical"
-                    spacing: dp(8)
-                    padding: 0, 0, 0, dp(8)
                     adaptive_height: True
-
+                    orientation: "vertical"
+                    spacing: dp(12)
 
 <AjustesScreen>:
     BoxLayout:
         orientation: "vertical"
-
-        TopBar:
-            MDLabel:
-                text: "Ajustes"
-                bold: True
-                theme_text_color: "Custom"
-                text_color: 1, 1, 1, 1
-                pos_hint: {"center_y": 0.5}
-
-        BoxLayout:
-            orientation: "vertical"
-            padding: dp(12), dp(10)
-            spacing: dp(10)
-
-            MDCard:
-                style: "outlined"
-                orientation: "horizontal"
-                size_hint_y: None
-                height: dp(64)
-                padding: dp(12), dp(8)
-                radius: [14]
-
-                MDLabel:
-                    text: "Tema oscuro"
-                    font_style: "Body"
-                    role: "medium"
-
-                MDSwitch:
-                    id: switch_tema
-                    pos_hint: {"center_y": 0.5}
-                    on_active: app.cambiar_tema(self.active)
-
-            MDCard:
-                style: "outlined"
-                orientation: "horizontal"
-                size_hint_y: None
-                height: dp(72)
-                padding: dp(12), dp(8)
-                radius: [14]
-
-                MDLabel:
-                    text: "Avisarme de atrasos y buses llenos en mis rutas favoritas"
-                    font_style: "Body"
-                    role: "medium"
-
-                MDSwitch:
-                    id: switch_notif
-                    active: True
-                    pos_hint: {"center_y": 0.5}
-                    on_active: app.cambiar_notificaciones(self.active)
-
-            MDButton:
-                style: "outlined"
-                size_hint_y: None
-                height: dp(40)
-                pos_hint: {"center_x": 0.5}
-                on_release: app.simular_aviso()
-
-                MDButtonIcon:
-                    icon: "flask-outline"
-
-                MDButtonText:
-                    text: "Simular aviso de otro pasajero (demo)"
-
-            MDCard:
-                style: "outlined"
-                orientation: "vertical"
-                size_hint_y: None
-                height: dp(150)
-                padding: dp(12), dp(8)
-                spacing: dp(4)
-                radius: [14]
-
-                MDLabel:
+        UiHeader:
+            titulo: "Ajustes"
+            subtitulo: "Una experiencia a tu medida"
+        UiScroll:
+            UiBody:
+                UiSection:
+                    text: "Preferencias"
+                UiSurface:
+                    size_hint_y: None
+                    height: dp(70)
+                    UiIcon:
+                        icon: "weather-night"
+                    BoxLayout:
+                        orientation: "vertical"
+                        UiText:
+                            text: "Tema oscuro"
+                            bold: True
+                        UiText:
+                            text: "Cambia la apariencia completa"
+                            -color: app.ui.secundario
+                            font_size: "10sp"
+                    UiSwitch:
+                        id: switch_tema
+                        on_active: app.cambiar_tema(self.active)
+                UiSurface:
+                    size_hint_y: None
+                    height: dp(80)
+                    UiIcon:
+                        icon: "bell-outline"
+                    BoxLayout:
+                        orientation: "vertical"
+                        UiText:
+                            text: "Notificaciones"
+                            bold: True
+                        UiParagraph:
+                            text: "Avisos de atrasos y buses llenos en tus favoritas"
+                            font_size: "10sp"
+                    UiSwitch:
+                        id: switch_notif
+                        active: True
+                        on_active: app.cambiar_notificaciones(self.active)
+                UiSection:
                     text: "Configuración remota"
-                    bold: True
-                    font_style: "Body"
-                    role: "medium"
+                UiSurface:
+                    orientation: "vertical"
                     size_hint_y: None
-                    height: dp(24)
-
-                MDLabel:
-                    id: cfg_estado
-                    text: ""
-                    font_style: "Body"
-                    role: "small"
-
-                MDButton:
-                    style: "text"
-                    size_hint_y: None
-                    height: dp(36)
-                    on_release: app.actualizar_config_remota()
-
-                    MDButtonIcon:
+                    height: cfg_estado.height + dp(92)
+                    UiParagraph:
+                        id: cfg_estado
+                        text: "Consultando configuración…"
+                        -color: app.ui.texto
+                        font_size: "11sp"
+                    UiButton:
+                        primary: False
+                        text: "Actualizar configuración"
                         icon: "cloud-refresh-outline"
-
-                    MDButtonText:
-                        text: "Actualizar"
-
-            MDButton:
-                style: "outlined"
-                size_hint_y: None
-                height: dp(40)
-                pos_hint: {"center_x": 0.5}
-                on_release: app.cerrar_sesion()
-
-                MDButtonIcon:
-                    icon: "logout"
-
-                MDButtonText:
+                        on_release: app.actualizar_config_remota()
+                UiSection:
+                    text: "Demostración"
+                UiButton:
+                    primary: False
+                    text: "Simular aviso de pasajero"
+                    icon: "flask-outline"
+                    on_release: app.simular_aviso()
+                UiParagraph:
+                    text: "Agrega un aviso de ejemplo en este dispositivo."
+                    font_size: "11sp"
+                UiButton:
+                    primary: False
                     text: "Cerrar sesión"
-
-            MDLabel:
-                text: "EnRuta Ya! v2.0"
-                halign: "center"
-                font_style: "Body"
-                role: "small"
-                size_hint_y: None
-                height: dp(20)
-
-            Widget:
-
+                    icon: "logout"
+                    on_release: app.cerrar_sesion()
+                UiParagraph:
+                    text: "EnRuta Ya! · Versión 2.0"
+                    font_size: "11sp"
+                    halign: "center"
 
 <PerfilScreen>:
     BoxLayout:
         orientation: "vertical"
-
-        TopBar:
-            MDLabel:
-                text: "Mi perfil"
-                bold: True
-                theme_text_color: "Custom"
-                text_color: 1, 1, 1, 1
-                pos_hint: {"center_y": 0.5}
-
-        ScrollView:
-            MDBoxLayout:
-                orientation: "vertical"
-                spacing: dp(10)
-                padding: dp(12), dp(10), dp(12), dp(8)
-                adaptive_height: True
-
-                MDCard:
-                    style: "filled"
-                    orientation: "horizontal"
+        UiHeader:
+            titulo: "Mi perfil"
+            subtitulo: "Tus rutas, tu viaje, tus preferencias"
+        UiScroll:
+            UiBody:
+                UiSurface:
                     size_hint_y: None
-                    height: dp(88)
-                    padding: dp(14)
-                    spacing: dp(14)
-                    radius: [16]
-
-                    MDIcon:
-                        icon: "account-circle"
-                        font_size: "56sp"
-                        size_hint_x: None
-                        width: dp(64)
-                        pos_hint: {"center_y": 0.5}
-
+                    height: dp(84)
+                    UiAvatar:
+                        pos_hint: {"center_y": .5}
                     BoxLayout:
                         orientation: "vertical"
-
-                        MDLabel:
+                        UiText:
                             id: nombre_label
                             text: "Usuario"
                             bold: True
-                            font_style: "Title"
-                            role: "medium"
-
-                        MDLabel:
+                            font_size: "18sp"
+                        UiText:
                             id: usuario_label
                             text: ""
-                            font_style: "Body"
-                            role: "small"
-
-                MDTextField:
+                            -color: app.ui.secundario
+                            font_size: "12sp"
+                UiSection:
+                    text: "Datos personales"
+                UiField:
                     id: nombre_field
-                    mode: "outlined"
-                    size_hint_y: None
-                    height: dp(64)
                     on_text_validate: app.guardar_nombre(self)
-
                     MDTextFieldHintText:
                         text: "Cambiar nombre"
-
                     MDTextFieldHelperText:
                         text: "Escribe un nombre (máx. 30 caracteres)"
                         mode: "on_error"
-
-                MDButton:
-                    style: "tonal"
-                    size_hint_y: None
-                    height: dp(40)
-                    pos_hint: {"center_x": 0.5}
+                UiButton:
+                    primary: False
+                    text: "Guardar nombre"
+                    icon: "check"
                     on_release: app.guardar_nombre(nombre_field)
-
-                    MDButtonText:
-                        text: "GUARDAR NOMBRE"
-
-                MDBoxLayout:
+                BoxLayout:
                     size_hint_y: None
-                    height: dp(84)
-                    spacing: dp(10)
-
-                    MDCard:
-                        style: "elevated"
+                    height: dp(80)
+                    spacing: dp(12)
+                    UiSurface:
                         orientation: "vertical"
-                        padding: dp(8)
-                        radius: [14]
-
-                        MDLabel:
+                        padding: dp(12), dp(8)
+                        spacing: dp(2)
+                        UiText:
                             id: viajes_num
                             text: "0"
-                            halign: "center"
+                            font_size: "24sp"
                             bold: True
-                            font_style: "Headline"
-                            role: "small"
-
-                        MDLabel:
+                            -color: app.ui.azul
+                        UiText:
                             text: "Viajes compartidos"
-                            halign: "center"
-                            font_style: "Body"
-                            role: "small"
-
-                    MDCard:
-                        style: "elevated"
+                            font_size: "10sp"
+                            -color: app.ui.secundario
+                    UiSurface:
                         orientation: "vertical"
-                        padding: dp(8)
-                        radius: [14]
-
-                        MDLabel:
+                        padding: dp(12), dp(8)
+                        spacing: dp(2)
+                        UiText:
                             id: fav_num
                             text: "0"
-                            halign: "center"
+                            font_size: "24sp"
                             bold: True
-                            font_style: "Headline"
-                            role: "small"
-
-                        MDLabel:
+                            -color: app.ui.azul
+                        UiText:
                             text: "Rutas favoritas"
-                            halign: "center"
-                            font_style: "Body"
-                            role: "small"
-
-                MDCard:
-                    style: "outlined"
-                    orientation: "horizontal"
+                            font_size: "10sp"
+                            -color: app.ui.secundario
+                UiSurface:
                     size_hint_y: None
-                    height: dp(64)
-                    padding: dp(12), dp(8)
-                    radius: [14]
-
-                    MDLabel:
-                        text: "Permitir compartir mi ubicación durante viajes"
-                        font_style: "Body"
-                        role: "medium"
-
-                    MDSwitch:
+                    height: dp(80)
+                    UiIcon:
+                        icon: "shield-account-outline"
+                    UiParagraph:
+                        text: "Permitir mi ubicación durante viajes. Puedes revocar el permiso cuando quieras."
+                        -color: app.ui.texto
+                        font_size: "11sp"
+                        pos_hint: {"center_y": .5}
+                    UiSwitch:
                         id: switch_consent
                         on_active: app.cambiar_consentimiento(self.active)
-
-                MDLabel:
+                UiSection:
                     text: "Mis rutas favoritas"
-                    bold: True
-                    size_hint_y: None
-                    height: dp(28)
-
-                MDLabel:
+                UiParagraph:
                     id: fav_vacio
-                    text: "Aún no tienes favoritas. Toca un recorrido y agrégalo."
-                    font_style: "Body"
-                    role: "small"
-                    size_hint_y: None
-                    height: dp(40)
-
+                    -height: dp(40)
+                    text: "Aún no tienes favoritas. Abre un recorrido y guárdalo desde su detalle."
                 MDBoxLayout:
                     id: fav_box
-                    orientation: "vertical"
-                    spacing: dp(6)
                     adaptive_height: True
+                    orientation: "vertical"
+                    spacing: dp(12)
 
-
-# ----------------------------------------------------------
-# Autenticación: login y registro
-# ----------------------------------------------------------
 <LoginScreen>:
-    ScrollView:
+    UiScroll:
         MDBoxLayout:
-            orientation: "vertical"
             adaptive_height: True
-            padding: dp(24), dp(48), dp(24), dp(24)
-            spacing: dp(10)
-
-            MDIcon:
-                icon: "bus"
-                font_size: "64sp"
-                halign: "center"
-                pos_hint: {"center_x": 0.5}
-                theme_text_color: "Custom"
-                text_color: AZUL_CLARO
+            AnchorLayout:
                 size_hint_y: None
-                height: dp(72)
-
-            MDLabel:
-                text: "EnRuta Ya!"
-                halign: "center"
-                bold: True
-                font_style: "Headline"
-                role: "medium"
-                size_hint_y: None
-                height: dp(40)
-
-            MDLabel:
-                text: "Inicia sesión para ver tus rutas y avisos"
-                halign: "center"
-                font_style: "Body"
-                role: "medium"
-                size_hint_y: None
-                height: dp(28)
-
-            Widget:
-                size_hint_y: None
-                height: dp(12)
-
-            MDTextField:
-                id: usuario
-                mode: "outlined"
-                size_hint_y: None
-                height: dp(64)
-                multiline: False
-                write_tab: False
-                on_text: self.error = False
-                on_text_validate: clave.focus = True
-
-                MDTextFieldLeadingIcon:
-                    icon: "account-outline"
-
-                MDTextFieldHintText:
-                    text: "Usuario"
-
-            MDLabel:
-                id: err_usuario
-                text: ""
-                theme_text_color: "Error"
-                font_style: "Body"
-                role: "small"
-                size_hint_y: None
-                height: dp(18)
-
-            MDTextField:
-                id: clave
-                mode: "outlined"
-                size_hint_y: None
-                height: dp(64)
-                password: True
-                multiline: False
-                write_tab: False
-                on_text_validate: app.hacer_login()
-
-                MDTextFieldLeadingIcon:
-                    icon: "lock-outline"
-
-                MDTextFieldHintText:
-                    text: "Contraseña"
-
-            MDLabel:
-                id: err_general
-                text: ""
-                theme_text_color: "Error"
-                font_style: "Body"
-                role: "small"
-                size_hint_y: None
-                height: dp(24)
-
-            MDButton:
-                style: "filled"
-                size_hint_y: None
-                height: dp(48)
-                pos_hint: {"center_x": 0.5}
-                on_release: app.hacer_login()
-
-                MDButtonText:
-                    text: "INGRESAR"
-
-            MDButton:
-                style: "text"
-                size_hint_y: None
-                height: dp(40)
-                pos_hint: {"center_x": 0.5}
-                on_release: app.cambiar_pantalla("registro")
-
-                MDButtonText:
-                    text: "¿No tienes cuenta? Regístrate"
-
+                height: login_form.height + dp(40)
+                UiBody:
+                    id: login_form
+                    spacing: dp(8)
+                    size_hint_x: None
+                    width: min(dp(420), self.parent.width)
+                    UiBrand:
+                    UiSection:
+                        text: "Bienvenido de nuevo"
+                    UiParagraph:
+                        text: "Inicia sesión para consultar tus rutas y guardar favoritas."
+                        font_size: "12sp"
+                    UiField:
+                        id: usuario
+                        on_text_validate: clave.focus = True
+                        MDTextFieldLeadingIcon:
+                            icon: "account-outline"
+                        MDTextFieldHintText:
+                            text: "Usuario"
+                    UiError:
+                        id: err_usuario
+                        text: ""
+                    UiField:
+                        id: clave
+                        password: True
+                        on_text_validate: app.hacer_login()
+                        MDTextFieldLeadingIcon:
+                            icon: "lock-outline"
+                        MDTextFieldHintText:
+                            text: "Contraseña"
+                    UiError:
+                        id: err_general
+                        text: ""
+                    UiButton:
+                        id: ingresar_btn
+                        text: "Iniciar sesión"
+                        icon: "login"
+                        on_release: app.hacer_login()
+                    UiButton:
+                        primary: False
+                        text: "Crear una cuenta"
+                        icon: "account-plus-outline"
+                        on_release: app.cambiar_pantalla("registro")
+                    UiNotice:
+                        text: "Tu ubicación solo se utiliza con tu permiso. Esta versión guarda los datos en el dispositivo."
+                        icon: "shield-check-outline"
 
 <RegistroScreen>:
-    ScrollView:
+    UiScroll:
         MDBoxLayout:
-            orientation: "vertical"
             adaptive_height: True
-            padding: dp(24), dp(36), dp(24), dp(24)
-            spacing: dp(8)
-
-            MDLabel:
-                text: "Crear cuenta"
-                halign: "center"
-                bold: True
-                font_style: "Headline"
-                role: "medium"
+            AnchorLayout:
                 size_hint_y: None
-                height: dp(44)
-
-            MDLabel:
-                text: "Tus favoritas, viajes y ajustes se guardan en tu cuenta"
-                halign: "center"
-                font_style: "Body"
-                role: "medium"
-                size_hint_y: None
-                height: dp(28)
-
-            Widget:
-                size_hint_y: None
-                height: dp(10)
-
-            MDTextField:
-                id: usuario
-                mode: "outlined"
-                size_hint_y: None
-                height: dp(64)
-                multiline: False
-                write_tab: False
-                on_text_validate: clave.focus = True
-
-                MDTextFieldLeadingIcon:
-                    icon: "account-outline"
-
-                MDTextFieldHintText:
-                    text: "Usuario (3 a 20 caracteres)"
-
-            MDLabel:
-                id: err_usuario
-                text: ""
-                theme_text_color: "Error"
-                font_style: "Body"
-                role: "small"
-                size_hint_y: None
-                height: dp(18)
-
-            MDTextField:
-                id: clave
-                mode: "outlined"
-                size_hint_y: None
-                height: dp(64)
-                password: True
-                multiline: False
-                write_tab: False
-                on_text_validate: repetir.focus = True
-
-                MDTextFieldLeadingIcon:
-                    icon: "lock-outline"
-
-                MDTextFieldHintText:
-                    text: "Contraseña (mín. 6, con letra y número)"
-
-            MDLabel:
-                id: err_clave
-                text: ""
-                theme_text_color: "Error"
-                font_style: "Body"
-                role: "small"
-                size_hint_y: None
-                height: dp(18)
-
-            MDTextField:
-                id: repetir
-                mode: "outlined"
-                size_hint_y: None
-                height: dp(64)
-                password: True
-                multiline: False
-                write_tab: False
-                on_text_validate: app.hacer_registro()
-
-                MDTextFieldLeadingIcon:
-                    icon: "lock-check-outline"
-
-                MDTextFieldHintText:
-                    text: "Repetir contraseña"
-
-            MDLabel:
-                id: err_repetir
-                text: ""
-                theme_text_color: "Error"
-                font_style: "Body"
-                role: "small"
-                size_hint_y: None
-                height: dp(18)
-
-            MDLabel:
-                id: err_general
-                text: ""
-                theme_text_color: "Error"
-                font_style: "Body"
-                role: "small"
-                size_hint_y: None
-                height: dp(18)
-
-            MDButton:
-                style: "filled"
-                size_hint_y: None
-                height: dp(48)
-                pos_hint: {"center_x": 0.5}
-                on_release: app.hacer_registro()
-
-                MDButtonText:
-                    text: "CREAR CUENTA"
-
-            MDButton:
-                style: "text"
-                size_hint_y: None
-                height: dp(40)
-                pos_hint: {"center_x": 0.5}
-                on_release: app.cambiar_pantalla("login")
-
-                MDButtonText:
-                    text: "¿Ya tienes cuenta? Inicia sesión"
+                height: registro_form.height + dp(32)
+                UiBody:
+                    id: registro_form
+                    spacing: dp(8)
+                    size_hint_x: None
+                    width: min(dp(420), self.parent.width)
+                    UiBrand:
+                    UiSection:
+                        text: "Crea tu cuenta"
+                    UiParagraph:
+                        text: "Tus favoritas y preferencias, en un solo lugar."
+                        font_size: "12sp"
+                    UiField:
+                        id: usuario
+                        on_text_validate: clave.focus = True
+                        MDTextFieldLeadingIcon:
+                            icon: "account-outline"
+                        MDTextFieldHintText:
+                            text: "Usuario (3 a 20 caracteres)"
+                    UiError:
+                        id: err_usuario
+                        text: ""
+                    UiField:
+                        id: clave
+                        password: True
+                        on_text_validate: repetir.focus = True
+                        MDTextFieldLeadingIcon:
+                            icon: "lock-outline"
+                        MDTextFieldHintText:
+                            text: "Contraseña"
+                    UiParagraph:
+                        text: "Mínimo 6 caracteres, con una letra y un número."
+                        font_size: "10sp"
+                    UiError:
+                        id: err_clave
+                        text: ""
+                    UiField:
+                        id: repetir
+                        password: True
+                        on_text_validate: app.hacer_registro()
+                        MDTextFieldLeadingIcon:
+                            icon: "lock-check-outline"
+                        MDTextFieldHintText:
+                            text: "Repetir contraseña"
+                    UiError:
+                        id: err_repetir
+                        text: ""
+                    UiError:
+                        id: err_general
+                        text: ""
+                    UiButton:
+                        id: registrar_btn
+                        text: "Crear cuenta"
+                        icon: "account-plus-outline"
+                        on_release: app.hacer_registro()
+                    UiButton:
+                        primary: False
+                        text: "Ya tengo cuenta"
+                        icon: "login"
+                        on_release: app.cambiar_pantalla("login")

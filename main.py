@@ -8,10 +8,12 @@ import traceback
 from kivy.animation import Animation
 from kivy.base import ExceptionHandler, ExceptionManager
 from kivy.clock import Clock
+from kivy.core.window import Window
 from kivy.lang import Builder
 from kivy.metrics import dp
-from kivy.properties import ListProperty, StringProperty
+from kivy.properties import BooleanProperty, ListProperty, NumericProperty, ObjectProperty, StringProperty
 from kivy.uix.screenmanager import Screen
+from kivy.utils import platform
 from kivy_garden.mapview import MapView, MapMarker, MapMarkerPopup  # noqa: F401
 try:
     from plyer import gps
@@ -38,6 +40,7 @@ from datos_rutas import (COORDENADAS, GRIS, LOCALIDADES, NARANJA, ROJO, RUTAS,
 from servicios import almacenamiento, autenticacion, config_remota
 from servicios.autenticacion import ErrorAutenticacion
 from servicios.notificaciones import notificar as enviar_notificacion
+from tema import PaletaVisual
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
@@ -80,11 +83,25 @@ class LineaCard(MDCard):
     aviso_color = ListProperty(GRIS)
 
 
+class HomeBusCard(MDCard):
+    """Variante de Inicio; conserva intactas las tarjetas de otras pantallas."""
+    ruta = StringProperty("")
+    detalle = StringProperty("")
+    minutos = StringProperty("")
+    aviso = StringProperty("")
+    aviso_color = ListProperty(GRIS)
+    ocupacion = StringProperty("Sin dato")
+    actualizacion = StringProperty("Sin reportes recientes")
+    estado_icono = StringProperty("information-outline")
+
+
 class AvisoCard(MDCard):
     icono = StringProperty("bell")
     titulo = StringProperty("")
     detalle = StringProperty("")
     color = ListProperty(GRIS)
+    antiguedad = StringProperty("")
+    vencido = BooleanProperty(False)
 
 
 class LoginScreen(Screen):
@@ -159,6 +176,8 @@ class MarcadorBus(MapMarker):
 # Aplicación
 # ------------------------------------------------------------
 class InterurbanoApp(MDApp):
+    ui = ObjectProperty(None)
+    safe_bottom = NumericProperty(0)
     menu_origen = None
     menu_linea = None
     dialogo = None
@@ -167,11 +186,13 @@ class InterurbanoApp(MDApp):
     gps_activo = False
     panel_expandido = False
     consentimiento = False   # ¿el usuario aceptó compartir ubicación?
-    compartiendo = False
+    compartiendo = BooleanProperty(False)
     linea_actual = ""
     favoritas = []
     viajes = 0
     avisos = []               # más nuevo primero: {ruta, tipo, minutos, ts, propio, autor}
+    recorrido_home = ""
+    menu_recorrido_home = None
     origen_actual = ""
     menu_atraso = None
     notificar_favoritas = True
@@ -185,8 +206,11 @@ class InterurbanoApp(MDApp):
     fuente_config = ""        # "remota" | "caché" | "valor por defecto"
 
     def build(self):
+        self.ui = PaletaVisual()
         self.theme_cls.primary_palette = "Blue"
         self.theme_cls.theme_style = "Light"
+        self.theme_cls.bind(theme_style=self._aplicar_tema_visual)
+        self._aplicar_tema_visual()
         self.title = "EnRuta Ya!"
         self.favoritas = []
         self.avisos = []
@@ -194,15 +218,59 @@ class InterurbanoApp(MDApp):
         # Configuración inmediata (caché o valores por defecto); la remota
         # llega después, en on_start, sin bloquear la interfaz.
         self.config, self.fuente_config = config_remota.cargar_local()
+        Builder.load_file(os.path.join(BASE_DIR, "componentes.kv"))
         return Builder.load_file(os.path.join(BASE_DIR, "root.kv"))
 
+    def _aplicar_tema_visual(self, *args):
+        self.ui.aplicar(self.theme_cls.theme_style == "Dark")
+        # Los controles MD conservados (campos, switches, menús y diálogos)
+        # usan el mismo esquema que los componentes KV, incluso al cambiar tema.
+        Clock.schedule_once(self._sincronizar_colores_md)
+
+    def _sincronizar_colores_md(self, *args):
+        colores = {"primaryColor": self.ui.azul, "surfaceColor": self.ui.fondo,
+                   "surfaceContainerColor": self.ui.tarjeta,
+                   "surfaceContainerHighColor": self.ui.tarjeta,
+                   "onSurfaceColor": self.ui.texto,
+                   "onSurfaceVariantColor": self.ui.secundario,
+                   "outlineColor": self.ui.borde, "errorColor": self.ui.rojo}
+        for nombre, color in colores.items():
+            setattr(self.theme_cls, nombre, color)
+
     def on_start(self):
+        Window.softinput_mode = "below_target"
+        Window.bind(size=self._actualizar_zona_segura)
+        self._actualizar_zona_segura()
         self.root.ids.sm.get_screen("home").ids.mapa.bind(zoom=self._ajustar_marcadores)
         self.cargar_avisos()
         self._aplicar_config(self.config, self.fuente_config)
         self.actualizar_config_remota()
         # Cada minuto se actualizan los "hace X min" y se descartan avisos vencidos.
         Clock.schedule_interval(lambda dt: self.refrescar_avisos(), 60)
+
+    def _actualizar_zona_segura(self, *args):
+        """Reserva el borde inferior solo si la ventana invade barras Android.
+
+        En escritorio y ventanas donde Android ya reserva las barras, vale 0.
+        Pyjnius lo aporta el empaquetado Android; no se exige en escritorio.
+        """
+        self.safe_bottom = 0
+        if platform != "android":
+            return
+        try:
+            from jnius import autoclass
+            actividad = autoclass("org.kivy.android.PythonActivity").mActivity
+            decor = actividad.getWindow().getDecorView()
+            insets = decor.getRootWindowInsets()
+            if insets is not None:
+                visible = autoclass("android.graphics.Rect")()
+                decor.getWindowVisibleDisplayFrame(visible)
+                self.safe_bottom = max(0, min(insets.getStableInsetBottom(),
+                                              Window.height - visible.height()))
+        except Exception:
+            # Android antiguo o proveedor sin insets: se mantiene el área que
+            # el sistema ya entrega a SDL, sin inventar una altura de barra.
+            pass
 
     def _ajustar_marcadores(self, *args):
         """Achica/agranda los iconos de bus según el zoom actual del mapa."""
@@ -211,7 +279,7 @@ class InterurbanoApp(MDApp):
         except Exception:
             return
         buses = [m for m in self._marcadores if isinstance(m, MarcadorBus)]
-        if self.marcador_yo:
+        if isinstance(self.marcador_yo, MarcadorBus):
             buses.append(self.marcador_yo)
         for m in buses:
             m.ajustar_zoom(zoom)
@@ -418,7 +486,8 @@ class InterurbanoApp(MDApp):
             self.menu_origen.dismiss()
         home = self._pantalla("home")
         home.ids.origen_text.text = lugar
-        home.ids.lineas_titulo.text = f"Buses desde {lugar} (toca uno para ver más)"
+        self.recorrido_home = ""
+        home.ids.recorrido_text.text = "Todos los destinos"
         self.origen_actual = lugar
         self._llenar_lineas_home()
         self.actualizar_mapa(home.ids.mapa, lugar)
@@ -433,14 +502,63 @@ class InterurbanoApp(MDApp):
         caja = home.ids.lineas_box
         caja.clear_widgets()
         for d in LOCALIDADES[self.origen_actual]:
-            caja.add_widget(self._tarjeta(d["ruta"]))
+            if self.recorrido_home and d["ruta"] != self.recorrido_home:
+                continue
+            texto, color = self._texto_estado(d["ruta"])
+            recientes = [a for a in self.avisos if a["ruta"] == d["ruta"]]
+            if not any(time.time() - a["ts"] < self.vigencia_s for a in recientes):
+                texto = "Reporte desactualizado" if recientes else "Sin reportes recientes"
+                color = GRIS
+            ocupacion, atraso, cambio = self._estado_ruta(d["ruta"])
+            ultimo = max((a["ts"] for a in recientes), default=None)
+            icono = ("map-marker-alert-outline" if cambio else "clock-alert-outline" if atraso
+                     else TIPOS_AVISO[ocupacion["tipo"]]["icono"] if ocupacion
+                     else "information-outline")
+            color = ((0.075, 0.60, 0.435, 1) if color == VERDE else color)
+            caja.add_widget(HomeBusCard(
+                ruta=d["ruta"], detalle=d["parada"], minutos=d.get("minutos") or "Sin ETA",
+                aviso=texto, aviso_color=list(color), estado_icono=icono,
+                ocupacion=TIPOS_AVISO[ocupacion["tipo"]]["texto"] if ocupacion else "Sin dato",
+                actualizacion=f"Reporte local · {self._hace(ultimo)}" if ultimo else "Sin actualización real"))
+
+    def abrir_recorrido_home(self, boton):
+        if not self.origen_actual:
+            self._snack("Primero elige una localidad")
+            return
+        rutas = [""] + [d["ruta"] for d in LOCALIDADES[self.origen_actual]]
+        self.menu_recorrido_home = MDDropdownMenu(caller=boton, items=[
+            {"text": ruta or "Todos los recorridos",
+             "on_release": lambda r=ruta: self.seleccionar_recorrido_home(r)}
+            for ruta in rutas])
+        self.menu_recorrido_home.open()
+
+    def seleccionar_recorrido_home(self, ruta):
+        if self.menu_recorrido_home:
+            self.menu_recorrido_home.dismiss()
+        self.recorrido_home = ruta
+        home = self._pantalla("home")
+        home.ids.recorrido_text.text = ruta.split("->")[-1].strip() if ruta else "Todos los destinos"
+        self._llenar_lineas_home()
+        self.actualizar_mapa(home.ids.mapa, self.origen_actual)
+
+    def ajustar_panel_home(self, *args):
+        home = self._pantalla("home")
+        Animation.cancel_all(home.ids.panel_buses, "height")
+        home.ids.panel_buses.height = self._alto_panel_home(home)
+        home.ids.panel_icono.icon = "chevron-down" if self.panel_expandido else "chevron-up"
+
+    def _alto_panel_home(self, home):
+        fijo = (home.ids.home_header.height + home.ids.home_selectors.height
+                + home.ids.banner.height)
+        return min(dp(248), max(dp(48), (home.height - fijo) * .38)) if self.panel_expandido else dp(48)
 
     def alternar_panel_buses(self):
         """Expande o colapsa el panel de 'Buses desde...' para estorbar
         menos la vista del mapa."""
         home = self._pantalla("home")
         self.panel_expandido = not self.panel_expandido
-        alto = dp(260) if self.panel_expandido else dp(48)
+        alto = self._alto_panel_home(home)
+        Animation.cancel_all(home.ids.panel_buses, "height")
         Animation(height=alto, d=0.18, t="out_quad").start(home.ids.panel_buses)
         home.ids.panel_icono.icon = "chevron-down" if self.panel_expandido else "chevron-up"
 
@@ -465,6 +583,8 @@ class InterurbanoApp(MDApp):
         self._marcadores.append(parada)
 
         for d in LOCALIDADES[lugar]:
+            if self.recorrido_home and d["ruta"] != self.recorrido_home:
+                continue
             destino = d["ruta"].split("->")[-1].strip()
             if destino not in COORDENADAS:
                 continue
@@ -486,14 +606,16 @@ class InterurbanoApp(MDApp):
         self._ajustar_marcadores()
 
     # --------------------------------------------------------
-    # Botón "reubicarme" del mapa: centra en mi posición GPS real
-    # y me dibuja como un bus en el mapa.
+    # Botón "reubicarme": identifica GPS o aproximación por IP y
+    # dibuja al usuario con un marcador distinto del bus de demostración.
     # --------------------------------------------------------
     def localizarme(self):
         """Botón de reubicarme: usa el GPS del dispositivo si existe
         (celular/tablet); en un PC de escritorio, que normalmente no
         tiene GPS, calcula una posición aproximada por IP en segundo
         plano para no congelar la interfaz."""
+        if self.marcador_yo:
+            self._pantalla("home").ids.mapa.center_on(self.marcador_yo.lat, self.marcador_yo.lon)
         if self.gps_activo:
             return
         if gps is not None:
@@ -502,13 +624,13 @@ class InterurbanoApp(MDApp):
                 gps.start(minTime=2000, minDistance=5)
                 self.gps_activo = True
                 return
-            except NotImplementedError:
+            except (NotImplementedError, PermissionError):
                 pass  # sin proveedor de GPS en este dispositivo -> sigue abajo
         threading.Thread(target=self._localizar_por_ip, daemon=True).start()
 
     def _localizar_por_ip(self):
         """Se ejecuta en un hilo aparte para no bloquear la app."""
-        lat, lon = COORDENADAS["Temuco"]  # último recurso si todo falla
+        lat = lon = None
         try:
             import requests
             r = requests.get("http://ip-api.com/json/", timeout=4)
@@ -517,26 +639,28 @@ class InterurbanoApp(MDApp):
                 lat, lon = datos["lat"], datos["lon"]
         except Exception as e:
             print("No se pudo obtener ubicación aproximada por IP:", e)
-        Clock.schedule_once(lambda dt: self.actualizar_mi_ubicacion(lat, lon))
+        if lat is not None and lon is not None:
+            Clock.schedule_once(lambda dt: self.actualizar_mi_ubicacion(lat, lon, "Aproximada por IP"))
+        else:
+            Clock.schedule_once(lambda dt: setattr(self._pantalla("home").ids.ubicacion_estado, "text", "Ubicación no disponible"))
 
     def on_gps_location(self, **kwargs):
         lat = kwargs.get("lat")
         lon = kwargs.get("lon")
         if lat is not None and lon is not None:
-            self.actualizar_mi_ubicacion(lat, lon)
+            Clock.schedule_once(lambda dt: self.actualizar_mi_ubicacion(lat, lon))
 
     def on_gps_status(self, stype, status):
         print(f"GPS [{stype}]: {status}")
 
-    def actualizar_mi_ubicacion(self, lat, lon):
+    def actualizar_mi_ubicacion(self, lat, lon, fuente="GPS del dispositivo"):
+        self._pantalla("home").ids.ubicacion_estado.text = fuente
         home = self._pantalla("home")
         mapa = home.ids.mapa
         if self.marcador_yo:
             mapa.remove_marker(self.marcador_yo)
-        self.marcador_yo = MarcadorBus(
+        self.marcador_yo = MapMarker(
             lat=lat, lon=lon,
-            source=ICONO_BUS if os.path.exists(ICONO_BUS)
-                   else "atlas://data/images/defaulttheme/checkbox_on",
             anchor_x=0.5, anchor_y=0.5,
         )
         mapa.add_marker(self.marcador_yo)
@@ -550,6 +674,7 @@ class InterurbanoApp(MDApp):
         self.gps_activo = False
 
     def on_stop(self):
+        Window.unbind(size=self._actualizar_zona_segura)
         self.detener_gps()
         self._guardar_perfil()
         self._guardar_avisos()
@@ -683,9 +808,9 @@ class InterurbanoApp(MDApp):
         self.dialogo = MDDialog(
             MDDialogHeadlineText(text="¿Compartir tu ubicación?"),
             MDDialogSupportingText(
-                text="Mientras vayas en la micro, otros usuarios verán la posición "
-                     "del bus en el mapa. Solo se comparte durante el viaje y "
-                     "puedes detenerlo cuando quieras."
+                text="En esta versión la posición se muestra solo en tu mapa; "
+                     "todavía no se sincroniza con otros teléfonos. Se utiliza "
+                     "durante el viaje y puedes detenerla cuando quieras."
             ),
             MDDialogButtonContainer(
                 MDButton(MDButtonText(text="Cancelar"), style="text",
@@ -710,7 +835,7 @@ class InterurbanoApp(MDApp):
         self.localizarme()
         p = self._pantalla("compartir")
         p.ids.compartir_btn_text.text = "DETENER VIAJE"
-        p.ids.estado_label.text = f"Compartiendo tu ubicación en {self.linea_actual}"
+        p.ids.estado_label.text = f"Ubicación local activa en {self.linea_actual}"
 
     def detener_compartir(self):
         self.compartiendo = False
@@ -868,6 +993,8 @@ class InterurbanoApp(MDApp):
                 titulo=self._titulo_aviso(a),
                 detalle=f'{a["ruta"]} · {self._hace(a["ts"])}',
                 color=list(t["color"]),
+                antiguedad=f'{time.strftime("%H:%M", time.localtime(a["ts"]))} · {self._hace(a["ts"])}',
+                vencido=ahora - a["ts"] > self.vigencia_s,
             ))
         pantalla.ids.avisos_vacio.text = (
             "No hay avisos en tus rutas favoritas." if self.solo_favoritas

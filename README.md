@@ -191,3 +191,23 @@ Ver [`USO_IA.md`](USO_IA.md).
 ## Documentación de diseño
 La fundamentación UX/UI (encuesta, hallazgos y decisiones) está en
 [`FUNDAMENTACION-UX-UI.md`](FUNDAMENTACION-UX-UI.md).
+
+El sistema visual compartido, las correcciones de KivyMD y la validación de las
+ocho pantallas están documentados en
+[`docs/REDISENO-INTEGRAL.md`](docs/REDISENO-INTEGRAL.md).
+Los colores claros/oscuros se centralizan en `tema.py` y los componentes en
+`componentes.kv`. La barra inferior es común a todas las secciones y se oculta
+en Login y Registro.
+
+Para verificar la interfaz desde la carpeta del proyecto:
+
+```powershell
+python -m unittest discover -v
+$env:KIVY_GL_BACKEND='angle_sdl2'  # Opcional en Windows, para capturas con ANGLE
+python tools/verificar_interfaz.py
+```
+
+El verificador genera capturas con datos de prueba en memoria y sin modificar
+los JSON personales. Véase [el resumen claro](docs/verificacion-ui/resumen-light.png)
+y [el resumen oscuro](docs/verificacion-ui/resumen-dark.png). La cartografía sigue
+siendo MapView; las descargas de teselas se aíslan durante esa verificación.
