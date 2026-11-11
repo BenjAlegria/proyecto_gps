@@ -515,43 +515,58 @@ BoxLayout:
 
 
 <LineaCard>:
+    # Tarjeta de recorrido compartida por Recorridos y Favoritas.
     style: "outlined"
     theme_bg_color: "Custom"
-    -md_bg_color: app.ui.tarjeta
+    -md_bg_color: app.ui.fondo
     theme_line_color: "Custom"
     -line_color: app.ui.borde
     orientation: "vertical"
     size_hint_y: None
-    height: dp(140)
-    radius: [dp(16)]
-    padding: dp(14)
-    spacing: dp(5)
+    height: dp(172)
+    radius: [dp(17)]
+    padding: dp(14), dp(12)
+    spacing: dp(7)
     on_release: app.mostrar_detalle(root.ruta)
+
     BoxLayout:
         size_hint_y: None
-        height: dp(40)
+        height: dp(45)
         spacing: dp(10)
-        UiIcon:
-            icon: "bus-side"
+        UiSurface:
+            size_hint: None, None
+            size: dp(42), dp(42)
+            pos_hint: {"center_y": .5}
+            corners: [dp(13)]
+            -bg: app.ui.suave
+            -stroke: 0, 0, 0, 0
+            padding: 0
+            AnchorLayout:
+                UiIcon:
+                    icon: "bus-side"
+                    font_size: "23sp"
+                    -icon_color: app.ui.azul
         BoxLayout:
             orientation: "vertical"
             UiText:
                 text: root.ruta.split("->")[0].strip()
                 bold: True
-                font_size: "15sp"
+                font_size: "14sp"
             BoxLayout:
                 spacing: dp(4)
                 UiIcon:
                     icon: "arrow-right"
-                    size: dp(16), dp(18)
+                    size: dp(16), dp(16)
                     font_size: "14sp"
+                    -icon_color: app.ui.azul
                 UiText:
                     text: root.ruta.split("->")[-1].strip()
                     font_size: "12sp"
+                    -color: app.ui.secundario
         BoxLayout:
             orientation: "vertical"
             size_hint_x: None
-            width: dp(72)
+            width: dp(76)
             UiText:
                 text: root.minutos
                 bold: True
@@ -563,30 +578,59 @@ BoxLayout:
                 -color: app.ui.secundario
                 font_size: "10sp"
                 halign: "right"
+
     UiText:
         text: root.detalle
         font_size: "11sp"
         -color: app.ui.secundario
-    UiText:
-        text: root.aviso
-        -color: app.ui.estado(root.aviso_color, app.ui.texto)
-        font_size: "11sp"
-        bold: True
-    UiText:
-        text: "Ver detalle y favoritos"
-        -color: app.ui.azul
-        font_size: "10sp"
+        size_hint_y: None
+        height: dp(20)
+
+    UiSurface:
+        size_hint_y: None
+        height: dp(30)
+        padding: dp(9), 0
+        spacing: dp(7)
+        corners: [dp(10)]
+        -bg: app.ui.suave
+        -stroke: 0, 0, 0, 0
+        UiIcon:
+            icon: "information-outline"
+            font_size: "16sp"
+            size: dp(18), dp(20)
+            -icon_color: app.ui.estado(root.aviso_color, app.ui.texto)
+        UiText:
+            text: root.aviso
+            font_size: "11sp"
+            bold: True
+            -color: app.ui.estado(root.aviso_color, app.ui.texto)
+
+    BoxLayout:
+        size_hint_y: None
+        height: dp(22)
+        spacing: dp(8)
+        UiText:
+            text: "Ver detalle y favoritas"
+            font_size: "11sp"
+            bold: True
+            -color: app.ui.azul
+        UiIcon:
+            icon: "arrow-right"
+            size: dp(20), dp(20)
+            font_size: "17sp"
+            -icon_color: app.ui.azul
 
 <AvisoCard>:
+    # Reportes con jerarquía visual y estado claro de vigencia.
     style: "outlined"
     theme_bg_color: "Custom"
-    -md_bg_color: app.ui.tarjeta
+    -md_bg_color: app.ui.fondo
     theme_line_color: "Custom"
     -line_color: app.ui.borde
     orientation: "horizontal"
     size_hint_y: None
-    height: dp(110)
-    radius: [dp(16)]
+    height: dp(118)
+    radius: [dp(17)]
     padding: dp(12)
     spacing: dp(10)
     Widget:
@@ -599,9 +643,19 @@ BoxLayout:
                 pos: self.pos
                 size: self.size
                 radius: [dp(2)]
-    UiIcon:
-        icon: root.icono
-        -icon_color: app.ui.estado(root.color, app.ui.texto)
+    UiSurface:
+        size_hint: None, None
+        size: dp(40), dp(40)
+        pos_hint: {"center_y": .5}
+        corners: [dp(12)]
+        -bg: app.ui.suave
+        -stroke: 0, 0, 0, 0
+        padding: 0
+        AnchorLayout:
+            UiIcon:
+                icon: root.icono
+                font_size: "21sp"
+                -icon_color: app.ui.estado(root.color, app.ui.texto)
     BoxLayout:
         orientation: "vertical"
         UiText:
@@ -611,15 +665,16 @@ BoxLayout:
         UiText:
             text: root.detalle.split(" · ")[0].replace("->", "a")
             font_size: "11sp"
-            -color: app.ui.secundario
+            -color: app.ui.texto
         UiText:
             text: root.antiguedad
             font_size: "11sp"
             -color: app.ui.secundario
         UiText:
-            text: "Vencido · solo historial" if root.vencido else "Reporte local / demo"
+            text: "Vencido · solo historial" if root.vencido else "Reporte local · demo"
             -color: app.ui.aviso if root.vencido else app.ui.secundario
             font_size: "10sp"
+
 
 <RecorridosScreen>:
     BoxLayout:
@@ -1155,7 +1210,7 @@ BoxLayout:
                 UiSurface:
                     orientation: "vertical"
                     size_hint_y: None
-                    height: dp(152)
+                    height: dp(188)
                     corners: [dp(17)]
                     -bg: app.ui.fondo
                     -stroke: app.ui.borde
