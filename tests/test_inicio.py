@@ -63,6 +63,35 @@ class InicioTests(unittest.TestCase):
             actualizar.assert_not_called()
         self.assertEqual(self.home.ids.ubicacion_estado.text, "Ubicación no disponible")
 
+    def test_ip_tardia_no_actualiza_mapa_tras_detener_gps(self):
+        # Simula que la consulta terminó después de cerrar una sesión.
+        self.app.gps_activo = False
+        solicitud = self.app._solicitud_ubicacion
+        with patch("servicios.ubicacion.aproximacion_por_ip",
+                   return_value=(-38.7359, -72.5904)), \
+                patch.object(self.app, "actualizar_mi_ubicacion") as actualizar:
+            self.app._localizar_por_ip(solicitud)
+            self.app.detener_gps()
+            Clock.tick()
+            actualizar.assert_not_called()
+
+    def test_gps_tardio_no_reubica_despues_de_revocar(self):
+        self.app.gps_activo = False
+        solicitud = self.app._solicitud_ubicacion
+        with patch.object(self.app, "actualizar_mi_ubicacion") as actualizar:
+            self.app.on_gps_location(
+                _solicitud=solicitud, lat=-38.7359, lon=-72.5904
+            )
+            self.app.detener_gps()
+            Clock.tick()
+            actualizar.assert_not_called()
+
+    def test_gps_invalido_no_actualiza_mapa(self):
+        with patch.object(self.app, "actualizar_mi_ubicacion") as actualizar:
+            self.app.on_gps_location(lat=float("nan"), lon=-72.5904)
+            Clock.tick()
+            actualizar.assert_not_called()
+
     def test_mapa_visible_y_panel_adaptable(self):
         for size in ((390, 844), (320, 568), (800, 600)):
             Window.size = size
