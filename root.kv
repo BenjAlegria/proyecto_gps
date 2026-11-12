@@ -1088,6 +1088,17 @@ BoxLayout:
                     on_release: app.simular_aviso()
 
                 UiSection:
+                    text: "Experimento Google Maps"
+                UiNotice:
+                    text: "Vista de prueba en el navegador del PC. Conserva MapView y no utiliza GPS real."
+                    icon: "map-search-outline"
+                UiButton:
+                    primary: False
+                    text: "Probar mapa de Google"
+                    icon: "google-maps"
+                    on_release: app.abrir_google_maps()
+
+                UiSection:
                     text: "Tu sesión"
                 UiAction:
                     height: dp(52)
