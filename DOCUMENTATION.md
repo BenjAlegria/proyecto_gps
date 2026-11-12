@@ -1,3 +1,13 @@
+> **Integración adicional (rama experimental):** en Ajustes existe
+> "Activar Google en Inicio", que cambia la cartografía del widget
+> Kivy MapView mediante **Google Map Tiles API**. Se mantiene la
+> opción de volver a OpenStreetMap; las teselas Google no se guardan
+> persistentemente y los créditos están disponibles en Inicio.
+> Requiere una clave y API distintas de Maps JavaScript API.
+> Consulte [docs/GOOGLE-MAPS-EXPERIMENTO.md](docs/GOOGLE-MAPS-EXPERIMENTO.md).
+> Esta opción está pendiente de pruebas locales con la API real y no
+> incluye preparación de APK ni Android en esta etapa.
+
 # DOCUMENTATION.md — EnRuta Ya!
 
 Documento técnico y funcional del Proyecto Integrado Final (PIF),
