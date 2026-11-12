@@ -1,0 +1,235 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>EnRuta Ya! · Google Maps experimental</title>
+  <style>
+    :root { color-scheme: light; --ink:#13233e; --muted:#67768b; --blue:#2867e8; --navy:#102a54; --line:#e3e9f1; --bg:#f5f8fc; }
+    * { box-sizing: border-box; }
+    body { margin:0; font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif; background:var(--bg); color:var(--ink); }
+    .topbar { background:var(--navy); color:white; display:flex; align-items:center; gap:12px; padding:14px max(16px,env(safe-area-inset-right)); }
+    .brand { width:40px; height:40px; flex:none; display:grid; place-items:center; border-radius:12px; background:#2867e8; font-size:21px; }
+    h1 { font-size:19px; margin:0; line-height:1.2; letter-spacing:-.02em; }
+    .sub { margin:3px 0 0; font-size:11px; color:#c5d8f5; }
+    .layout { display:grid; grid-template-columns:minmax(290px,350px) 1fr; height:calc(100dvh - 68px); min-height:480px; }
+    aside { padding:20px; background:#fff; border-right:1px solid var(--line); overflow:auto; }
+    .eyebrow { font-size:11px; letter-spacing:.1em; color:var(--blue); font-weight:800; }
+    h2 { font-size:24px; line-height:1.15; margin:10px 0 12px; letter-spacing:-.035em; }
+    .description { font-size:13px; color:var(--muted); line-height:1.55; margin:0 0 18px; }
+    label { display:block; font-size:11px; font-weight:800; letter-spacing:.06em; color:var(--muted); margin:14px 0 7px; }
+    select { width:100%; min-height:45px; color:var(--ink); background:#fff; border:1px solid #d8e2ef; border-radius:12px; font:600 13px system-ui; padding:0 12px; outline-color:var(--blue); }
+    .stats { display:flex; gap:10px; margin-top:19px; }
+    .stat { flex:1; padding:13px; background:var(--bg); border:1px solid var(--line); border-radius:13px; }
+    .stat b { font-size:19px; display:block; color:var(--navy); }
+    .stat span { font-size:10px; color:var(--muted); }
+    .route { border:1px solid var(--line); border-radius:14px; padding:14px; margin-top:15px; background:#fff; }
+    .route strong { display:block; font-size:13px; line-height:1.5; }
+    .route p { color:var(--muted); font-size:12px; line-height:1.45; margin:5px 0; }
+    .route .eta { display:inline-block; margin-top:8px; color:var(--blue); font-size:12px; font-weight:800; }
+    .note { padding:12px; background:#eaf1ff; color:#24446d; border-radius:12px; font-size:11px; line-height:1.5; margin-top:16px; }
+    .note strong { display:block; margin-bottom:2px; }
+    .mapwrap { position:relative; min-height:350px; }
+    #map { width:100%; height:100%; min-height:350px; background:#e6eef5; }
+    .mapchip { position:absolute; z-index:1; left:16px; top:16px; background:#102a54; color:#fff; padding:10px 14px; border-radius:100px; font-size:10px; font-weight:800; box-shadow:0 4px 20px #102a5422; pointer-events:none; }
+    #status { min-height:1.5em; font-size:11px; color:var(--muted); margin-top:8px; }
+    .err { color:#b91c1c !important; }
+    @media (max-width:760px) {
+      .layout { display:flex; flex-direction:column; height:auto; min-height:calc(100dvh - 68px); }
+      aside { padding:16px; border-right:0; border-bottom:1px solid var(--line); overflow:visible; }
+      aside h2 { margin:6px 0; font-size:20px; }
+      .description { margin-bottom:10px; }
+      .filters { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+      .filters > div { min-width:0; }
+      .filters select { font-size:11px; }
+      .route { margin-top:11px; }
+      .stats { margin-top:12px; }
+      .mapwrap { height:52dvh; min-height:330px; }
+      #map { height:100%; }
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand" aria-hidden="true">🚌</div>
+    <div><h1>EnRuta Ya!</h1><p class="sub">Experimento Google Maps · La Araucanía</p></div>
+  </header>
+  <main class="layout">
+    <aside>
+      <span class="eyebrow">MAPA EXPERIMENTAL</span>
+      <h2>Explora tus recorridos</h2>
+      <p class="description">Compara la cartografía de Google Maps con MapView. Esta vista es independiente de la aplicación principal.</p>
+      <div class="filters">
+        <div>
+          <label for="origen">LOCALIDAD DE SALIDA</label>
+          <select id="origen" aria-label="Localidad de salida" disabled>
+            <option>Cargando rutas…</option>
+          </select>
+        </div>
+        <div>
+          <label for="ruta">RECORRIDO</label>
+          <select id="ruta" aria-label="Recorrido" disabled>
+            <option>Todas las rutas</option>
+          </select>
+        </div>
+      </div>
+      <div class="stats">
+        <div class="stat"><b id="total">—</b><span>Rutas de ejemplo</span></div>
+        <div class="stat"><b>DEMO</b><span>Sin GPS compartido</span></div>
+      </div>
+      <div class="route" aria-live="polite">
+        <strong id="titulo-ruta">Selecciona una ruta</strong>
+        <p id="detalle-ruta">Los marcadores son simulados.</p>
+        <span class="eta" id="eta-ruta">Sin seguimiento en vivo</span>
+      </div>
+      <div class="note">
+        <strong>⚠️ Solo demostración</strong>
+        Las ubicaciones de buses se calculan entre dos localidades y las líneas son rectas ilustrativas, no rutas reales por calles. Sin conexión con otros celulares.
+      </div>
+      <p id="status" role="status">Iniciando mapa…</p>
+    </aside>
+    <section class="mapwrap" aria-label="Mapa de Google de rutas demostrativas">
+      <div class="mapchip">POSICIONES SIMULADAS</div>
+      <div id="map" role="application" aria-label="Google Maps interactivo"></div>
+    </section>
+  </main>
+  <script>
+    "use strict";
+    let mapa, rutas = [], marcadores = [], lineas = [], globo = null, AdvancedMarkerElement, PinElement;
+    const $ = id => document.getElementById(id);
+    function limpiar() {
+      marcadores.forEach(m => { m.map = null; });
+      lineas.forEach(l => l.setMap(null));
+      marcadores = []; lineas = [];
+      if (globo) globo.close();
+    }
+    function marcador(pos, icono, color, titulo, detalle) {
+      const pin = new PinElement({
+        glyph: icono,
+        background: color,
+        borderColor: color,
+        glyphColor: "#fff",
+        scale: icono === "🚌" ? 1.2 : 1.0
+      });
+      const m = new AdvancedMarkerElement({
+        position: pos, map: mapa, title: titulo, content: pin.element
+      });
+      m.addListener("gmp-click", () => {
+        const contenedor = document.createElement("div");
+        contenedor.style.cssText = "min-width:160px;font:12px system-ui;color:#102a54";
+        const nombre = document.createElement("strong");
+        nombre.textContent = titulo;
+        const descripcion = document.createElement("p");
+        descripcion.textContent = detalle;
+        contenedor.append(nombre, descripcion);
+        if (globo) globo.close();
+        globo = new google.maps.InfoWindow({ content: contenedor });
+        globo.open({ anchor: m, map: mapa });
+      });
+      marcadores.push(m);
+    }
+    function dibujar() {
+      if (!mapa || !rutas.length) return;
+      limpiar();
+      const origen = $("origen").value;
+      const elegido = $("ruta").value;
+      let seleccion = rutas.filter(r => origen === "*" || r.origen === origen);
+      if (elegido !== "*") seleccion = seleccion.filter(r => r.nombre === elegido);
+      $("total").textContent = String(seleccion.length);
+      const bounds = new google.maps.LatLngBounds();
+      seleccion.forEach(r => {
+        const dest = r.fin, inicio = r.inicio;
+        marcador(inicio, "P", "#24446d", "Salida · " + r.origen, r.nombre);
+        marcador(dest, "D", "#14966d", "Destino · " + r.destino, r.nombre);
+        marcador(r.bus_demo, "🚌", "#2867e8", "Bus simulado · " + r.nombre,
+                  "ETA de ejemplo: " + r.minutos + " · NO es GPS en vivo");
+        // Línea recta visual: expresamente NO es el trazado real del recorrido.
+        const linea = new google.maps.Polyline({
+          path: [inicio, dest], map: mapa, strokeColor: "#2867e8",
+          strokeOpacity: 0, icons: [{ icon: { path: "M 0,-1 0,1", strokeOpacity: .8,
+          scale: 3 }, offset: "0", repeat: "14px" }]
+        });
+        lineas.push(linea);
+        bounds.extend(inicio); bounds.extend(dest);
+      });
+      if (seleccion.length) {
+        mapa.fitBounds(bounds, 42);
+        const elegidoDetalle = seleccion.length === 1 ? seleccion[0] : null;
+        $("titulo-ruta").textContent = elegidoDetalle ? elegidoDetalle.nombre :
+          "Mostrando " + seleccion.length + " recorridos";
+        $("detalle-ruta").textContent = elegidoDetalle ?
+          "Frecuencia: " + elegidoDetalle.frecuencia + " · Tarifa referencial: " + elegidoDetalle.tarifa :
+          "Selecciona un recorrido para consultar la información de ejemplo.";
+        $("eta-ruta").textContent = elegidoDetalle ?
+          "Próximo bus · " + elegidoDetalle.minutos + " (demo)" : "Sin seguimiento en vivo";
+      } else {
+        $("titulo-ruta").textContent = "No hay rutas para este filtro";
+        $("detalle-ruta").textContent = "Prueba otra localidad.";
+        $("eta-ruta").textContent = "Datos de demostración";
+      }
+    }
+    function llenarRutas() {
+      const origen = $("origen").value;
+      const seleccion = rutas.filter(r => origen === "*" || r.origen === origen);
+      $("ruta").replaceChildren();
+      const opcion = document.createElement("option");
+      opcion.value = "*"; opcion.textContent = "Todos los recorridos";
+      $("ruta").append(opcion);
+      seleccion.forEach(r => {
+        const opt = document.createElement("option");
+        opt.value = r.nombre; opt.textContent = r.destino;
+        $("ruta").append(opt);
+      });
+      dibujar();
+    }
+    window.initMap = async function initMap() {
+      try {
+        const libraries = await Promise.all([
+          google.maps.importLibrary("maps"),
+          google.maps.importLibrary("marker")
+        ]);
+        AdvancedMarkerElement = libraries[1].AdvancedMarkerElement;
+        PinElement = libraries[1].PinElement;
+        const respuesta = await fetch("/api/rutas", { cache: "no-store" });
+        if (!respuesta.ok) throw new Error("No se pudo leer el catálogo de rutas");
+        const data = await respuesta.json();
+        if (data.demo !== true) throw new Error("Se esperaban datos de demostración");
+        rutas = data.rutas;
+        mapa = new google.maps.Map($("map"), {
+          center: data.centro,
+          zoom: 10,
+          mapId: "DEMO_MAP_ID",
+          clickableIcons: false,
+          streetViewControl: false,
+          fullscreenControl: true,
+          mapTypeControl: true
+        });
+        $("origen").replaceChildren();
+        const todas = document.createElement("option");
+        todas.value = "*"; todas.textContent = "Todas las localidades";
+        $("origen").append(todas);
+        [...new Set(rutas.map(r => r.origen))].sort().forEach(n => {
+          const opcion = document.createElement("option");
+          opcion.value = n; opcion.textContent = n;
+          $("origen").append(opcion);
+        });
+        $("origen").value = "Temuco";
+        $("origen").disabled = false;
+        $("ruta").disabled = false;
+        $("origen").addEventListener("change", llenarRutas);
+        $("ruta").addEventListener("change", dibujar);
+        llenarRutas();
+        $("status").textContent = "Mapa de Google cargado. Todos los datos de buses son simulados.";
+      } catch (error) {
+        $("status").textContent = "Error cargando Google Maps: " + error.message;
+        $("status").classList.add("err");
+      }
+    };
+    window.gm_authFailure = function () {
+      $("status").textContent = "Google Maps rechazó la clave o la facturación. Revisa Google Cloud.";
+      $("status").classList.add("err");
+    };
+  </script>
+  <script async defer src="https://maps.googleapis.com/maps/api/js?key=__GOOGLE_MAPS_API_KEY__&amp;loading=async&amp;callback=initMap&amp;v=weekly&amp;language=es&amp;region=CL"></script>
+</body>
+</html>
