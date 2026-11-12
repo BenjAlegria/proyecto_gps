@@ -55,11 +55,11 @@ class ClienteMapTiles:
         self._mosaicos_pedidos = 0
         self._bloqueo = threading.Lock()
 
-    def _verificar(self, respuesta):
+    def _verificar(self, respuesta, etapa):
         # No propagar requests.HTTPError: su mensaje puede incluir la API key.
         if respuesta.status_code != 200:
             raise ErrorMapTiles(
-                f"Google Map Tiles rechazó la solicitud (HTTP {respuesta.status_code}). "
+                f"Google Map Tiles falló en {etapa} (HTTP {respuesta.status_code}). "
                 "Revisa Map Tiles API, restricciones, cuotas y facturación."
             )
         return respuesta
@@ -72,7 +72,7 @@ class ClienteMapTiles:
                 json={"mapType": self.tipo, "language": "es-CL", "region": "CL"},
                 timeout=10,
             )
-            info = self._verificar(respuesta).json()
+            info = self._verificar(respuesta, "crear sesión").json()
             token = info.get("session") if isinstance(info, dict) else None
             if not isinstance(token, str) or not token:
                 raise ErrorMapTiles("Google Map Tiles no devolvió una sesión válida.")
@@ -109,7 +109,7 @@ class ClienteMapTiles:
                 params={"session": self.session, "key": self._clave},
                 timeout=8,
             )
-            datos = self._verificar(respuesta).content
+            datos = self._verificar(respuesta, "descargar mosaico").content
             if not datos or len(datos) > LIMITE_IMAGEN_BYTES:
                 raise ErrorMapTiles("Google Map Tiles devolvió una imagen inválida.")
             return datos
