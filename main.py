@@ -631,8 +631,10 @@ class InterurbanoApp(MDApp):
             self._pantalla("home").ids.mapa.center_on(
                 self.marcador_yo.lat, self.marcador_yo.lon
             )
-        if self.gps_activo or self._ip_consulta_pendiente:
-            return
+        if self.gps_activo:
+            return True
+        if self._ip_consulta_pendiente:
+            return False
         self._solicitud_ubicacion += 1
         solicitud = self._solicitud_ubicacion
         if gps is not None:
@@ -645,7 +647,7 @@ class InterurbanoApp(MDApp):
                 )
                 gps.start(minTime=2000, minDistance=5)
                 self.gps_activo = True
-                return
+                return True
             except (NotImplementedError, PermissionError, RuntimeError, OSError):
                 pass
         if permitir_ip and not self.compartiendo and platform != "android":
@@ -657,6 +659,7 @@ class InterurbanoApp(MDApp):
             self._pantalla("home").ids.ubicacion_estado.text = (
                 "GPS no disponible o sin permisos"
             )
+        return False
 
     def _localizar_por_ip(self, solicitud=None):
         """Solo el botón de ubicación de escritorio consulta el servicio.
@@ -898,13 +901,22 @@ class InterurbanoApp(MDApp):
     def iniciar_compartir(self):
         # TODO: además de mostrar mi posición local, enviarla a un servidor
         # para que otros usuarios la vean en su propio mapa.
+        # Cancelar una consulta IP pendiente del botón «localizarme» antes
+        # de iniciar una sesión que requiere GPS real.
+        if self._ip_consulta_pendiente:
+            self.detener_gps()
         self.compartiendo = True
-        # La geolocalización aproximada por IP no sirve para compartir el
-        # recorrido de un bus: únicamente se permite GPS del dispositivo.
-        self.localizarme(permitir_ip=False)
+        # Una IP no sirve para rastrear un bus. Si no hay proveedor GPS, no
+        # se abre una sesión ficticia ni se cuenta un viaje inexistente.
+        gps_iniciado = self.localizarme(permitir_ip=False)
         p = self._pantalla("compartir")
+        if not gps_iniciado:
+            self.compartiendo = False
+            p.ids.compartir_btn_text.text = "INICIAR VIAJE"
+            p.ids.estado_label.text = "GPS no disponible. Verifica los permisos del dispositivo."
+            return
         p.ids.compartir_btn_text.text = "DETENER VIAJE"
-        p.ids.estado_label.text = f"Esperando GPS local en {self.linea_actual}"
+        p.ids.estado_label.text = f"Esperando señal GPS local en {self.linea_actual}"
 
     def detener_compartir(self):
         self.compartiendo = False
