@@ -72,6 +72,8 @@ def registrar(usuario, clave, repetir):
     validar_usuario(usuario)
     validar_contrasena(clave, repetir)
     usuarios = leer_json(ARCHIVO_USUARIOS, {})
+    if not isinstance(usuarios, dict):
+        raise ErrorAutenticacion("El archivo local de cuentas es inválido")
     if usuario in usuarios:
         raise ErrorAutenticacion("Ese usuario ya existe", "usuario")
     sal = os.urandom(16).hex()
@@ -91,8 +93,17 @@ def iniciar_sesion(usuario, clave):
     usuario = normalizar_usuario(usuario)
     if not usuario or not clave:
         raise ErrorAutenticacion("Completa usuario y contraseña")
-    registro = leer_json(ARCHIVO_USUARIOS, {}).get(usuario)
-    if registro is None or not hmac.compare_digest(
-            registro["hash"], _hash(clave, registro["sal"])):
+    usuarios = leer_json(ARCHIVO_USUARIOS, {})
+    registro = usuarios.get(usuario) if isinstance(usuarios, dict) else None
+    if not isinstance(registro, dict):
+        raise ErrorAutenticacion("Usuario o contraseña incorrectos")
+    sal, hash_guardado = registro.get("sal"), registro.get("hash")
+    if not isinstance(sal, str) or not isinstance(hash_guardado, str):
+        raise ErrorAutenticacion("Usuario o contraseña incorrectos")
+    try:
+        hash_calculado = _hash(clave, sal)
+    except (ValueError, TypeError):
+        raise ErrorAutenticacion("Usuario o contraseña incorrectos") from None
+    if not hmac.compare_digest(hash_guardado, hash_calculado):
         raise ErrorAutenticacion("Usuario o contraseña incorrectos")
     return usuario

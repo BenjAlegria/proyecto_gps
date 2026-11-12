@@ -1,6 +1,5 @@
 import os
 import random
-import re
 import threading
 import time
 import traceback
@@ -37,7 +36,7 @@ from config import (CONFIG_REMOTA_DEFECTO, HISTORIAL_S, ICONO_BUS, LOG_ERRORES,
                     OPCIONES_ATRASO)
 from datos_rutas import (COORDENADAS, GRIS, LOCALIDADES, NARANJA, ROJO, RUTAS,
                          TIPOS_AVISO, VERDE)
-from servicios import almacenamiento, autenticacion, config_remota
+from servicios import almacenamiento, autenticacion, config_remota, avisos_service, recorridos, ubicacion
 from servicios.autenticacion import ErrorAutenticacion
 from servicios.notificaciones import notificar as enviar_notificacion
 from tema import PaletaVisual
@@ -215,6 +214,10 @@ class InterurbanoApp(MDApp):
         self.favoritas = []
         self.avisos = []
         self._ultimo_aviso = {}
+        self.gps_activo = False
+        self.marcador_yo = None
+        self._solicitud_ubicacion = 0
+        self._ip_consulta_pendiente = False
         # Configuración inmediata (caché o valores por defecto); la remota
         # llega después, en on_start, sin bloquear la interfaz.
         self.config, self.fuente_config = config_remota.cargar_local()
@@ -354,7 +357,8 @@ class InterurbanoApp(MDApp):
         self._cargando = True
         try:
             self.nombre_visible = perfil["nombre"]
-            self.favoritas = list(perfil["favoritas"])
+            # Ignorar rutas borradas o no reconocidas, sin romper el perfil.
+            self.favoritas = [r for r in perfil["favoritas"] if r in RUTAS]
             self.viajes = perfil["viajes"]
             self.notificar_favoritas = perfil["notificar_favoritas"]
             self.consentimiento = perfil["consentimiento"]
@@ -378,6 +382,13 @@ class InterurbanoApp(MDApp):
     def cerrar_sesion(self):
         if self.compartiendo:
             self.detener_compartir()
+        # Aunque no haya un viaje activo, una búsqueda GPS/IP iniciada desde
+        # el mapa debe cancelarse al salir de la cuenta.
+        self.detener_gps()
+        if self.marcador_yo:
+            self._pantalla("home").ids.mapa.remove_marker(self.marcador_yo)
+            self.marcador_yo = None
+        self._pantalla("home").ids.ubicacion_estado.text = "Tu ubicación: sin consultar"
         self._guardar_perfil()
         self.usuario_actual = ""
         self.linea_actual = ""
@@ -416,7 +427,7 @@ class InterurbanoApp(MDApp):
             ])
             self._guardar_avisos()
         else:
-            self.avisos = guardados
+            self.avisos = avisos_service.sanear_avisos(guardados)
 
     def _guardar_avisos(self):
         try:
@@ -564,10 +575,8 @@ class InterurbanoApp(MDApp):
 
     @staticmethod
     def _minutos(texto):
-        """'1 h 20 min' -> 80, '15 min' -> 15 (para ubicar buses de demo)."""
-        horas = re.search(r"(\d+)\s*h", texto)
-        mins = re.search(r"(\d+)\s*min", texto)
-        return (int(horas.group(1)) * 60 if horas else 0) + (int(mins.group(1)) if mins else 0)
+        """Compatibilidad con llamadas existentes; el cálculo vive en recorridos."""
+        return recorridos.minutos_desde_texto(texto)
 
     def actualizar_mapa(self, mapa, lugar):
         """Centra el mapa en la localidad, dibuja la parada y un bus (simulado)
@@ -589,11 +598,12 @@ class InterurbanoApp(MDApp):
             if destino not in COORDENADAS:
                 continue
             dlat, dlon = COORDENADAS[destino]
-            dur = max(self._minutos(d["duracion"]), 1)
-            frac = min(0.8, max(0.15, self._minutos(d["minutos"]) / dur))
+            bus_lat, bus_lon = recorridos.posicion_bus_demo(
+                (lat, lon), (dlat, dlon), d["duracion"], d["minutos"]
+            )
             bus = MarcadorBus(
-                lat=lat + (dlat - lat) * frac,
-                lon=lon + (dlon - lon) * frac,
+                lat=bus_lat,
+                lon=bus_lon,
                 source=ICONO_BUS if os.path.exists(ICONO_BUS)
                        else "atlas://data/images/defaulttheme/checkbox_on",
                 anchor_x=0.5, anchor_y=0.5,
@@ -609,51 +619,139 @@ class InterurbanoApp(MDApp):
     # Botón "reubicarme": identifica GPS o aproximación por IP y
     # dibuja al usuario con un marcador distinto del bus de demostración.
     # --------------------------------------------------------
-    def localizarme(self):
-        """Botón de reubicarme: usa el GPS del dispositivo si existe
-        (celular/tablet); en un PC de escritorio, que normalmente no
-        tiene GPS, calcula una posición aproximada por IP en segundo
-        plano para no congelar la interfaz."""
+    def localizarme(self, permitir_ip=True):
+        """Obtiene ubicación solo tras un toque o el inicio de un viaje.
+
+        En escritorio puede pedir una aproximación HTTPS por IP al pulsar
+        reubicarme. Durante un viaje se exige GPS real: una IP no representa
+        la ubicación de un bus. Cada solicitud usa un token para ignorar
+        respuestas que lleguen después de cerrar sesión o detener GPS.
+        """
         if self.marcador_yo:
-            self._pantalla("home").ids.mapa.center_on(self.marcador_yo.lat, self.marcador_yo.lon)
+            self._pantalla("home").ids.mapa.center_on(
+                self.marcador_yo.lat, self.marcador_yo.lon
+            )
         if self.gps_activo:
-            return
+            return True
+        if self._ip_consulta_pendiente:
+            return False
+        self._solicitud_ubicacion += 1
+        solicitud = self._solicitud_ubicacion
         if gps is not None:
             try:
-                gps.configure(on_location=self.on_gps_location, on_status=self.on_gps_status)
+                gps.configure(
+                    on_location=lambda **kw: self.on_gps_location(
+                        _solicitud=solicitud, **kw
+                    ),
+                    on_status=self.on_gps_status,
+                )
                 gps.start(minTime=2000, minDistance=5)
                 self.gps_activo = True
-                return
-            except (NotImplementedError, PermissionError):
-                pass  # sin proveedor de GPS en este dispositivo -> sigue abajo
-        threading.Thread(target=self._localizar_por_ip, daemon=True).start()
+                return True
+            except (NotImplementedError, PermissionError, RuntimeError, OSError):
+                pass
+        if permitir_ip and not self.compartiendo and platform != "android":
+            # Una IP se envía a un tercero: pedir consentimiento explícito
+            # antes de ejecutar esta alternativa aproximada al GPS.
+            self._ip_consulta_pendiente = True
+            self.dialogo = MDDialog(
+                MDDialogHeadlineText(text="Ubicación aproximada por IP"),
+                MDDialogSupportingText(
+                    text="Este equipo no tiene GPS disponible. Si continúas, "
+                         "se consultará al proveedor externo ipwho.is por HTTPS "
+                         "usando tu IP pública para estimar la ubicación. "
+                         "No es una ubicación precisa ni se usará para viajes."
+                ),
+                MDDialogButtonContainer(
+                    MDButton(
+                        MDButtonText(text="Cancelar"),
+                        style="text",
+                        on_release=lambda *a: self._cancelar_ubicacion_ip(solicitud),
+                    ),
+                    MDButton(
+                        MDButtonText(text="Continuar"),
+                        style="text",
+                        on_release=lambda *a: self._autorizar_ubicacion_ip(solicitud),
+                    ),
+                    spacing="8dp",
+                ),
+            )
+            self.dialogo.open()
+        else:
+            self._pantalla("home").ids.ubicacion_estado.text = (
+                "GPS no disponible o sin permisos"
+            )
+        return False
 
-    def _localizar_por_ip(self):
-        """Se ejecuta en un hilo aparte para no bloquear la app."""
-        lat = lon = None
+    def _cancelar_ubicacion_ip(self, solicitud):
+        self.dialogo.dismiss()
+        if solicitud == self._solicitud_ubicacion:
+            self._ip_consulta_pendiente = False
+            self._solicitud_ubicacion += 1
+
+    def _autorizar_ubicacion_ip(self, solicitud):
+        self.dialogo.dismiss()
+        if solicitud != self._solicitud_ubicacion or self.compartiendo:
+            self._ip_consulta_pendiente = False
+            return
+        threading.Thread(
+            target=self._localizar_por_ip, args=(solicitud,), daemon=True
+        ).start()
+
+    def _localizar_por_ip(self, solicitud=None):
+        """Solo el botón de ubicación de escritorio consulta el servicio.
+
+        `solicitud=None` mantiene las llamadas directas de tests existentes.
+        Las actualizaciones a widgets siempre se ejecutan en el hilo Kivy.
+        """
+        coordenadas = None
         try:
-            import requests
-            r = requests.get("http://ip-api.com/json/", timeout=4)
-            datos = r.json()
-            if datos.get("status") == "success":
-                lat, lon = datos["lat"], datos["lon"]
+            coordenadas = ubicacion.aproximacion_por_ip()
         except Exception as e:
             print("No se pudo obtener ubicación aproximada por IP:", e)
-        if lat is not None and lon is not None:
-            Clock.schedule_once(lambda dt: self.actualizar_mi_ubicacion(lat, lon, "Aproximada por IP"))
-        else:
-            Clock.schedule_once(lambda dt: setattr(self._pantalla("home").ids.ubicacion_estado, "text", "Ubicación no disponible"))
 
-    def on_gps_location(self, **kwargs):
-        lat = kwargs.get("lat")
-        lon = kwargs.get("lon")
-        if lat is not None and lon is not None:
-            Clock.schedule_once(lambda dt: self.actualizar_mi_ubicacion(lat, lon))
+        def aplicar(_dt):
+            if solicitud is not None and solicitud != self._solicitud_ubicacion:
+                return
+            self._ip_consulta_pendiente = False
+            if coordenadas is not None and not self.compartiendo:
+                self.actualizar_mi_ubicacion(*coordenadas, fuente="Aproximada por IP")
+            else:
+                self._pantalla("home").ids.ubicacion_estado.text = (
+                    "Ubicación no disponible"
+                )
+
+        Clock.schedule_once(aplicar)
+
+    def on_gps_location(self, _solicitud=None, **kwargs):
+        lat, lon = kwargs.get("lat"), kwargs.get("lon")
+        if not ubicacion.coordenadas_validas(lat, lon):
+            return
+
+        def aplicar(_dt):
+            if _solicitud is not None and _solicitud != self._solicitud_ubicacion:
+                return
+            self.actualizar_mi_ubicacion(lat, lon)
+            if not self.compartiendo:
+                # El botón «localizarme» solo necesita una posición: detener
+                # el sensor ahorra batería y evita seguimiento inadvertido.
+                self.detener_gps()
+            else:
+                self._pantalla("compartir").ids.estado_label.text = (
+                    f"GPS local activo en {self.linea_actual}"
+                )
+
+        Clock.schedule_once(aplicar)
 
     def on_gps_status(self, stype, status):
         print(f"GPS [{stype}]: {status}")
 
     def actualizar_mi_ubicacion(self, lat, lon, fuente="GPS del dispositivo"):
+        if not ubicacion.coordenadas_validas(lat, lon):
+            self._pantalla("home").ids.ubicacion_estado.text = (
+                "Coordenadas de ubicación inválidas"
+            )
+            return
         self._pantalla("home").ids.ubicacion_estado.text = fuente
         home = self._pantalla("home")
         mapa = home.ids.mapa
@@ -669,8 +767,14 @@ class InterurbanoApp(MDApp):
         self._ajustar_marcadores()
 
     def detener_gps(self):
+        # También invalida búsquedas IP pendientes y callbacks GPS antiguos.
+        self._solicitud_ubicacion += 1
+        self._ip_consulta_pendiente = False
         if self.gps_activo and gps is not None:
-            gps.stop()
+            try:
+                gps.stop()
+            except (NotImplementedError, PermissionError, RuntimeError, OSError) as e:
+                registrar_error(e)
         self.gps_activo = False
 
     def on_stop(self):
@@ -768,8 +872,11 @@ class InterurbanoApp(MDApp):
 
     def cambiar_consentimiento(self, activo):
         self.consentimiento = activo
-        if not activo and self.compartiendo:
-            self.detener_compartir()
+        if not activo:
+            if self.compartiendo:
+                self.detener_compartir()
+            else:
+                self.detener_gps()
         self._guardar_perfil()
 
     # --------------------------------------------------------
@@ -831,11 +938,22 @@ class InterurbanoApp(MDApp):
     def iniciar_compartir(self):
         # TODO: además de mostrar mi posición local, enviarla a un servidor
         # para que otros usuarios la vean en su propio mapa.
+        # Cancelar una consulta IP pendiente del botón «localizarme» antes
+        # de iniciar una sesión que requiere GPS real.
+        if self._ip_consulta_pendiente:
+            self.detener_gps()
         self.compartiendo = True
-        self.localizarme()
+        # Una IP no sirve para rastrear un bus. Si no hay proveedor GPS, no
+        # se abre una sesión ficticia ni se cuenta un viaje inexistente.
+        gps_iniciado = self.localizarme(permitir_ip=False)
         p = self._pantalla("compartir")
+        if not gps_iniciado:
+            self.compartiendo = False
+            p.ids.compartir_btn_text.text = "INICIAR VIAJE"
+            p.ids.estado_label.text = "GPS no disponible. Verifica los permisos del dispositivo."
+            return
         p.ids.compartir_btn_text.text = "DETENER VIAJE"
-        p.ids.estado_label.text = f"Ubicación local activa en {self.linea_actual}"
+        p.ids.estado_label.text = f"Esperando señal GPS local en {self.linea_actual}"
 
     def detener_compartir(self):
         self.compartiendo = False
@@ -873,15 +991,8 @@ class InterurbanoApp(MDApp):
         return TIPOS_AVISO[aviso["tipo"]]["texto"]
 
     def _estado_ruta(self, ruta):
-        """Devuelve (ocupación, atraso, cambio_ruta): el aviso vigente más
-        reciente de cada tipo para esa línea, o None si no hay."""
-        ahora = time.time()
-        vigentes = [a for a in self.avisos
-                    if a["ruta"] == ruta and ahora - a["ts"] <= self.vigencia_s]
-        ocupacion = next((a for a in vigentes if a["tipo"] in ("lleno", "asientos")), None)
-        atraso = next((a for a in vigentes if a["tipo"] == "atrasado"), None)
-        cambio = next((a for a in vigentes if a["tipo"] == "cambio_ruta"), None)
-        return ocupacion, atraso, cambio
+        """Últimos reportes vigentes; sin dependencias de widgets Kivy."""
+        return avisos_service.estado_ruta(self.avisos, ruta, self.vigencia_s)
 
     def _texto_estado(self, ruta):
         """Texto corto + color para la tarjeta de la línea."""
@@ -980,9 +1091,11 @@ class InterurbanoApp(MDApp):
         caja = pantalla.ids.avisos_box
         caja.clear_widgets()
         ahora = time.time()
-        antes = len(self.avisos)
-        self.avisos = [a for a in self.avisos if ahora - a["ts"] <= HISTORIAL_S]
-        if len(self.avisos) != antes:
+        anteriores = self.avisos
+        self.avisos = avisos_service.historial_reciente(
+            anteriores, HISTORIAL_S, ahora
+        )
+        if self.avisos != anteriores:
             self._guardar_avisos()
         visibles = [a for a in self.avisos
                     if not self.solo_favoritas or a["ruta"] in self.favoritas]

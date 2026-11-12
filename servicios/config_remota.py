@@ -27,7 +27,7 @@ def _sanear(datos):
         return limpio
     for clave, defecto in CONFIG_REMOTA_DEFECTO.items():
         valor = datos.get(clave)
-        if isinstance(defecto, bool) or not isinstance(valor, type(defecto)):
+        if type(valor) is not type(defecto):
             continue
         if isinstance(defecto, int) and valor <= 0:
             continue

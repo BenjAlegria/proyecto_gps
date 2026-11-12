@@ -111,28 +111,90 @@
             icon: "account-outline"
             -icon_color: 1, 1, 1, 1
 
+# Cabecera consistente con Inicio: ícono de marca, títulos y perfil.
 <UiHeader@BoxLayout>:
     titulo: "EnRuta Ya!"
     subtitulo: "Tu viaje, mejor informado"
     size_hint_y: None
-    height: dp(80)
-    padding: dp(app.ui.margen), dp(12)
-    spacing: dp(12)
+    height: dp(76)
+    padding: dp(18), dp(10), dp(16), dp(9)
+    spacing: dp(11)
+    canvas.after:
+        Color:
+            rgba: app.ui.borde
+        Line:
+            points: self.x, self.y, self.right, self.y
+            width: .7
+    UiSurface:
+        size_hint: None, None
+        size: dp(42), dp(42)
+        pos_hint: {"center_y": .5}
+        corners: [dp(14)]
+        -bg: app.ui.suave
+        -stroke: 0, 0, 0, 0
+        padding: 0
+        AnchorLayout:
+            UiIcon:
+                icon: "bus-side"
+                size: dp(25), dp(25)
+                font_size: "23sp"
+                -icon_color: app.ui.azul
     BoxLayout:
         orientation: "vertical"
         UiText:
             text: root.titulo
             bold: True
-            font_size: "22sp"
+            font_size: "19sp"
         UiText:
             text: root.subtitulo
             -color: app.ui.secundario
-            font_size: "11sp"
+            font_size: "10sp"
             size_hint_y: None
-            height: dp(20)
+            height: dp(18)
     UiAvatar:
         pos_hint: {"center_y": .5}
         on_release: app.cambiar_pantalla("perfil")
+
+# Tarjeta introductoria común a las secciones. Títulos y textos son
+# propiedades configurables desde cada pantalla, sin lógica de negocio.
+<UiJourneyHero@UiSurface>:
+    etiqueta: "ENRUTA YA!"
+    titulo: "Tu viaje, mejor informado"
+    descripcion: ""
+    icono: "bus-side"
+    orientation: "vertical"
+    size_hint_y: None
+    height: dp(142)
+    corners: [dp(21)]
+    padding: dp(18), dp(15)
+    spacing: dp(5)
+    -bg: app.ui.marino
+    -stroke: 0, 0, 0, 0
+    BoxLayout:
+        size_hint_y: None
+        height: dp(24)
+        spacing: dp(7)
+        UiIcon:
+            icon: root.icono
+            size: dp(20), dp(20)
+            font_size: "17sp"
+            -icon_color: .64, .81, 1, 1
+        UiText:
+            text: root.etiqueta
+            font_size: "10sp"
+            bold: True
+            -color: .71, .84, 1, 1
+    UiText:
+        text: root.titulo
+        font_size: "22sp"
+        bold: True
+        size_hint_y: None
+        height: dp(37)
+        -color: 1, 1, 1, 1
+    UiParagraph:
+        text: root.descripcion
+        font_size: "11sp"
+        -color: .86, .92, 1, 1
 
 <UiBody@MDBoxLayout>:
     orientation: "vertical"
