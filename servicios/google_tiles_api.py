@@ -130,7 +130,7 @@ class ClienteMapTiles:
                 },
                 timeout=8,
             )
-            info = self._verificar(respuesta).json()
+            info = self._verificar(respuesta, "consultar atribución").json()
             copyright_texto = info.get("copyright", "") if isinstance(info, dict) else ""
             if not isinstance(copyright_texto, str) or not copyright_texto.strip():
                 raise ErrorMapTiles("Google Maps no devolvió la atribución de datos.")
