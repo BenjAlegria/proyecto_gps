@@ -1141,7 +1141,7 @@ class InterurbanoApp(MDApp):
     def _limites_del_mapa(mapa):
         sur, oeste, norte, este = mapa.get_bbox()
         return (max(-85., min(85., norte)), max(-85., min(85., sur)),
-                max(-180., min(180., este)), max(-180., min(180., oeste))
+                max(-180., min(180., este)), max(-180., min(180., oeste)))
 
     def activar_google_en_inicio(self):
         """Prueba Google Maps en la ventana Kivy, con permiso explícito.
