@@ -22,7 +22,7 @@ def sanear_avisos(registros):
         if not isinstance(aviso, dict):
             continue
         ruta, tipo, ts = aviso.get("ruta"), aviso.get("tipo"), aviso.get("ts")
-        if not isinstance(ruta, str) or not ruta or tipo not in TIPOS_VALIDOS:
+        if not isinstance(ruta, str) or not ruta or not isinstance(tipo, str) or tipo not in TIPOS_VALIDOS:
             continue
         if isinstance(ts, bool) or not isinstance(ts, (int, float)) or not math.isfinite(ts):
             continue
