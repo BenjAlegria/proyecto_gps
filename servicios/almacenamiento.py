@@ -50,18 +50,39 @@ def guardar_json(ruta, datos):
 # Perfiles (uno por usuario)
 # ------------------------------------------------------------
 def cargar_perfil(usuario):
-    """Devuelve el perfil del usuario, completando lo que falte con los
-    valores por defecto."""
+    """Carga un perfil con tipos seguros, aun si el JSON fue modificado.
+
+    No se mezclan estructuras arbitrarias del disco con el estado de Kivy:
+    una lista/dict corruptos no pueden dejar la app sin abrir.
+    """
     todos = leer_json(ARCHIVO_PERFILES, {})
-    perfil = dict(PERFIL_POR_DEFECTO)
-    perfil["favoritas"] = []
-    perfil.update(todos.get(usuario, {}))
-    if not perfil["nombre"]:
+    todos = todos if isinstance(todos, dict) else {}
+    guardado = todos.get(usuario, {})
+    guardado = guardado if isinstance(guardado, dict) else {}
+    perfil = {**PERFIL_POR_DEFECTO, "favoritas": []}
+
+    nombre = guardado.get("nombre")
+    if isinstance(nombre, str) and 0 < len(nombre.strip()) <= 30:
+        perfil["nombre"] = nombre.strip()
+    else:
         perfil["nombre"] = usuario
+
+    favoritas = guardado.get("favoritas")
+    if isinstance(favoritas, list):
+        perfil["favoritas"] = list(dict.fromkeys(
+            ruta for ruta in favoritas if isinstance(ruta, str)
+        ))
+    viajes = guardado.get("viajes")
+    if type(viajes) is int and viajes >= 0:
+        perfil["viajes"] = viajes
+    for clave in ("tema_oscuro", "notificar_favoritas", "consentimiento"):
+        if type(guardado.get(clave)) is bool:
+            perfil[clave] = guardado[clave]
     return perfil
 
 def guardar_perfil(usuario, perfil):
     todos = leer_json(ARCHIVO_PERFILES, {})
+    todos = todos if isinstance(todos, dict) else {}
     todos[usuario] = perfil
     guardar_json(ARCHIVO_PERFILES, todos)
 
