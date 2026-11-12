@@ -10,6 +10,7 @@ https://developers.google.com/maps/documentation/tile/policies
 from __future__ import annotations
 
 import os
+import threading
 import time
 
 import requests
@@ -18,6 +19,7 @@ VARIABLE_CLAVE = "ENRUTA_GOOGLE_TILES_API_KEY"
 BASE = "https://tile.googleapis.com"
 TIPOS_MAPA = {"roadmap", "satellite"}
 LIMITE_IMAGEN_BYTES = 3 * 1024 * 1024
+MAX_MOSAICOS_POR_ACTIVACION = 180  # Límite preventivo; no equivale a una cuota Google Cloud
 
 
 class ErrorMapTiles(RuntimeError):
@@ -50,6 +52,8 @@ class ClienteMapTiles:
         self.session = None
         self.expiry = 0
         self.formato = "png"
+        self._mosaicos_pedidos = 0
+        self._bloqueo = threading.Lock()
 
     def _verificar(self, respuesta):
         # No propagar requests.HTTPError: su mensaje puede incluir la API key.
@@ -92,6 +96,13 @@ class ClienteMapTiles:
     def mosaico(self, zoom, x, y):
         """Devuelve bytes de imagen de una sola tesela, sin guardar caché."""
         self._asegurar_sesion()
+        with self._bloqueo:
+            if self._mosaicos_pedidos >= MAX_MOSAICOS_POR_ACTIVACION:
+                raise ErrorMapTiles(
+                    "Se alcanzó el límite de mosaicos de esta prueba. "
+                    "Se volverá al mapa original."
+                )
+            self._mosaicos_pedidos += 1
         try:
             respuesta = self.transporte.get(
                 f"{BASE}/v1/2dtiles/{int(zoom)}/{int(x)}/{int(y)}",
