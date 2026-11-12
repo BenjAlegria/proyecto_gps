@@ -36,7 +36,7 @@ from config import (CONFIG_REMOTA_DEFECTO, HISTORIAL_S, ICONO_BUS, LOG_ERRORES,
                     OPCIONES_ATRASO)
 from datos_rutas import (COORDENADAS, GRIS, LOCALIDADES, NARANJA, ROJO, RUTAS,
                          TIPOS_AVISO, VERDE)
-from servicios import almacenamiento, autenticacion, config_remota, avisos_service, recorridos, ubicacion
+from servicios import almacenamiento, autenticacion, config_remota, avisos_service, recorridos, ubicacion, google_maps_preview
 from servicios.autenticacion import ErrorAutenticacion
 from servicios.notificaciones import notificar as enviar_notificacion
 from tema import PaletaVisual
@@ -779,6 +779,7 @@ class InterurbanoApp(MDApp):
 
     def on_stop(self):
         Window.unbind(size=self._actualizar_zona_segura)
+        google_maps_preview.detener()
         self.detener_gps()
         self._guardar_perfil()
         self._guardar_avisos()
@@ -1119,6 +1120,20 @@ class InterurbanoApp(MDApp):
     def alternar_solo_favoritas(self, activo):
         self.solo_favoritas = activo
         self.poblar_avisos()
+
+    def abrir_google_maps(self):
+        """Abre Google Maps en el navegador, manteniendo MapView en Kivy.
+
+        Solo es un experimento para PC: no confundir esta vista web con
+        un mapa embebido en Android ni con GPS remoto sincronizado.
+        """
+        if platform == "android":
+            self._snack("Google Maps experimental: prueba disponible por ahora en PC.")
+            return
+        try:
+            google_maps_preview.abrir_en_navegador()
+        except google_maps_preview.ErrorGoogleMaps as exc:
+            self._snack(str(exc))
 
     def simular_aviso(self):
         """Solo para la demo: simula que otro pasajero envió un aviso
