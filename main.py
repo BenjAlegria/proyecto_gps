@@ -1,6 +1,5 @@
 import os
 import random
-import re
 import threading
 import time
 import traceback
@@ -37,7 +36,7 @@ from config import (CONFIG_REMOTA_DEFECTO, HISTORIAL_S, ICONO_BUS, LOG_ERRORES,
                     OPCIONES_ATRASO)
 from datos_rutas import (COORDENADAS, GRIS, LOCALIDADES, NARANJA, ROJO, RUTAS,
                          TIPOS_AVISO, VERDE)
-from servicios import almacenamiento, autenticacion, config_remota
+from servicios import almacenamiento, autenticacion, config_remota, avisos_service, recorridos, ubicacion
 from servicios.autenticacion import ErrorAutenticacion
 from servicios.notificaciones import notificar as enviar_notificacion
 from tema import PaletaVisual
@@ -416,7 +415,7 @@ class InterurbanoApp(MDApp):
             ])
             self._guardar_avisos()
         else:
-            self.avisos = guardados
+            self.avisos = avisos_service.sanear_avisos(guardados)
 
     def _guardar_avisos(self):
         try:
@@ -564,10 +563,8 @@ class InterurbanoApp(MDApp):
 
     @staticmethod
     def _minutos(texto):
-        """'1 h 20 min' -> 80, '15 min' -> 15 (para ubicar buses de demo)."""
-        horas = re.search(r"(\d+)\s*h", texto)
-        mins = re.search(r"(\d+)\s*min", texto)
-        return (int(horas.group(1)) * 60 if horas else 0) + (int(mins.group(1)) if mins else 0)
+        """Compatibilidad con llamadas existentes; el cálculo vive en recorridos."""
+        return recorridos.minutos_desde_texto(texto)
 
     def actualizar_mapa(self, mapa, lugar):
         """Centra el mapa en la localidad, dibuja la parada y un bus (simulado)
@@ -589,11 +586,12 @@ class InterurbanoApp(MDApp):
             if destino not in COORDENADAS:
                 continue
             dlat, dlon = COORDENADAS[destino]
-            dur = max(self._minutos(d["duracion"]), 1)
-            frac = min(0.8, max(0.15, self._minutos(d["minutos"]) / dur))
+            bus_lat, bus_lon = recorridos.posicion_bus_demo(
+                (lat, lon), (dlat, dlon), d["duracion"], d["minutos"]
+            )
             bus = MarcadorBus(
-                lat=lat + (dlat - lat) * frac,
-                lon=lon + (dlon - lon) * frac,
+                lat=bus_lat,
+                lon=bus_lon,
                 source=ICONO_BUS if os.path.exists(ICONO_BUS)
                        else "atlas://data/images/defaulttheme/checkbox_on",
                 anchor_x=0.5, anchor_y=0.5,
@@ -873,15 +871,8 @@ class InterurbanoApp(MDApp):
         return TIPOS_AVISO[aviso["tipo"]]["texto"]
 
     def _estado_ruta(self, ruta):
-        """Devuelve (ocupación, atraso, cambio_ruta): el aviso vigente más
-        reciente de cada tipo para esa línea, o None si no hay."""
-        ahora = time.time()
-        vigentes = [a for a in self.avisos
-                    if a["ruta"] == ruta and ahora - a["ts"] <= self.vigencia_s]
-        ocupacion = next((a for a in vigentes if a["tipo"] in ("lleno", "asientos")), None)
-        atraso = next((a for a in vigentes if a["tipo"] == "atrasado"), None)
-        cambio = next((a for a in vigentes if a["tipo"] == "cambio_ruta"), None)
-        return ocupacion, atraso, cambio
+        """Últimos reportes vigentes; sin dependencias de widgets Kivy."""
+        return avisos_service.estado_ruta(self.avisos, ruta, self.vigencia_s)
 
     def _texto_estado(self, ruta):
         """Texto corto + color para la tarjeta de la línea."""
@@ -980,9 +971,11 @@ class InterurbanoApp(MDApp):
         caja = pantalla.ids.avisos_box
         caja.clear_widgets()
         ahora = time.time()
-        antes = len(self.avisos)
-        self.avisos = [a for a in self.avisos if ahora - a["ts"] <= HISTORIAL_S]
-        if len(self.avisos) != antes:
+        anteriores = self.avisos
+        self.avisos = avisos_service.historial_reciente(
+            anteriores, HISTORIAL_S, ahora
+        )
+        if self.avisos != anteriores:
             self._guardar_avisos()
         visibles = [a for a in self.avisos
                     if not self.solo_favoritas or a["ruta"] in self.favoritas]
