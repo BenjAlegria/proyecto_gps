@@ -91,6 +91,20 @@ class GoogleTilesClientTests(unittest.TestCase):
             self.cliente.iniciar()
         self.assertNotIn("clave-de-prueba", str(error.exception))
 
+    def test_error_google_muestra_motivo_sin_revelar_clave(self):
+        self.respuesta.status_code = 404
+        self.respuesta.json.return_value = {
+            "error": {
+                "status": "NOT_FOUND",
+                "message": "API no encontrada para clave-de-prueba",
+            }
+        }
+        with self.assertRaises(tiles.ErrorMapTiles) as error:
+            self.cliente.iniciar()
+        self.assertIn("NOT_FOUND", str(error.exception))
+        self.assertIn("[CLAVE OCULTA]", str(error.exception))
+        self.assertNotIn("clave-de-prueba", str(error.exception))
+
     def test_sin_sesion_no_permite_pedir_tiles(self):
         with self.assertRaises(tiles.ErrorMapTiles):
             self.cliente.mosaico(10, 120, 350)
