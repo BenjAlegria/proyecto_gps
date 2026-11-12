@@ -36,7 +36,8 @@ from config import (CONFIG_REMOTA_DEFECTO, HISTORIAL_S, ICONO_BUS, LOG_ERRORES,
                     OPCIONES_ATRASO)
 from datos_rutas import (COORDENADAS, GRIS, LOCALIDADES, NARANJA, ROJO, RUTAS,
                          TIPOS_AVISO, VERDE)
-from servicios import almacenamiento, autenticacion, config_remota, avisos_service, recorridos, ubicacion, google_maps_preview
+from servicios import almacenamiento, autenticacion, config_remota, avisos_service, recorridos, ubicacion, google_maps_preview, google_tiles_api
+from servicios.google_tiles_kivy import GoogleTilesSource
 from servicios.autenticacion import ErrorAutenticacion
 from servicios.notificaciones import notificar as enviar_notificacion
 from tema import PaletaVisual
@@ -186,6 +187,8 @@ class InterurbanoApp(MDApp):
     panel_expandido = False
     consentimiento = False   # ¿el usuario aceptó compartir ubicación?
     compartiendo = BooleanProperty(False)
+    mapa_google_activo = BooleanProperty(False)
+    google_creditos = StringProperty("")
     linea_actual = ""
     favoritas = []
     viajes = 0
@@ -214,6 +217,13 @@ class InterurbanoApp(MDApp):
         self.favoritas = []
         self.avisos = []
         self._ultimo_aviso = {}
+        self._mapa_fuente_base = None
+        self._mapa_google_cliente = None
+        self._mapa_google_solicitud = 0
+        self._mapa_google_creditos_solicitud = 0
+        self._mapa_google_conectando = False
+        self.mapa_google_activo = False
+        self.google_creditos = ""
         self.gps_activo = False
         self.marcador_yo = None
         self._solicitud_ubicacion = 0
@@ -779,6 +789,7 @@ class InterurbanoApp(MDApp):
 
     def on_stop(self):
         Window.unbind(size=self._actualizar_zona_segura)
+        self.volver_a_mapview(silencioso=True)
         google_maps_preview.detener()
         self.detener_gps()
         self._guardar_perfil()
@@ -1120,6 +1131,158 @@ class InterurbanoApp(MDApp):
     def alternar_solo_favoritas(self, activo):
         self.solo_favoritas = activo
         self.poblar_avisos()
+
+    # --------------------------------------------------------
+    # Google Map Tiles en Inicio — opción experimental de escritorio.
+    # MapView sigue siendo el widget: solo cambia la fuente del mapa.
+    # Las imágenes Google se procesan en memoria, nunca en disco.
+    # --------------------------------------------------------
+    @staticmethod
+    def _limites_del_mapa(mapa):
+        sur, oeste, norte, este = mapa.get_bbox()
+        return (max(-85., min(85., norte)), max(-85., min(85., sur)),
+                max(-180., min(180., este)), max(-180., min(180., oeste))
+
+    def activar_google_en_inicio(self):
+        """Prueba Google Maps en la ventana Kivy, con permiso explícito.
+
+        No necesita WebView, y no altera la variante estable del repositorio.
+        La API Google Map Tiles requiere una clave distinta de Maps JS.
+        """
+        if platform == "android":
+            self._snack("Google Maps dentro de Kivy está en prueba de escritorio.")
+            return
+        if self.mapa_google_activo:
+            self.cambiar_pantalla("home")
+            return
+        if self._mapa_google_conectando:
+            return
+        try:
+            clave = google_tiles_api.clave_configurada()
+        except google_tiles_api.ErrorMapTiles as exc:
+            self._snack(str(exc))
+            return
+
+        mapa = self._pantalla("home").ids.mapa
+        limites = self._limites_del_mapa(mapa)
+        zoom = int(mapa.zoom)
+        self._mapa_google_solicitud += 1
+        solicitud = self._mapa_google_solicitud
+        self._mapa_google_conectando = True
+        self._snack("Conectando Google Maps dentro de Inicio…")
+
+        def trabajo():
+            try:
+                cliente = google_tiles_api.ClienteMapTiles(clave).iniciar()
+                creditos = cliente.atribucion(zoom, *limites)
+                error = None
+            except google_tiles_api.ErrorMapTiles as exc:
+                cliente, creditos, error = None, "", str(exc)
+            except Exception:
+                cliente, creditos, error = None, "", "Google Maps no está disponible."
+            Clock.schedule_once(
+                lambda dt: self._finalizar_google_en_inicio(
+                    solicitud, cliente, creditos, error
+                )
+            )
+
+        threading.Thread(target=trabajo, daemon=True, name="google-map-tiles").start()
+
+    def _finalizar_google_en_inicio(self, solicitud, cliente, creditos, error):
+        if solicitud != self._mapa_google_solicitud:
+            return
+        self._mapa_google_conectando = False
+        if error:
+            self._snack(error)
+            return
+        mapa = self._pantalla("home").ids.mapa
+        if self._mapa_fuente_base is None:
+            self._mapa_fuente_base = mapa.map_source
+        self._mapa_google_cliente = cliente
+        self.google_creditos = creditos
+        fuente_google = GoogleTilesSource(
+            cliente, al_fallar=self._error_google_tiles, creditos=creditos
+        )
+        mapa.map_source = fuente_google
+        self.mapa_google_activo = True
+        mapa.bind(on_map_relocated=self._mapa_google_reubicado)
+        self.cambiar_pantalla("home")
+        self._snack("Google Maps activado en Inicio · datos de buses simulados")
+
+    def _error_google_tiles(self, mensaje):
+        if self.mapa_google_activo:
+            self.volver_a_mapview(silencioso=True)
+            self._snack(mensaje + " Se restauró OpenStreetMap.")
+
+    def volver_a_mapview(self, silencioso=False):
+        """Restaura el mapa original e invalida solicitudes de Google tardías."""
+        self._mapa_google_solicitud += 1
+        self._mapa_google_creditos_solicitud += 1
+        self._mapa_google_conectando = False
+        Clock.unschedule(self._actualizar_creditos_google)
+        if self.root:
+            mapa = self._pantalla("home").ids.mapa
+            mapa.unbind(on_map_relocated=self._mapa_google_reubicado)
+            if self._mapa_fuente_base is not None and self.mapa_google_activo:
+                mapa.map_source = self._mapa_fuente_base
+        self._mapa_google_cliente = None
+        self.mapa_google_activo = False
+        self.google_creditos = ""
+        if not silencioso:
+            self.cambiar_pantalla("home")
+            self._snack("Se restauró el mapa original OpenStreetMap")
+
+    def _mapa_google_reubicado(self, *args):
+        """Actualiza los créditos al cambiar la zona visible de Google Maps."""
+        if not self.mapa_google_activo:
+            return
+        Clock.unschedule(self._actualizar_creditos_google)
+        Clock.schedule_once(self._actualizar_creditos_google, .8)
+
+    def _actualizar_creditos_google(self, *args):
+        if not self.mapa_google_activo or self._mapa_google_cliente is None:
+            return
+        mapa = self._pantalla("home").ids.mapa
+        limites = self._limites_del_mapa(mapa)
+        zoom = int(mapa.zoom)
+        cliente = self._mapa_google_cliente
+        self._mapa_google_creditos_solicitud += 1
+        solicitud = self._mapa_google_creditos_solicitud
+
+        def trabajo():
+            try:
+                creditos = cliente.atribucion(zoom, *limites)
+            except google_tiles_api.ErrorMapTiles:
+                return
+            Clock.schedule_once(lambda dt: self._aplicar_creditos_google(
+                solicitud, cliente, creditos
+            ))
+
+        threading.Thread(target=trabajo, daemon=True, name="google-map-creditos").start()
+
+    def _aplicar_creditos_google(self, solicitud, cliente, creditos):
+        if (self.mapa_google_activo
+                and solicitud == self._mapa_google_creditos_solicitud
+                and cliente is self._mapa_google_cliente):
+            self.google_creditos = creditos
+
+    def mostrar_atribucion_google(self):
+        """Mostrar créditos completos, sobre todo si la pantalla es pequeña."""
+        if not self.mapa_google_activo:
+            return
+        self.dialogo = MDDialog(
+            MDDialogHeadlineText(text="Fuentes del mapa · Google Maps"),
+            MDDialogSupportingText(
+                text=self.google_creditos + "\n\n"
+                     "Mapa base: Google Maps. Marcadores y ubicaciones de buses: "
+                     "simulación de EnRuta Ya!, no son GPS ni datos oficiales."
+            ),
+            MDDialogButtonContainer(
+                MDButton(MDButtonText(text="Cerrar"), style="text",
+                         on_release=lambda *a: self.dialogo.dismiss())
+            ),
+        )
+        self.dialogo.open()
 
     def abrir_google_maps(self):
         """Abre Google Maps en el navegador, manteniendo MapView en Kivy.
