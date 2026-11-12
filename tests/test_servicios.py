@@ -42,6 +42,19 @@ class AutenticacionLocalTests(unittest.TestCase):
         with self.assertRaises(ErrorAutenticacion):
             autenticacion.registrar("PASAJERO", "abc12345", "abc12345")
 
+    def test_login_controla_registros_json_incompletos(self):
+        self.ruta.write_text(
+            json.dumps({"pasajero": {"sal": "incorrecta"}}),
+            encoding="utf-8",
+        )
+        with self.assertRaises(ErrorAutenticacion):
+            autenticacion.iniciar_sesion("pasajero", "abc12345")
+        self.ruta.write_text("[]", encoding="utf-8")
+        with self.assertRaises(ErrorAutenticacion):
+            autenticacion.iniciar_sesion("pasajero", "abc12345")
+        with self.assertRaises(ErrorAutenticacion):
+            autenticacion.registrar("pasajero", "abc12345", "abc12345")
+
     def test_validacion_de_campos(self):
         casos = [
             ("!", "abc12345", "abc12345"),
@@ -75,6 +88,26 @@ class AlmacenamientoLocalTests(unittest.TestCase):
         self.assertEqual(almacenamiento.cargar_perfil("ana")["favoritas"], ["Lautaro"])
         self.assertEqual(almacenamiento.cargar_perfil("ben")["nombre"], "Ben")
         self.assertFalse((self.carpeta / "perfiles.json.tmp").exists())
+
+    def test_perfil_corrupto_recupera_valores_seguros(self):
+        ruta = self.carpeta / "perfiles.json"
+        ruta.write_text(json.dumps({
+            "ana": {
+                "nombre": 123,
+                "favoritas": ["Temuco -> Lautaro", 4, "Temuco -> Lautaro"],
+                "viajes": -3,
+                "tema_oscuro": "sí",
+                "consentimiento": True,
+            }
+        }), encoding="utf-8")
+        perfil = almacenamiento.cargar_perfil("ana")
+        self.assertEqual(perfil["nombre"], "ana")
+        self.assertEqual(perfil["favoritas"], ["Temuco -> Lautaro"])
+        self.assertEqual(perfil["viajes"], 0)
+        self.assertFalse(perfil["tema_oscuro"])
+        self.assertTrue(perfil["consentimiento"])
+        ruta.write_text("[]", encoding="utf-8")
+        self.assertEqual(almacenamiento.cargar_perfil("ana")["favoritas"], [])
 
     def test_avisos_persisten_en_formato_json(self):
         avisos = [{"ruta": "Temuco -> Lautaro", "tipo": "lleno", "ts": 10}]
