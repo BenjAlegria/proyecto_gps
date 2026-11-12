@@ -651,15 +651,52 @@ class InterurbanoApp(MDApp):
             except (NotImplementedError, PermissionError, RuntimeError, OSError):
                 pass
         if permitir_ip and not self.compartiendo and platform != "android":
+            # Una IP se envía a un tercero: pedir consentimiento explícito
+            # antes de ejecutar esta alternativa aproximada al GPS.
             self._ip_consulta_pendiente = True
-            threading.Thread(
-                target=self._localizar_por_ip, args=(solicitud,), daemon=True
-            ).start()
+            self.dialogo = MDDialog(
+                MDDialogHeadlineText(text="Ubicación aproximada por IP"),
+                MDDialogSupportingText(
+                    text="Este equipo no tiene GPS disponible. Si continúas, "
+                         "se consultará al proveedor externo ipwho.is por HTTPS "
+                         "usando tu IP pública para estimar la ubicación. "
+                         "No es una ubicación precisa ni se usará para viajes."
+                ),
+                MDDialogButtonContainer(
+                    MDButton(
+                        MDButtonText(text="Cancelar"),
+                        style="text",
+                        on_release=lambda *a: self._cancelar_ubicacion_ip(solicitud),
+                    ),
+                    MDButton(
+                        MDButtonText(text="Continuar"),
+                        style="text",
+                        on_release=lambda *a: self._autorizar_ubicacion_ip(solicitud),
+                    ),
+                    spacing="8dp",
+                ),
+            )
+            self.dialogo.open()
         else:
             self._pantalla("home").ids.ubicacion_estado.text = (
                 "GPS no disponible o sin permisos"
             )
         return False
+
+    def _cancelar_ubicacion_ip(self, solicitud):
+        self.dialogo.dismiss()
+        if solicitud == self._solicitud_ubicacion:
+            self._ip_consulta_pendiente = False
+            self._solicitud_ubicacion += 1
+
+    def _autorizar_ubicacion_ip(self, solicitud):
+        self.dialogo.dismiss()
+        if solicitud != self._solicitud_ubicacion or self.compartiendo:
+            self._ip_consulta_pendiente = False
+            return
+        threading.Thread(
+            target=self._localizar_por_ip, args=(solicitud,), daemon=True
+        ).start()
 
     def _localizar_por_ip(self, solicitud=None):
         """Solo el botón de ubicación de escritorio consulta el servicio.
