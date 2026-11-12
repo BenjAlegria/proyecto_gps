@@ -52,6 +52,18 @@ class GoogleTilesClientTests(unittest.TestCase):
             "sesion-de-prueba",
         )
 
+    def test_limite_por_activacion_reduce_riesgo_de_consumo(self):
+        self.cliente.iniciar()
+        respuesta = Mock()
+        respuesta.status_code = 200
+        respuesta.content = b"png"
+        self.transport.get.return_value = respuesta
+        with patch.object(tiles, "MAX_MOSAICOS_POR_ACTIVACION", 1):
+            self.assertEqual(self.cliente.mosaico(10, 120, 350), b"png")
+            with self.assertRaises(tiles.ErrorMapTiles):
+                self.cliente.mosaico(10, 120, 351)
+        self.assertEqual(self.transport.get.call_count, 1)
+
     def test_creditos_consulta_viewport_y_retorna_copyright(self):
         self.cliente.iniciar()
         respuesta = Mock()
