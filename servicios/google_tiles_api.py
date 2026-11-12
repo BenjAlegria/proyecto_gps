@@ -58,9 +58,26 @@ class ClienteMapTiles:
     def _verificar(self, respuesta, etapa):
         # No propagar requests.HTTPError: su mensaje puede incluir la API key.
         if respuesta.status_code != 200:
+            detalle = ""
+            try:
+                cuerpo = respuesta.json()
+                error = cuerpo.get("error", {}) if isinstance(cuerpo, dict) else {}
+                if isinstance(error, dict):
+                    codigo = error.get("status")
+                    mensaje = error.get("message")
+                    if isinstance(codigo, str):
+                        detalle += " · " + codigo[:70]
+                    if isinstance(mensaje, str):
+                        # El servicio podría reflejar datos de la petición;
+                        # nunca mostrar el valor secreto ni volcar la URL.
+                        filtrado = mensaje.replace(self._clave, "[CLAVE OCULTA]")
+                        filtrado = filtrado.replace("https://tile.googleapis.com", "[API]")
+                        detalle += " · " + filtrado[:240]
+            except (ValueError, TypeError, AttributeError):
+                pass
             raise ErrorMapTiles(
-                f"Google Map Tiles falló en {etapa} (HTTP {respuesta.status_code}). "
-                "Revisa Map Tiles API, restricciones, cuotas y facturación."
+                f"Google Map Tiles falló en {etapa} (HTTP {respuesta.status_code})"
+                f"{detalle}. Revisa Map Tiles API y facturación."
             )
         return respuesta
 
