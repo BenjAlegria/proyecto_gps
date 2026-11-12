@@ -356,6 +356,33 @@ BoxLayout:
                         font_size: "24sp"
                         -text_color: 1, 1, 1, 1
 
+            # Visible exclusivamente con Google Maps y separado del GPS demo.
+            # Los créditos completos se abren al tocar este control.
+            HomeAction:
+                id: google_fuentes_btn
+                width: min(dp(220), self.parent.width * .69)
+                height: dp(30) if app.mapa_google_activo else 0
+                opacity: 1 if app.mapa_google_activo else 0
+                disabled: not app.mapa_google_activo
+                pos_hint: {"x": .03}
+                y: dp(5)
+                radius: [dp(10)]
+                -md_bg_color: 1, 1, 1, .94
+                -stroke: .6, .65, .7, 1
+                padding: dp(7), 0
+                spacing: dp(4)
+                on_release: app.mostrar_atribucion_google()
+                HomeText:
+                    text: "Google Maps · Fuentes de datos"
+                    font_size: "10sp"
+                    bold: True
+                    -color: .1, .2, .35, 1
+                HomeIcon:
+                    icon: "information-outline"
+                    font_size: "15sp"
+                    size: dp(17), dp(17)
+                    -text_color: .1, .2, .35, 1
+
         # Panel plegable, más claro y preparado para mostrar las rutas.
         HomeSurface:
             id: panel_buses
@@ -1088,14 +1115,27 @@ BoxLayout:
                     on_release: app.simular_aviso()
 
                 UiSection:
-                    text: "Experimento Google Maps"
+                    text: "Google Maps · Experimento"
                 UiNotice:
-                    text: "Vista de prueba en el navegador del PC. Conserva MapView y no utiliza GPS real."
+                    text: "Prueba Google Maps dentro de Inicio. Requiere Map Tiles API y una clave distinta de Maps JavaScript. No modifica tus datos ni el GPS."
                     icon: "map-search-outline"
                 UiButton:
                     primary: False
-                    text: "Probar mapa de Google"
+                    text: "Activar Google en Inicio"
                     icon: "google-maps"
+                    on_release: app.activar_google_en_inicio()
+                UiButton:
+                    primary: False
+                    text: "Volver al mapa original"
+                    icon: "map-outline"
+                    on_release: app.volver_a_mapview()
+                UiParagraph:
+                    text: "La prueba anterior en navegador sigue disponible:"
+                    font_size: "11sp"
+                UiButton:
+                    primary: False
+                    text: "Abrir Google Maps en navegador"
+                    icon: "open-in-new"
                     on_release: app.abrir_google_maps()
 
                 UiSection:
