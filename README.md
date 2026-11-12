@@ -115,10 +115,15 @@ proyecto_gps/
 ├── servicios/
 │   ├── autenticacion.py        # Registro, login, validación y hash de contraseñas
 │   ├── almacenamiento.py       # Leer/guardar JSON: perfiles y avisos
+│   ├── avisos_service.py       # Reglas, historial y saneamiento de reportes
+│   ├── recorridos.py           # Cálculos de rutas y posiciones de demostración
+│   ├── ubicacion.py            # Validación GPS y estimación IP opcional por HTTPS
 │   ├── config_remota.py        # Descarga, validación y caché de la configuración remota
 │   └── notificaciones.py       # Notificación en la app + del sistema (plyer)
 ├── remote_config.json          # Fuente de la configuración remota (se sirve desde GitHub)
-├── tests/test_servicios.py     # Pruebas automáticas de los servicios
+├── tests/test_servicios.py     # Pruebas de almacenamiento, login y configuración
+├── tests/test_logica.py        # Pruebas puras de rutas, GPS y avisos
+├── tests/test_inicio.py        # Regresiones Kivy y navegación de pantallas
 ├── bus_marker.png              # Ícono del bus en el mapa
 ├── data/                       # Se crea sola al usar la app (no se sube al repo)
 │   ├── usuarios.json           #   credenciales (sal + hash)
@@ -166,9 +171,11 @@ error del login es el mismo si falla el usuario o la clave.
   alto 0): se creó `AvisoSnackbar`, que fuerza un tamaño mínimo antes de crear el FBO.
 - **Íconos de bus gigantes al alejar el mapa:** los marcadores de MapView no escalan;
   `MarcadorBus.ajustar_zoom` cambia su tamaño según el zoom.
-- **PC sin GPS ni notificaciones del sistema:** `plyer` se importa dentro de `try`; sin
-  GPS se calcula una ubicación aproximada por IP en un hilo, y sin proveedor de
-  notificaciones igual se muestra el aviso dentro de la app.
+- **PC sin GPS ni notificaciones del sistema:** `plyer` se importa dentro de `try`. Si
+  el usuario pulsa «localizarme» sin GPS, se le solicita autorización explícita antes
+  de consultar `https://ipwho.is/` por HTTPS para obtener una ubicación aproximada.
+  Esa estimación NO sirve para compartir la posición de un bus. Sin proveedor de
+  notificaciones se muestra el aviso dentro de la app.
 - **Interfaz congelada al consultar internet:** la configuración remota y la ubicación
   por IP corren en hilos y vuelven a la interfaz con `Clock.schedule_once`.
 - **Archivos JSON corruptos o a medias:** `guardar_json` escribe a un temporal y lo
@@ -177,6 +184,13 @@ error del login es el mismo si falla el usuario o la clave.
   interruptores y disparaban guardados; la bandera `_cargando` lo evita.
 - **Sin internet en la demo:** la app no depende de la red para abrir; cae a la caché
   o a los valores por defecto.
+
+## Fase 1.5 — Preparación para nuevas integraciones
+Se extrajeron cálculos de rutas, validación de ubicaciones y reglas de avisos a
+servicios independientes de Kivy. Se reforzó el cierre de sesión para invalidar
+consultas GPS/IP pendientes y se validan JSON incompletos o corruptos antes de
+aplicarlos a la interfaz. Los cambios, pruebas y limitaciones están detallados en
+[`docs/FASE-1-5-REFACTORIZACION.md`](docs/FASE-1-5-REFACTORIZACION.md).
 
 ## Limitaciones conocidas
 - La ubicación y los avisos son locales al dispositivo: aún no hay un servidor que los
