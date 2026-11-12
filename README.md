@@ -1,3 +1,12 @@
+> **Nuevo experimento en Kivy:** además de abrir Google Maps
+> en el navegador, ahora puedes ir a **Ajustes → Activar Google en
+> Inicio** para probar mosaicos de Google directamente en el mapa
+> de Kivy y volver con **Volver al mapa original**. Requiere activar
+> **Map Tiles API** y configurar una clave distinta:
+> `ENRUTA_GOOGLE_TILES_API_KEY`. Más detalles en
+> [la guía del mapa](docs/GOOGLE-MAPS-EXPERIMENTO.md).
+> Aún no está validado con Google Map Tiles real ni preparado para APK.
+
 # EnRuta Ya!
 
 App móvil para consultar la hora de llegada de los buses interurbanos
