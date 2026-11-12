@@ -105,16 +105,17 @@
     }
     function marcador(pos, icono, color, titulo, detalle) {
       const pin = new PinElement({
-        glyph: icono,
+        glyphText: icono,
         background: color,
         borderColor: color,
         glyphColor: "#fff",
         scale: icono === "🚌" ? 1.2 : 1.0
       });
       const m = new AdvancedMarkerElement({
-        position: pos, map: mapa, title: titulo, content: pin.element
+        position: pos, map: mapa, title: titulo, gmpClickable: true
       });
-      m.addListener("gmp-click", () => {
+      m.append(pin);
+      m.addEventListener("gmp-click", () => {
         const contenedor = document.createElement("div");
         contenedor.style.cssText = "min-width:160px;font:12px system-ui;color:#102a54";
         const nombre = document.createElement("strong");
