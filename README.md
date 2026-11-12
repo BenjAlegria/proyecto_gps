@@ -1,3 +1,12 @@
+> **Nuevo experimento en Kivy:** además de abrir Google Maps
+> en el navegador, ahora puedes ir a **Ajustes → Activar Google en
+> Inicio** para probar mosaicos de Google directamente en el mapa
+> de Kivy y volver con **Volver al mapa original**. Requiere activar
+> **Map Tiles API** y configurar una clave distinta:
+> `ENRUTA_GOOGLE_TILES_API_KEY`. Más detalles en
+> [la guía del mapa](docs/GOOGLE-MAPS-EXPERIMENTO.md).
+> Aún no está validado con Google Map Tiles real ni preparado para APK.
+
 # EnRuta Ya!
 
 App móvil para consultar la hora de llegada de los buses interurbanos
@@ -191,6 +200,26 @@ servicios independientes de Kivy. Se reforzó el cierre de sesión para invalida
 consultas GPS/IP pendientes y se validan JSON incompletos o corruptos antes de
 aplicarlos a la interfaz. Los cambios, pruebas y limitaciones están detallados en
 [`docs/FASE-1-5-REFACTORIZACION.md`](docs/FASE-1-5-REFACTORIZACION.md).
+
+## Mapa Google experimental (rama experimento/google-maps)
+
+En **Ajustes → Probar mapa de Google** hay una prueba de Google Maps
+JavaScript API que se abre en el navegador del PC. Conserva MapView
+dentro de Kivy. Muestra recorridos y marcadores **simulados**, sin
+seguimiento GPS real ni conexión entre dispositivos.
+
+Requiere una clave propia de Google Maps JavaScript API con facturación,
+restricciones y cuotas configuradas. Se establece en PowerShell como
+variable de entorno ENRUTA_GOOGLE_MAPS_API_KEY (nunca en el código Git).
+Para requisitos, configuración y límites, consultar
+[docs/GOOGLE-MAPS-EXPERIMENTO.md](docs/GOOGLE-MAPS-EXPERIMENTO.md).
+
+## Entrega académica E4
+
+La arquitectura, pruebas y limitaciones están descritas en
+[DOCUMENTATION.md](DOCUMENTATION.md). La revisión de la rúbrica y
+los pendientes de MJV App, KPIs, gráficos e Informe Final están en
+[docs/E4-RUBRICA-CUMPLIMIENTO.md](docs/E4-RUBRICA-CUMPLIMIENTO.md).
 
 ## Limitaciones conocidas
 - La ubicación y los avisos son locales al dispositivo: aún no hay un servidor que los
