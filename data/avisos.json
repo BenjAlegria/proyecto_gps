@@ -1,10 +1,22 @@
 [
   {
-    "ruta": "Nueva Imperial -> Temuco",
+    "id": "e44aff56",
+    "ruta": "Lautaro -> Victoria",
     "tipo": "asientos",
     "minutos": 0,
-    "ts": 1793061710.5738988,
+    "ts": 1794768067.9445655,
     "propio": true,
-    "autor": "benjamin"
+    "autor": "juju",
+    "votos": {}
+  },
+  {
+    "ruta": "Lautaro -> Temuco",
+    "tipo": "atrasado",
+    "minutos": 15,
+    "ts": 1794767441.1351514,
+    "propio": true,
+    "autor": "juju",
+    "id": "f4fc9222",
+    "votos": {}
   }
 ]

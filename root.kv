@@ -40,6 +40,9 @@ BoxLayout:
         PerfilScreen:
             name: "perfil"
 
+        DetalleScreen:
+            name: "detalle"
+
     # ----------------------------------------------------------
     # Barra de navegación inferior (azul, iconos blancos)
     # ----------------------------------------------------------
@@ -320,10 +323,12 @@ BoxLayout:
     padding: dp(12), dp(8)
     spacing: dp(10)
     radius: [12]
-    on_release: app.mostrar_detalle(root.ruta)
+    on_release: app.tocar_linea(root)
 
     MDIcon:
-        icon: "bus"
+        icon: "map-marker-path" if root.seleccionada else "bus"
+        theme_text_color: "Custom"
+        text_color: (0.16, 0.45, 0.87, 1) if root.seleccionada else ((1, 1, 1, 0.9) if app.theme_cls.theme_style == "Dark" else (0.10, 0.12, 0.15, 1))
         size_hint_x: None
         width: dp(32)
         pos_hint: {"center_y": 0.5}
@@ -367,12 +372,23 @@ BoxLayout:
             font_style: "Body"
             role: "small"
 
+    # Solo en las tarjetas del panel de Inicio: abre el detalle de la línea
+    MDIconButton:
+        icon: "information-outline"
+        style: "standard"
+        size_hint: None, None
+        size: (dp(36), dp(36)) if root.en_mapa else (dp(1), dp(36))
+        opacity: 1 if root.en_mapa else 0
+        disabled: not root.en_mapa
+        pos_hint: {"center_y": 0.5}
+        on_release: app.mostrar_detalle(root.ruta)
+
 
 <AvisoCard>:
     style: "outlined"
     orientation: "horizontal"
     size_hint_y: None
-    height: dp(68)
+    height: dp(96)
     padding: dp(12), dp(8)
     spacing: dp(10)
     radius: [12]
@@ -400,6 +416,264 @@ BoxLayout:
             text: root.detalle
             font_style: "Body"
             role: "small"
+
+        BoxLayout:
+            size_hint_y: None
+            height: dp(32)
+            spacing: dp(2)
+
+            MDLabel:
+                text: "¿Es correcto?"
+                font_style: "Body"
+                role: "small"
+                size_hint_x: None
+                width: dp(90)
+
+            MDIconButton:
+                icon: "thumb-up" if root.mi_voto == 1 else "thumb-up-outline"
+                style: "standard"
+                size_hint: None, None
+                size: dp(32), dp(32)
+                on_release: app.votar_aviso(root.aviso_id, 1)
+
+            MDLabel:
+                text: str(root.votos_ok)
+                size_hint_x: None
+                width: dp(28)
+
+            MDIconButton:
+                icon: "thumb-down" if root.mi_voto == -1 else "thumb-down-outline"
+                style: "standard"
+                size_hint: None, None
+                size: dp(32), dp(32)
+                on_release: app.votar_aviso(root.aviso_id, -1)
+
+            MDLabel:
+                text: str(root.votos_mal)
+
+
+<DatoRuta@MDCard>:
+    icono: ""
+    titulo: ""
+    valor: ""
+    style: "outlined"
+    orientation: "vertical"
+    size_hint_y: None
+    height: dp(88)
+    padding: dp(8)
+    radius: [14]
+
+    MDIcon:
+        icon: root.icono
+        halign: "center"
+        size_hint_y: None
+        height: dp(28)
+
+    MDLabel:
+        text: root.valor
+        halign: "center"
+        bold: True
+        font_style: "Body"
+        role: "medium"
+
+    MDLabel:
+        text: root.titulo
+        halign: "center"
+        font_style: "Body"
+        role: "small"
+
+
+<DetalleScreen>:
+    BoxLayout:
+        orientation: "vertical"
+
+        MDBoxLayout:
+            size_hint_y: None
+            height: dp(58)
+            padding: dp(6), 0
+            spacing: dp(6)
+            md_bg_color: AZUL_OSCURO if app.theme_cls.theme_style == "Dark" else AZUL_CLARO
+
+            MDIconButton:
+                icon: "arrow-left"
+                icon_color: 1, 1, 1, 1
+                pos_hint: {"center_y": 0.5}
+                on_release: app.cerrar_detalle()
+
+            MDLabel:
+                text: "Detalle de la línea"
+                bold: True
+                theme_text_color: "Custom"
+                text_color: 1, 1, 1, 1
+                pos_hint: {"center_y": 0.5}
+
+        ScrollView:
+            MDBoxLayout:
+                orientation: "vertical"
+                spacing: dp(12)
+                padding: dp(12), dp(12), dp(12), dp(12)
+                adaptive_height: True
+
+                # --- Cabecera: ruta, parada y próximo bus ---
+                MDBoxLayout:
+                    orientation: "horizontal"
+                    size_hint_y: None
+                    height: dp(112)
+                    padding: dp(16)
+                    spacing: dp(10)
+                    radius: [18]
+                    md_bg_color: AZUL_OSCURO if app.theme_cls.theme_style == "Dark" else AZUL_CLARO
+
+                    MDIcon:
+                        icon: "bus"
+                        theme_text_color: "Custom"
+                        text_color: 1, 1, 1, 1
+                        size_hint_x: None
+                        width: dp(40)
+                        pos_hint: {"center_y": 0.5}
+
+                    BoxLayout:
+                        orientation: "vertical"
+
+                        MDLabel:
+                            id: det_titulo
+                            text: ""
+                            bold: True
+                            font_style: "Title"
+                            role: "medium"
+                            theme_text_color: "Custom"
+                            text_color: 1, 1, 1, 1
+
+                        MDLabel:
+                            id: det_parada
+                            text: ""
+                            font_style: "Body"
+                            role: "small"
+                            theme_text_color: "Custom"
+                            text_color: 1, 1, 1, 0.85
+
+                    BoxLayout:
+                        orientation: "vertical"
+                        size_hint_x: None
+                        width: dp(80)
+
+                        MDLabel:
+                            id: det_minutos
+                            text: ""
+                            halign: "right"
+                            bold: True
+                            font_style: "Title"
+                            role: "large"
+                            theme_text_color: "Custom"
+                            text_color: 1, 1, 1, 1
+
+                        MDLabel:
+                            text: "próximo bus"
+                            halign: "right"
+                            font_style: "Body"
+                            role: "small"
+                            theme_text_color: "Custom"
+                            text_color: 1, 1, 1, 0.85
+
+                # --- Frecuencia, duración y tarifa ---
+                MDBoxLayout:
+                    orientation: "horizontal"
+                    size_hint_y: None
+                    height: dp(88)
+                    spacing: dp(8)
+
+                    DatoRuta:
+                        id: det_frecuencia
+                        icono: "timer-sand"
+                        titulo: "Frecuencia"
+
+                    DatoRuta:
+                        id: det_duracion
+                        icono: "clock-outline"
+                        titulo: "Duración"
+
+                    DatoRuta:
+                        id: det_tarifa
+                        icono: "cash"
+                        titulo: "Tarifa"
+
+                # --- Estado actual según los avisos ---
+                MDCard:
+                    style: "outlined"
+                    orientation: "horizontal"
+                    size_hint_y: None
+                    height: dp(60)
+                    padding: dp(14), dp(8)
+                    spacing: dp(10)
+                    radius: [14]
+
+                    MDIcon:
+                        icon: "information-outline"
+                        size_hint_x: None
+                        width: dp(28)
+                        pos_hint: {"center_y": 0.5}
+
+                    BoxLayout:
+                        orientation: "vertical"
+
+                        MDLabel:
+                            text: "Estado ahora"
+                            font_style: "Body"
+                            role: "small"
+
+                        MDLabel:
+                            id: det_estado
+                            text: ""
+                            bold: True
+                            font_style: "Body"
+                            role: "medium"
+                            theme_text_color: "Custom"
+                            text_color: 0.5, 0.52, 0.58, 1
+
+                MDButton:
+                    style: "tonal"
+                    size_hint_y: None
+                    height: dp(44)
+                    pos_hint: {"center_x": 0.5}
+                    on_release: app.alternar_favorita(app.ruta_detalle)
+
+                    MDButtonIcon:
+                        id: det_fav_icono
+                        icon: "star-outline"
+
+                    MDButtonText:
+                        id: det_fav_texto
+                        text: "Agregar a favoritas"
+
+                # --- Avisos de esta línea, con votos ---
+                MDLabel:
+                    text: "Avisos recientes de esta línea"
+                    bold: True
+                    font_style: "Title"
+                    role: "small"
+                    size_hint_y: None
+                    height: dp(28)
+
+                MDLabel:
+                    text: "Vota si el aviso es correcto o erróneo: así ayudas a que la información sea confiable."
+                    font_style: "Body"
+                    role: "small"
+                    size_hint_y: None
+                    height: dp(36)
+
+                MDLabel:
+                    id: det_vacio
+                    text: "Aún no hay avisos para esta línea."
+                    font_style: "Body"
+                    role: "small"
+                    size_hint_y: None
+                    height: dp(40)
+
+                MDBoxLayout:
+                    id: det_avisos_box
+                    orientation: "vertical"
+                    spacing: dp(8)
+                    adaptive_height: True
 
 
 <RecorridosScreen>:
@@ -799,6 +1073,36 @@ BoxLayout:
 
                         MDLabel:
                             id: usuario_label
+                            text: ""
+                            font_style: "Body"
+                            role: "small"
+
+                MDCard:
+                    style: "outlined"
+                    orientation: "horizontal"
+                    size_hint_y: None
+                    height: dp(72)
+                    padding: dp(14)
+                    spacing: dp(12)
+                    radius: [16]
+
+                    MDIcon:
+                        id: nivel_icono
+                        icon: "account-outline"
+                        size_hint_x: None
+                        width: dp(40)
+                        pos_hint: {"center_y": 0.5}
+
+                    BoxLayout:
+                        orientation: "vertical"
+
+                        MDLabel:
+                            id: nivel_label
+                            text: "Novato · 0 puntos"
+                            bold: True
+
+                        MDLabel:
+                            id: nivel_falta
                             text: ""
                             font_style: "Body"
                             role: "small"

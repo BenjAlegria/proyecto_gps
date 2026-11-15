@@ -6,5 +6,23 @@
     "tema_oscuro": true,
     "notificar_favoritas": true,
     "consentimiento": true
+  },
+  "felipe": {
+    "nombre": "felipe",
+    "favoritas": [],
+    "viajes": 1,
+    "tema_oscuro": false,
+    "notificar_favoritas": true,
+    "consentimiento": true
+  },
+  "juju": {
+    "nombre": "juju",
+    "favoritas": [
+      "Lautaro -> Temuco"
+    ],
+    "viajes": 2,
+    "tema_oscuro": false,
+    "notificar_favoritas": false,
+    "consentimiento": true
   }
 }

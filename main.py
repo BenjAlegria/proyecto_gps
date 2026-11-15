@@ -1,18 +1,22 @@
+import math
 import os
 import random
 import re
 import threading
 import time
 import traceback
+import uuid
 
 from kivy.animation import Animation
 from kivy.base import ExceptionHandler, ExceptionManager
 from kivy.clock import Clock
+from kivy.graphics import Color, Ellipse, Line
 from kivy.lang import Builder
 from kivy.metrics import dp
-from kivy.properties import ListProperty, StringProperty
+from kivy.properties import (BooleanProperty, ListProperty, NumericProperty,
+                             StringProperty)
 from kivy.uix.screenmanager import Screen
-from kivy_garden.mapview import MapView, MapMarker, MapMarkerPopup  # noqa: F401
+from kivy_garden.mapview import MapLayer, MapView, MapMarker, MapMarkerPopup  # noqa: F401
 try:
     from plyer import gps
 except Exception:
@@ -31,11 +35,11 @@ from kivymd.uix.dialog import (
 from kivymd.uix.menu import MDDropdownMenu
 from kivymd.uix.snackbar import MDSnackbar, MDSnackbarText
 
-from config import (CONFIG_REMOTA_DEFECTO, HISTORIAL_S, ICONO_BUS, LOG_ERRORES,
-                    OPCIONES_ATRASO)
+from config import (CONFIG_REMOTA_DEFECTO, DATA_DIR, HISTORIAL_S, ICONO_BUS,
+                    LOG_ERRORES, OPCIONES_ATRASO)
 from datos_rutas import (COORDENADAS, GRIS, LOCALIDADES, NARANJA, ROJO, RUTAS,
                          TIPOS_AVISO, VERDE)
-from servicios import almacenamiento, autenticacion, config_remota
+from servicios import almacenamiento, autenticacion, config_remota, reputacion
 from servicios.autenticacion import ErrorAutenticacion
 from servicios.notificaciones import notificar as enviar_notificacion
 
@@ -78,6 +82,8 @@ class LineaCard(MDCard):
     minutos = StringProperty("")
     aviso = StringProperty("")
     aviso_color = ListProperty(GRIS)
+    en_mapa = BooleanProperty(False)       # tarjeta del panel de Inicio: al tocarla se dibuja en el mapa
+    seleccionada = BooleanProperty(False)  # es la ruta que está dibujada en el mapa
 
 
 class AvisoCard(MDCard):
@@ -85,6 +91,10 @@ class AvisoCard(MDCard):
     titulo = StringProperty("")
     detalle = StringProperty("")
     color = ListProperty(GRIS)
+    aviso_id = StringProperty("")
+    votos_ok = NumericProperty(0)
+    votos_mal = NumericProperty(0)
+    mi_voto = NumericProperty(0)     # 1 (correcto), -1 (erróneo) o 0 (sin voto)
 
 
 class LoginScreen(Screen):
@@ -112,6 +122,10 @@ class AvisosScreen(Screen):
 
 
 class PerfilScreen(Screen):
+    pass
+
+
+class DetalleScreen(Screen):
     pass
 
 
@@ -155,6 +169,54 @@ class MarcadorBus(MapMarker):
             capa.set_marker_position(capa.parent, self)
 
 
+class CapaRuta(MapLayer):
+    """Capa del mapa que dibuja el recorrido de una línea (de A a B).
+
+    Es una capa "window": MapView llama a reposition() cada vez que el mapa
+    se mueve o cambia el zoom, y aquí se recalcula la posición en pantalla
+    de cada punto del trazado y se redibuja la línea. Lo que se dibuja queda
+    recortado al área del mapa."""
+
+    COLOR_LINEA = (0.16, 0.45, 0.87, 1)
+    COLOR_INICIO = (0.05, 0.62, 0.43, 1)
+    COLOR_FIN = (0.80, 0.18, 0.18, 1)
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.puntos = []   # [(lat, lon), ...] desde el origen hasta el destino
+
+    def poner(self, puntos):
+        self.puntos = list(puntos)
+        self.reposition()
+
+    def limpiar(self):
+        self.puntos = []
+        self.canvas.clear()
+
+    def reposition(self):
+        mapa = self.parent
+        self.canvas.clear()
+        if mapa is None or len(self.puntos) < 2:
+            return
+        xy = []
+        for lat, lon in self.puntos:
+            x, y = mapa.get_window_xy_from(lat, lon, mapa.zoom)
+            xy.extend((x, y))
+        r = dp(7)
+        with self.canvas:
+            Color(1, 1, 1, 0.95)                      # borde blanco (se ve sobre cualquier mapa)
+            Line(points=xy, width=dp(5), cap="round", joint="round")
+            Color(*self.COLOR_LINEA)
+            Line(points=xy, width=dp(3), cap="round", joint="round")
+            Color(1, 1, 1, 1)
+            Ellipse(pos=(xy[0] - r - dp(1.5), xy[1] - r - dp(1.5)), size=(2 * r + dp(3),) * 2)
+            Ellipse(pos=(xy[-2] - r - dp(1.5), xy[-1] - r - dp(1.5)), size=(2 * r + dp(3),) * 2)
+            Color(*self.COLOR_INICIO)                 # A: origen
+            Ellipse(pos=(xy[0] - r, xy[1] - r), size=(2 * r, 2 * r))
+            Color(*self.COLOR_FIN)                    # B: destino
+            Ellipse(pos=(xy[-2] - r, xy[-1] - r), size=(2 * r, 2 * r))
+
+
 # ------------------------------------------------------------
 # Aplicación
 # ------------------------------------------------------------
@@ -177,6 +239,12 @@ class InterurbanoApp(MDApp):
     notificar_favoritas = True
     solo_favoritas = False
     _ultimo_aviso = {}
+    capa_ruta = None          # CapaRuta: la línea A -> B dibujada sobre el mapa
+    ruta_mapa = ""            # línea dibujada ahora en el mapa ("" = ninguna)
+    _trazados = {}            # {ruta: [(lat, lon), ...]} trazados por carretera ya descargados
+    ruta_detalle = ""         # línea que se está viendo en la pantalla de detalle
+    pantalla_previa = "recorridos"   # a dónde vuelve la flecha "atrás" del detalle
+    UMBRAL_DUDOSO = -3        # con este puntaje (o menos) un aviso se marca como dudoso
 
     usuario_actual = ""       # "" = nadie ha iniciado sesión
     nombre_visible = ""
@@ -197,7 +265,13 @@ class InterurbanoApp(MDApp):
         return Builder.load_file(os.path.join(BASE_DIR, "root.kv"))
 
     def on_start(self):
-        self.root.ids.sm.get_screen("home").ids.mapa.bind(zoom=self._ajustar_marcadores)
+        mapa = self.root.ids.sm.get_screen("home").ids.mapa
+        mapa.bind(zoom=self._ajustar_marcadores)
+        # La capa de la ruta se agrega primero para que los iconos de bus
+        # (capa de marcadores, que se crea después) queden por encima.
+        self.capa_ruta = CapaRuta()
+        mapa.add_layer(self.capa_ruta)
+        self._cargar_trazados()
         self.cargar_avisos()
         self._aplicar_config(self.config, self.fuente_config)
         self.actualizar_config_remota()
@@ -222,7 +296,7 @@ class InterurbanoApp(MDApp):
     def _pantalla(self, nombre):
         return self.root.ids.sm.get_screen(nombre)
 
-    def _tarjeta(self, ruta):
+    def _tarjeta(self, ruta, en_mapa=False):
         d = RUTAS[ruta]
         texto, color = self._texto_estado(ruta)
         return LineaCard(
@@ -231,6 +305,8 @@ class InterurbanoApp(MDApp):
             minutos=d["minutos"],
             aviso=texto,
             aviso_color=list(color),
+            en_mapa=en_mapa,
+            seleccionada=en_mapa and ruta == self.ruta_mapa,
         )
 
     # --------------------------------------------------------
@@ -303,6 +379,7 @@ class InterurbanoApp(MDApp):
             self._cargando = False
         self._limpiar_formularios()
         self.refrescar_avisos()
+        self.refrescar_reputacion()
         self.cambiar_pantalla("home")
         self._snack(f"¡Cuenta creada! Hola, {self.nombre_visible}" if nuevo
                     else f"Hola de nuevo, {self.nombre_visible}")
@@ -418,8 +495,8 @@ class InterurbanoApp(MDApp):
             self.menu_origen.dismiss()
         home = self._pantalla("home")
         home.ids.origen_text.text = lugar
-        home.ids.lineas_titulo.text = f"Buses desde {lugar} (toca uno para ver más)"
         self.origen_actual = lugar
+        self.quitar_ruta_mapa()   # limpia la ruta anterior y pone el título del panel
         self._llenar_lineas_home()
         self.actualizar_mapa(home.ids.mapa, lugar)
         self.panel_expandido = False
@@ -433,7 +510,7 @@ class InterurbanoApp(MDApp):
         caja = home.ids.lineas_box
         caja.clear_widgets()
         for d in LOCALIDADES[self.origen_actual]:
-            caja.add_widget(self._tarjeta(d["ruta"]))
+            caja.add_widget(self._tarjeta(d["ruta"], en_mapa=True))
 
     def alternar_panel_buses(self):
         """Expande o colapsa el panel de 'Buses desde...' para estorbar
@@ -484,6 +561,129 @@ class InterurbanoApp(MDApp):
         mapa.zoom = 10
         mapa.center_on(lat, lon)
         self._ajustar_marcadores()
+
+    # --------------------------------------------------------
+    # Ruta A -> B dibujada en el mapa de Inicio. Al tocar una línea del
+    # panel "Buses desde..." se dibuja su recorrido (por carretera si hay
+    # internet; si no, una línea recta). Tocarla otra vez la quita.
+    # --------------------------------------------------------
+    ARCHIVO_TRAZADOS = os.path.join(DATA_DIR, "trazados.json")
+
+    def _cargar_trazados(self):
+        """Recupera los trazados ya descargados para no pedirlos de nuevo."""
+        guardados = almacenamiento.leer_json(self.ARCHIVO_TRAZADOS, {})
+        self._trazados = {r: [tuple(p) for p in pts] for r, pts in guardados.items()
+                          if isinstance(pts, list) and len(pts) >= 2}
+
+    def _guardar_trazados(self):
+        try:
+            almacenamiento.guardar_json(
+                self.ARCHIVO_TRAZADOS,
+                {r: [list(p) for p in pts] for r, pts in self._trazados.items()})
+        except OSError as e:
+            registrar_error(e)
+
+    def _titulo_panel(self):
+        if self.ruta_mapa:
+            return f'{self.ruta_mapa.replace("->", "→")} · toca para cambiar'
+        if self.origen_actual:
+            return f"Buses desde {self.origen_actual} (toca uno para verlo en el mapa)"
+        return "Elige una localidad para ver los buses"
+
+    def tocar_linea(self, tarjeta):
+        """Tarjetas del panel de Inicio: dibujan la ruta. En el resto de las
+        pantallas (Recorridos, Perfil) abren el detalle de la línea."""
+        if tarjeta.en_mapa:
+            self.seleccionar_ruta_mapa(tarjeta.ruta)
+        else:
+            self.mostrar_detalle(tarjeta.ruta)
+
+    def seleccionar_ruta_mapa(self, ruta):
+        if ruta == self.ruta_mapa:          # tocar la misma ruta = quitarla
+            self.quitar_ruta_mapa()
+            return
+        d = RUTAS[ruta]
+        destino = ruta.split("->")[-1].strip()
+        if d["origen"] not in COORDENADAS or destino not in COORDENADAS:
+            self._snack("Esta línea aún no tiene coordenadas para dibujarla.")
+            return
+        self.ruta_mapa = ruta
+        trazado = self._trazados.get(ruta)
+        puntos = trazado or [COORDENADAS[d["origen"]], COORDENADAS[destino]]
+        self.capa_ruta.poner(puntos)
+        self._encuadrar(puntos)
+        self._llenar_lineas_home()
+        self._pantalla("home").ids.lineas_titulo.text = self._titulo_panel()
+        if self.panel_expandido:            # se pliega el panel para ver el mapa
+            self.alternar_panel_buses()
+        if trazado is None:
+            threading.Thread(target=self._descargar_trazado,
+                             args=(ruta, d["origen"], destino), daemon=True).start()
+
+    def quitar_ruta_mapa(self):
+        self.ruta_mapa = ""
+        if self.capa_ruta is not None:
+            self.capa_ruta.limpiar()
+        self._llenar_lineas_home()
+        self._pantalla("home").ids.lineas_titulo.text = self._titulo_panel()
+
+    def _descargar_trazado(self, ruta, origen, destino):
+        """Hilo aparte: pide a OSRM el recorrido por carretera entre las dos
+        localidades. Si falla (sin internet), se queda la línea recta."""
+        puntos = None
+        try:
+            import requests
+            la1, lo1 = COORDENADAS[origen]
+            la2, lo2 = COORDENADAS[destino]
+            url = (f"https://router.project-osrm.org/route/v1/driving/"
+                   f"{lo1},{la1};{lo2},{la2}?overview=full&geometries=geojson")
+            r = requests.get(url, timeout=8, headers={"User-Agent": "EnRutaYa/1.0"})
+            datos = r.json()
+            if datos.get("code") == "Ok":
+                coords = datos["routes"][0]["geometry"]["coordinates"]  # [lon, lat]
+                paso = max(1, len(coords) // 400)    # se aligera para dibujar rápido
+                puntos = [(c[1], c[0]) for c in coords[::paso]]
+                ultimo = (coords[-1][1], coords[-1][0])
+                if puntos[-1] != ultimo:
+                    puntos.append(ultimo)
+        except Exception as e:
+            print("No se pudo descargar el trazado:", e)
+        Clock.schedule_once(lambda dt: self._trazado_listo(ruta, puntos))
+
+    def _trazado_listo(self, ruta, puntos):
+        if puntos and len(puntos) >= 2:
+            self._trazados[ruta] = puntos
+            self._guardar_trazados()
+            if ruta == self.ruta_mapa:
+                self.capa_ruta.poner(puntos)
+        elif ruta == self.ruta_mapa:
+            self._snack("Sin conexión: se muestra una línea recta entre las localidades.")
+
+    @staticmethod
+    def _px_mercator(lat, lon, zoom):
+        """Posición en píxeles de un punto en el mapa completo a ese zoom."""
+        n = 256 * (2 ** zoom)
+        s = math.sin(math.radians(lat))
+        x = (lon + 180.0) / 360.0 * n
+        y = (0.5 - math.log((1 + s) / (1 - s)) / (4 * math.pi)) * n
+        return x, y
+
+    def _encuadrar(self, puntos):
+        """Centra el mapa y elige el mayor zoom en el que cabe toda la ruta."""
+        mapa = self._pantalla("home").ids.mapa
+        lats = [p[0] for p in puntos]
+        lons = [p[1] for p in puntos]
+        ancho = mapa.width * 0.80
+        alto = max(mapa.height - dp(58) - dp(48), dp(100)) * 0.70   # sin barra ni panel
+        zoom = 8
+        for z in range(15, 7, -1):
+            x1, y1 = self._px_mercator(max(lats), min(lons), z)
+            x2, y2 = self._px_mercator(min(lats), max(lons), z)
+            if abs(x2 - x1) <= ancho and abs(y2 - y1) <= alto:
+                zoom = z
+                break
+        mapa.zoom = zoom
+        mapa.center_on((max(lats) + min(lats)) / 2, (max(lons) + min(lons)) / 2)
 
     # --------------------------------------------------------
     # Botón "reubicarme" del mapa: centra en mi posición GPS real
@@ -558,53 +758,63 @@ class InterurbanoApp(MDApp):
     # Detalle de una línea (al tocar cualquier tarjeta)
     # --------------------------------------------------------
     def mostrar_detalle(self, ruta):
+        """Al tocar cualquier tarjeta de línea se abre la pantalla de detalle."""
+        actual = self.root.ids.sm.current
+        if actual != "detalle":
+            self.pantalla_previa = actual
+        self.ruta_detalle = ruta
+        self.poblar_detalle()
+        self.cambiar_pantalla("detalle")
+
+    def cerrar_detalle(self):
+        self.ruta_detalle = ""
+        self.cambiar_pantalla(self.pantalla_previa)
+
+    def poblar_detalle(self):
+        """Dibuja la pantalla de detalle de la línea abierta: datos del
+        recorrido, estado actual y avisos recientes (con botones de voto)."""
+        ruta = self.ruta_detalle
+        if not ruta or ruta not in RUTAS:
+            return
         d = RUTAS[ruta]
+        ids = self._pantalla("detalle").ids
+        ids.det_titulo.text = ruta.replace("->", "→")
+        ids.det_parada.text = f'Parada: {d["parada"]}'
+        ids.det_minutos.text = d["minutos"]
+        ids.det_frecuencia.valor = d["frecuencia"]
+        ids.det_duracion.valor = d["duracion"]
+        ids.det_tarifa.valor = d["tarifa"]
+
+        texto, color = self._texto_estado(ruta)
+        ids.det_estado.text = texto
+        ids.det_estado.text_color = list(color)
+
         es_fav = ruta in self.favoritas
-        ocup, atraso, cambio = self._estado_ruta(ruta)
-        ocup_txt = (f'{TIPOS_AVISO[ocup["tipo"]]["texto"]} ({self._hace(ocup["ts"])})'
-                    if ocup else "sin avisos recientes")
-        atraso_txt = (f'~{atraso["minutos"]} min ({self._hace(atraso["ts"])})'
-                      if atraso else "sin atraso reportado")
-        extra = f'\nAviso: cambio de ruta ({self._hace(cambio["ts"])})' if cambio else ""
-        self.dialogo = MDDialog(
-            MDDialogHeadlineText(text=ruta),
-            MDDialogSupportingText(
-                text=(
-                    f'Parada: {d["parada"]}\n'
-                    f'Próximo bus: {d["minutos"]}\n'
-                    f'Frecuencia: {d["frecuencia"]}\n'
-                    f'Duración del viaje: {d["duracion"]}\n'
-                    f'Tarifa: {d["tarifa"]}\n'
-                    f'Ocupación: {ocup_txt}\n'
-                    f'Atraso: {atraso_txt}'
-                    f'{extra}'
-                )
-            ),
-            MDDialogButtonContainer(
-                MDButton(
-                    MDButtonText(text="Quitar favorita" if es_fav else "Agregar a favoritas"),
-                    style="text",
-                    on_release=lambda *a: self.alternar_favorita(ruta),
-                ),
-                MDButton(
-                    MDButtonText(text="Cerrar"),
-                    style="text",
-                    on_release=lambda *a: self.dialogo.dismiss(),
-                ),
-                spacing="8dp",
-            ),
-        )
-        self.dialogo.open()
+        ids.det_fav_icono.icon = "star" if es_fav else "star-outline"
+        ids.det_fav_texto.text = "Quitar de favoritas" if es_fav else "Agregar a favoritas"
+
+        caja = ids.det_avisos_box
+        caja.clear_widgets()
+        ahora = time.time()
+        recientes = [a for a in self.avisos
+                     if a["ruta"] == ruta and ahora - a["ts"] <= HISTORIAL_S]
+        niveles = {}
+        for a in recientes:
+            caja.add_widget(self._tarjeta_aviso(a, niveles))
+        ids.det_vacio.opacity = 0 if recientes else 1
+        ids.det_vacio.height = 0 if recientes else dp(40)
 
     def alternar_favorita(self, ruta):
         if ruta in self.favoritas:
             self.favoritas.remove(ruta)
+            self._snack("Quitada de tus favoritas.")
         else:
             self.favoritas.append(ruta)
-        self.dialogo.dismiss()
+            self._snack("Agregada a tus favoritas.")
         self._guardar_perfil()
         self.refrescar_favoritos()
         self.poblar_avisos()
+        self.poblar_detalle()
 
     # --------------------------------------------------------
     # Recorridos y Perfil
@@ -752,7 +962,8 @@ class InterurbanoApp(MDApp):
         reciente de cada tipo para esa línea, o None si no hay."""
         ahora = time.time()
         vigentes = [a for a in self.avisos
-                    if a["ruta"] == ruta and ahora - a["ts"] <= self.vigencia_s]
+                    if a["ruta"] == ruta and ahora - a["ts"] <= self.vigencia_s
+                    and not self._dudoso(a)]
         ocupacion = next((a for a in vigentes if a["tipo"] in ("lleno", "asientos")), None)
         atraso = next((a for a in vigentes if a["tipo"] == "atrasado"), None)
         cambio = next((a for a in vigentes if a["tipo"] == "cambio_ruta"), None)
@@ -828,14 +1039,19 @@ class InterurbanoApp(MDApp):
         self.publicar_aviso(self.linea_actual, tipo, minutos, propio=True)
         self._snack("¡Aviso enviado! Gracias por ayudar a otros pasajeros.")
 
-    def publicar_aviso(self, ruta, tipo, minutos=0, propio=True):
+    def publicar_aviso(self, ruta, tipo, minutos=0, propio=True, autor=""):
         # TODO: enviar el aviso a un servidor y recibir los de otros usuarios
         # (hoy queda solo en este dispositivo, guardado en data/avisos.json).
-        aviso = {"ruta": ruta, "tipo": tipo, "minutos": minutos,
-                 "ts": time.time(), "propio": propio,
-                 "autor": self.usuario_actual if propio else ""}
+        autor = autor or (self.usuario_actual if propio else "")
+        aviso = {"id": uuid.uuid4().hex[:8], "ruta": ruta, "tipo": tipo,
+                 "minutos": minutos, "ts": time.time(), "propio": propio,
+                 "autor": autor, "votos": {}}
         self.avisos.insert(0, aviso)
         self._guardar_avisos()
+        try:
+            reputacion.sumar_aviso(autor)
+        except OSError as e:
+            registrar_error(e)
         self.refrescar_avisos()
         if not propio and self.notificar_favoritas and ruta in self.favoritas:
             self.notificar(ruta, self._titulo_aviso(aviso))
@@ -844,7 +1060,8 @@ class InterurbanoApp(MDApp):
         """Redibuja todo lo que muestra el estado de las líneas. Cada paso
         va aparte: si uno falla, los demás igual se actualizan."""
         for paso in (self._llenar_lineas_home, self.poblar_recorridos,
-                     self.refrescar_favoritos, self.poblar_avisos):
+                     self.refrescar_favoritos, self.poblar_avisos,
+                     self.poblar_detalle):
             try:
                 paso()
             except Exception as e:
@@ -861,20 +1078,92 @@ class InterurbanoApp(MDApp):
             self._guardar_avisos()
         visibles = [a for a in self.avisos
                     if not self.solo_favoritas or a["ruta"] in self.favoritas]
+        niveles = {}   # autor -> nombre de nivel (se calcula una vez por autor)
         for a in visibles:
-            t = TIPOS_AVISO[a["tipo"]]
-            caja.add_widget(AvisoCard(
-                icono=t["icono"],
-                titulo=self._titulo_aviso(a),
-                detalle=f'{a["ruta"]} · {self._hace(a["ts"])}',
-                color=list(t["color"]),
-            ))
+            caja.add_widget(self._tarjeta_aviso(a, niveles))
         pantalla.ids.avisos_vacio.text = (
             "No hay avisos en tus rutas favoritas." if self.solo_favoritas
             else "Aún no hay avisos. Cuando alguien avise, aparecerá aquí."
         )
         pantalla.ids.avisos_vacio.opacity = 0 if visibles else 1
         pantalla.ids.avisos_vacio.height = 0 if visibles else dp(40)
+
+    # --------------------------------------------------------
+    # Valoración de avisos y reputación de los autores
+    # (los puntos viven en servicios/reputacion.py -> data/reputacion.json)
+    # --------------------------------------------------------
+    def _puntaje_aviso(self, aviso):
+        return sum(aviso.get("votos", {}).values())
+
+    def _dudoso(self, aviso):
+        """Un aviso con muchos votos 'erróneo' deja de contar en el estado
+        de la línea y se muestra como dudoso."""
+        return self._puntaje_aviso(aviso) <= self.UMBRAL_DUDOSO
+
+    def votar_aviso(self, aviso_id, valor):
+        """valor: 1 = correcto, -1 = erróneo. Un voto por usuario y aviso;
+        tocar de nuevo el mismo botón quita el voto. No se puede votar el
+        propio aviso."""
+        if not self.usuario_actual:
+            return
+        aviso = next((a for a in self.avisos if a.get("id") == aviso_id), None)
+        if aviso is None:
+            return
+        if aviso.get("autor") and aviso["autor"] == self.usuario_actual:
+            self._snack("No puedes votar tu propio aviso.")
+            return
+        votos = aviso.setdefault("votos", {})
+        previo = votos.get(self.usuario_actual, 0)
+        nuevo = 0 if previo == valor else valor
+        if nuevo:
+            votos[self.usuario_actual] = nuevo
+        else:
+            votos.pop(self.usuario_actual, None)
+        try:
+            reputacion.actualizar_voto(aviso.get("autor", ""), previo, nuevo)
+        except OSError as e:
+            registrar_error(e)
+        self._guardar_avisos()
+        self.refrescar_avisos()
+        self.refrescar_reputacion()
+        if nuevo:
+            self._snack("¡Gracias por tu voto!")
+
+    def refrescar_reputacion(self):
+        """Muestra en Perfil el nivel y los puntos del usuario actual."""
+        if not self.usuario_actual:
+            return
+        pf = self._pantalla("perfil").ids
+        if "nivel_label" not in pf:   # por si root.kv aún no tiene la tarjeta
+            return
+        pts = reputacion.puntos(self.usuario_actual)
+        nombre, icono, faltan = reputacion.nivel(pts)
+        pf.nivel_label.text = f"{nombre} · {pts} puntos"
+        pf.nivel_icono.icon = icono
+        pf.nivel_falta.text = (f"Te faltan {faltan} puntos para el siguiente nivel"
+                               if faltan else "¡Nivel máximo!")
+
+    def _tarjeta_aviso(self, a, niveles):
+        """Crea la tarjeta de un aviso (con sus botones de voto). La usan la
+        pantalla Avisos y el detalle de cada línea. `niveles` es un caché
+        {autor: nombre de nivel} para no leer el archivo por cada tarjeta."""
+        t = TIPOS_AVISO[a["tipo"]]
+        votos = a.get("votos", {})
+        autor = a.get("autor", "")
+        if autor and autor not in niveles:
+            niveles[autor] = reputacion.nivel(reputacion.puntos(autor))[0]
+        quien = f' · @{autor} ({niveles[autor]})' if autor else ""
+        dudoso = self._dudoso(a)
+        return AvisoCard(
+            icono="alert-circle-outline" if dudoso else t["icono"],
+            titulo=("Dudoso: " if dudoso else "") + self._titulo_aviso(a),
+            detalle=f'{a["ruta"]} · {self._hace(a["ts"])}{quien}',
+            color=list(GRIS if dudoso else t["color"]),
+            aviso_id=a.get("id", ""),
+            votos_ok=sum(1 for v in votos.values() if v == 1),
+            votos_mal=sum(1 for v in votos.values() if v == -1),
+            mi_voto=votos.get(self.usuario_actual, 0),
+        )
 
     def alternar_solo_favoritas(self, activo):
         self.solo_favoritas = activo
@@ -887,7 +1176,8 @@ class InterurbanoApp(MDApp):
         ruta = random.choice(self.favoritas or list(RUTAS))
         tipo = random.choice(list(TIPOS_AVISO))
         minutos = random.choice(OPCIONES_ATRASO) if tipo == "atrasado" else 0
-        self.publicar_aviso(ruta, tipo, minutos, propio=False)
+        autor = random.choice(["maria_t", "pedro_r", "luis_v"])
+        self.publicar_aviso(ruta, tipo, minutos, propio=False, autor=autor)
         if ruta not in self.favoritas:
             if self.notificar_favoritas:
                 self.notificar(f"{ruta} (demo)", self._titulo_aviso(self.avisos[0]))

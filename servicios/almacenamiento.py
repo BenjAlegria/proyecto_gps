@@ -10,7 +10,7 @@ Los archivos viven en config.DATA_DIR y se leen al abrir la app.
 import json
 import os
 import time
-
+import uuid  # arriba, con los otros imports
 from config import ARCHIVO_AVISOS, ARCHIVO_PERFILES, DATA_DIR
 
 PERFIL_POR_DEFECTO = {
@@ -68,21 +68,37 @@ def guardar_perfil(usuario, perfil):
 # ------------------------------------------------------------
 # Avisos (registros compartidos por todos los usuarios del dispositivo)
 # ------------------------------------------------------------
+
+
 def cargar_avisos():
-    """Lista de avisos (más nuevo primero) o None si nunca se han guardado."""
-    return leer_json(ARCHIVO_AVISOS, None)
+    """Lista de avisos (más nuevo primero) o None si nunca se han guardado.
+    Completa id y votos en avisos guardados antes del sistema de valoración."""
+    avisos = leer_json(ARCHIVO_AVISOS, None)
+    if avisos is None:
+        return None
+    cambio = False
+    for a in avisos:
+        if not a.get("id"):
+            a["id"] = uuid.uuid4().hex[:8]
+            cambio = True
+        if "votos" not in a:
+            a["votos"] = {}
+            cambio = True
+    if cambio:
+        guardar_avisos(avisos)
+    return avisos
 
 def guardar_avisos(avisos):
     guardar_json(ARCHIVO_AVISOS, avisos)
 
 def avisos_de_ejemplo(rutas_ejemplo):
-    """Avisos de demostración para la primera vez que se abre la app.
-    `rutas_ejemplo`: lista de (ruta, tipo, minutos, hace_cuantos_min)."""
+    """`rutas_ejemplo`: lista de (ruta, tipo, minutos, hace_cuantos_min)."""
     ahora = time.time()
+    autores = ["maria_t", "pedro_r", "luis_v"]
     return [
-        {"ruta": r, "tipo": t, "minutos": m, "ts": ahora - hace * 60,
-         "propio": False, "autor": ""}
-        for r, t, m, hace in rutas_ejemplo
+        {"id": uuid.uuid4().hex[:8], "ruta": r, "tipo": t, "minutos": m,
+         "ts": ahora - hace * 60, "propio": False,
+         "autor": autores[i % len(autores)], "votos": {}}
+        for i, (r, t, m, hace) in enumerate(rutas_ejemplo)
     ]
-
 __all__ = ["DATA_DIR"]
