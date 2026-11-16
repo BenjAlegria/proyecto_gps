@@ -1,22 +1,21 @@
 # EnRuta Ya!
 
-App móvil para consultar la hora de llegada de los buses interurbanos
-y ver su ubicación en un mapa (Lautaro, Nueva Imperial, Carahue, Padre
-Las Casas → Temuco, entre otros recorridos). Como la empresa de buses
-no cuenta con GPS en sus vehículos, la posición del bus en el mapa la
-aporta un usuario que va viajando en él y acepta compartir su
-ubicación mientras dura el viaje.
+Prototipo académico de aplicación Kivy/KivyMD para consultar recorridos
+interurbanos de La Araucanía y avisos comunitarios. Incluye un mapa
+MapView/OpenStreetMap con posiciones de buses **demostrativas**. Un pasajero
+puede consultar su propio GPS con permiso, pero **no existe todavía
+seguimiento en vivo entre celulares**.
+
+**Rama de entrega:** `feature/ajustesV2`, basada en el diseño aprobado
+de `audit/fase-1`. La integración Google Maps se descartó.
 
 ## Problema que resuelve
-Según la encuesta aplicada (17 respuestas, ver
-`FUNDAMENTACION-UX-UI.md`), el 76% de los usuarios de buses
-interurbanos en la Araucanía se informa hoy por memoria o
-preguntándole al conductor, no por un canal oficial confiable, y el
-71% ha quedado con el bus lleno sin poder subir. La utilidad percibida
-de una app que muestre horarios y ubicación en vivo fue de 4.7/5.
-EnRuta Ya! resuelve esa falta de información centralizando
-horarios y mostrando la ubicación real del bus en un mapa, aportada
-por los propios pasajeros ante la ausencia de GPS en los buses.
+La encuesta diagnóstica del equipo tuvo 17 respuestas (ver
+`FUNDAMENTACION-UX-UI.md`): 59% declaró informarse mediante experiencia
+o memoria, 35% preguntando al conductor y 71% reportó dificultades
+por buses llenos. La utilidad percibida de una app de consulta fue
+4,7/5. Estos datos justifican el diseño, pero no prueban el impacto
+real del prototipo ni representan a toda la población.
 
 ## Usuario objetivo
 Personas que viajan en bus interurbano entre comunas de la Araucanía
@@ -27,7 +26,7 @@ aunque también incluye trabajadores y personas que lo usan
 ocasionalmente para trámites médicos.
 
 ## Pantallas
-0. **Login / Registro** — pantallas de entrada: crear cuenta o iniciar sesión (ver *Servicios*).
+0. **Bienvenida / Login / Registro** — splash de carga y acceso con correo y contraseña de Firebase cuando está configurado.
 1. **Inicio** — mapa a pantalla completa con barra superior (perfil,
    selector de localidad, acceso directo a Compartir), botón flotante
    para centrarse en la ubicación real del usuario, un banner con el mensaje de la
@@ -37,9 +36,9 @@ ocasionalmente para trámites médicos.
 2. **Recorridos** — listado de todos los recorridos con su próximo
    bus; cada tarjeta abre el mismo detalle.
 3. **Compartir** — el usuario elige su línea y, tras aceptar un
-   diálogo de consentimiento, comparte su ubicación durante el viaje
-   (por ahora simulada localmente, ver limitaciones). Además puede
-   **avisar a otros pasajeros** el estado de su línea con cuatro
+   diálogo de consentimiento, inicia el GPS **local si el dispositivo lo
+   permite**. No transmite GPS a otros teléfonos. Además puede
+   registrar avisos de su línea con cuatro
    botones: *Bus lleno*, *Hay asientos*, *Atrasado* (pregunta cuántos
    minutos) y *Cambio de ruta*.
 4. **Avisos** — lista de los avisos de las últimas 2 horas, con
@@ -47,7 +46,7 @@ ocasionalmente para trámites médicos.
 5. **Ajustes** — tema oscuro/claro, interruptor de notificaciones, resumen de la
    **configuración remota** con botón *Actualizar*, botón de demo que simula el
    aviso de otro pasajero y *Cerrar sesión*.
-6. **Perfil** — accesible desde el ícono de la barra superior; usuario, nombre
+6. **Perfil** — accesible desde el ícono de la barra superior; cuenta, nombre
    editable con validación, contador de viajes y favoritas,
    interruptor de permiso de ubicación y lista de rutas favoritas.
 
@@ -67,7 +66,7 @@ llega un aviso de una ruta favorita se muestra una notificación dentro
 de la app y, si el dispositivo lo permite (plyer), del sistema.
 
 ## Requisitos
-- Python 3.10 o superior (probado con 3.12)
+- Python 3.10 o superior (ejecutado por el equipo con Python 3.10.11)
 - Git
 - Conexión a internet (tiles del mapa y configuración remota; sin internet la app
   igual abre y usa los valores guardados)
@@ -99,10 +98,55 @@ python main.py
 5. Cierra la app, ábrela de nuevo e inicia sesión: tus favoritas, nombre, tema,
    viajes y los avisos siguen ahí.
 
-Pruebas automáticas de los servicios (sin interfaz):
+Pruebas automatizadas (incluyen regresiones de interfaz Kivy):
 ```bash
 python -m unittest discover tests -v
 ```
+
+## Analítica MJV App — requisito de la rúbrica E4
+
+La app registra eventos anónimos solo si se activa **Ajustes →
+Privacidad → Ayudar a mejorar la app** con consentimiento. No muestra
+KPIs ni un panel de estadísticas al pasajero; el análisis se realiza
+fuera de la interfaz para la evaluación universitaria.
+Los eventos se guardan en `data/analitica_eventos.jsonl`, sin nombres,
+coordenadas ni IP. La medición está **desactivada por defecto**.
+Para generar los resultados y el gráfico con **datos reales**:
+
+```powershell
+python tools/generar_resultados_mjv.py
+```
+
+Completar el periodo, participantes y observaciones en
+`docs/PROTOCOLO-MJV-APP.md` y `docs/REGISTRO-PRUEBAS-USUARIOS.csv`.
+El generador no inventa resultados si faltan eventos.
+
+## Firebase — cuentas con correo y sincronización de avisos
+
+Con `ENRUTA_FIREBASE_API_KEY` y `ENRUTA_FIREBASE_DATABASE_URL` configuradas,
+el **registro e inicio de sesión usan Firebase Authentication (correo y
+contraseña)**. Una pantalla de bienvenida acompaña el inicio de la app y
+una pantalla de carga aparece mientras se verifica el acceso.
+
+**Los avisos comunitarios se sincronizan automáticamente al iniciar
+sesión**, sin activar un interruptor en Ajustes. Los tokens viven en
+memoria y no se guardan contraseñas en el dispositivo. Si no se ha
+configurado Firebase, se mantiene el login local heredado para pruebas.
+
+**Alcance actual:** se sincronizan **avisos**, no GPS, perfiles ni
+favoritas entre dispositivos; las preferencias se guardan localmente
+por UID. Las cuentas locales anteriores no se migran por sí solas.
+Para activar el nuevo proveedor, publicar las reglas y hacer las
+pruebas: [firebase/README.md](firebase/README.md).
+
+## Entregables de evaluación
+
+- [DOCUMENTATION.md](DOCUMENTATION.md) — arquitectura, privacidad y KPIs.
+- [INFORME-FINAL.md](INFORME-FINAL.md) — informe estructurado; completar
+  resultados y capturas reales antes de presentar.
+- [docs/PROTOCOLO-MJV-APP.md](docs/PROTOCOLO-MJV-APP.md) — método de medición.
+- [USO_IA.md](USO_IA.md) — declaración actualizada de uso de IA.
+- [FUNDAMENTACION-UX-UI.md](FUNDAMENTACION-UX-UI.md) — encuesta diagnóstica.
 
 ## Estructura del proyecto
 ```
@@ -143,8 +187,8 @@ descarga un JSON.
 
 | Servicio | Dónde está en el código | Cómo funciona |
 |---|---|---|
-| **Registro** | `servicios/autenticacion.py` → `registrar()`; pantalla `RegistroScreen` en `root.kv`; `hacer_registro()` en `main.py` | Valida usuario y contraseña, crea la cuenta en `data/usuarios.json` |
-| **Login** | `autenticacion.iniciar_sesion()`; `LoginScreen`; `hacer_login()` / `_entrar()` en `main.py` | Compara el hash de la contraseña; si es válido carga el perfil y abre Inicio |
+| **Registro** | `servicios/firebase_auth.py` y `hacer_registro()` en `main.py` | Con Firebase configurado crea una cuenta por correo. Sin Firebase, solo conserva registro local heredado |
+| **Login** | `servicios/firebase_auth.py`, `LoginScreen`, `_entrar()` en `main.py` | Firebase valida correo/contraseña, la app guarda sesión en memoria e inicia sincronización de avisos automáticamente |
 | **Validación de contraseña** | `autenticacion.validar_contrasena()` | Mínimo 6 caracteres, una letra y un número, y que coincida con la repetición |
 | **Persistencia en JSON** | `servicios/almacenamiento.py` (`leer_json`, `guardar_json`, `cargar_perfil`, `guardar_perfil`, `cargar_avisos`, `guardar_avisos`); `_guardar_perfil()` y `_guardar_avisos()` en `main.py` | Se guarda al cambiar favoritas, nombre, tema, ajustes, viajes y al publicar un aviso; se recupera al iniciar sesión / abrir la app |
 | **Notificaciones** | `servicios/notificaciones.py` → `notificar()`; `InterurbanoApp.notificar()` en `main.py` | Se disparan por eventos: aviso en una ruta favorita (`publicar_aviso`), fin de viaje (`detener_compartir`) y el botón de demo (`simular_aviso`) |

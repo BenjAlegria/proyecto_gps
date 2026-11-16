@@ -3,6 +3,7 @@ import random
 import threading
 import time
 import traceback
+import uuid
 
 from kivy.animation import Animation
 from kivy.base import ExceptionHandler, ExceptionManager
@@ -36,7 +37,7 @@ from config import (CONFIG_REMOTA_DEFECTO, HISTORIAL_S, ICONO_BUS, LOG_ERRORES,
                     OPCIONES_ATRASO)
 from datos_rutas import (COORDENADAS, GRIS, LOCALIDADES, NARANJA, ROJO, RUTAS,
                          TIPOS_AVISO, VERDE)
-from servicios import almacenamiento, autenticacion, config_remota, avisos_service, recorridos, ubicacion
+from servicios import almacenamiento, autenticacion, config_remota, avisos_service, recorridos, ubicacion, analitica, firebase_rtdb, firebase_auth
 from servicios.autenticacion import ErrorAutenticacion
 from servicios.notificaciones import notificar as enviar_notificacion
 from tema import PaletaVisual
@@ -103,6 +104,10 @@ class AvisoCard(MDCard):
     vencido = BooleanProperty(False)
 
 
+class CargaScreen(Screen):
+    pass
+
+
 class LoginScreen(Screen):
     pass
 
@@ -132,6 +137,10 @@ class PerfilScreen(Screen):
 
 
 class AjustesScreen(Screen):
+    pass
+
+
+class AnaliticaScreen(Screen):
     pass
 
 
@@ -186,6 +195,7 @@ class InterurbanoApp(MDApp):
     panel_expandido = False
     consentimiento = False   # ¿el usuario aceptó compartir ubicación?
     compartiendo = BooleanProperty(False)
+    firebase_avisos_activo = BooleanProperty(False)
     linea_actual = ""
     favoritas = []
     viajes = 0
@@ -214,6 +224,20 @@ class InterurbanoApp(MDApp):
         self.favoritas = []
         self.avisos = []
         self._ultimo_aviso = {}
+        # Nunca medir antes de pedir consentimiento explícito.
+        self.medidor = analitica.Registrador(activo=False)
+        self._medicion_intento = None
+        self._firebase_cliente = None
+        self._firebase_sesion = None
+        self._auth_generacion = 0
+        self._auth_en_progreso = False
+        self._firebase_generacion = 0
+        self._firebase_ocupado = False
+        self.firebase_avisos_activo = False
+        try:
+            self._firebase_config = firebase_rtdb.configuracion()
+        except firebase_rtdb.FirebaseError:
+            self._firebase_config = None
         self.gps_activo = False
         self.marcador_yo = None
         self._solicitud_ubicacion = 0
@@ -250,6 +274,15 @@ class InterurbanoApp(MDApp):
         self.actualizar_config_remota()
         # Cada minuto se actualizan los "hace X min" y se descartan avisos vencidos.
         Clock.schedule_interval(lambda dt: self.refrescar_avisos(), 60)
+        # Revisión remota opcional; nunca consulta Firebase si está apagado.
+        Clock.schedule_interval(lambda dt: self._refrescar_firebase(), 90)
+        # El splash se muestra inmediatamente y finaliza cuando la UI
+        # está preparada; no simula porcentajes ni esperas de red.
+        Clock.schedule_once(self._terminar_inicio, 0.4)
+
+    def _terminar_inicio(self, *args):
+        if self.root.ids.sm.current == "carga" and not self._auth_en_progreso:
+            self.cambiar_pantalla("login")
 
     def _actualizar_zona_segura(self, *args):
         """Reserva el borde inferior solo si la ventana invade barras Android.
@@ -288,7 +321,16 @@ class InterurbanoApp(MDApp):
             m.ajustar_zoom(zoom)
 
     def cambiar_pantalla(self, nombre):
+        anterior = self.root.ids.sm.current
         self.root.ids.sm.current = nombre
+        if nombre != anterior:
+            self.medidor.registrar("pantalla_abierta", pantalla=nombre)
+            if nombre == "recorridos":
+                self._medicion_intento = self.medidor.iniciar_busqueda()
+            elif anterior == "recorridos":
+                self._medicion_intento = None
+        if nombre == "analitica":
+            self.refrescar_analitica()
 
     def _pantalla(self, nombre):
         return self.root.ids.sm.get_screen(nombre)
@@ -330,33 +372,109 @@ class InterurbanoApp(MDApp):
                 if err in p.ids:
                     p.ids[err].text = ""
 
+    def _autenticar_en_firebase(self, correo, clave, repetir=None, nuevo=False):
+        """Autenticación sin bloquear el hilo de dibujo Kivy.
+
+        Las contraseñas se pasan solo en memoria al hilo; no se guardan
+        en preferencias, registros de errores ni Git.
+        """
+        if self._auth_en_progreso:
+            return
+        pantalla = self._pantalla("registro" if nuevo else "login")
+        try:
+            correo = firebase_auth.validar_correo(correo)
+            if nuevo:
+                firebase_auth.validar_clave(clave, repetir)
+            elif not clave:
+                raise firebase_auth.ErrorFirebaseAuth("Escribe tu contraseña.", "clave")
+        except firebase_auth.ErrorFirebaseAuth as exc:
+            self._mostrar_errores_auth(pantalla, exc)
+            return
+        self._auth_en_progreso = True
+        self._auth_generacion += 1
+        generacion = self._auth_generacion
+        self.cambiar_pantalla("carga")
+        self._pantalla("carga").ids.carga_estado.text = (
+            "Creando tu cuenta…" if nuevo else "Iniciando sesión…"
+        )
+
+        def tarea():
+            sesion = firebase_auth.SesionFirebase(self._firebase_config[0])
+            try:
+                if nuevo:
+                    uid = sesion.registrar(correo, clave, repetir)
+                else:
+                    uid = sesion.login(correo, clave)
+                error = None
+            except firebase_auth.ErrorFirebaseAuth as exc:
+                uid, error = None, exc
+            except Exception:
+                uid, error = None, firebase_auth.ErrorFirebaseAuth(
+                    "No fue posible iniciar sesión. Reintenta.")
+            # No pasar la contraseña a la interfaz ni guardarla.
+            Clock.schedule_once(lambda dt: self._autenticacion_lista(
+                generacion, uid, sesion, correo, error, nuevo
+            ))
+        threading.Thread(target=tarea, daemon=True,
+                         name="enruta-auth-firebase").start()
+
+    def _autenticacion_lista(self, generacion, uid, sesion, correo, error, nuevo):
+        if generacion != self._auth_generacion:
+            sesion.cerrar()
+            return
+        self._auth_en_progreso = False
+        if error:
+            self.medidor.registrar("login_fallido")
+            self.cambiar_pantalla("registro" if nuevo else "login")
+            self._mostrar_errores_auth(self._pantalla(
+                "registro" if nuevo else "login"), error)
+            return
+        self._firebase_sesion = sesion
+        self.medidor.registrar("registro_exitoso" if nuevo else "login_exitoso")
+        self._entrar(uid, nuevo=nuevo, correo=correo)
+
     def hacer_login(self):
         p = self._pantalla("login")
+        if self._firebase_config:
+            return self._autenticar_en_firebase(
+                p.ids.usuario.text, p.ids.clave.text)
+        # Respaldo para instalaciones anteriores sin variables de Firebase.
         try:
-            usuario = autenticacion.iniciar_sesion(p.ids.usuario.text, p.ids.clave.text)
+            usuario = autenticacion.iniciar_sesion(
+                p.ids.usuario.text, p.ids.clave.text)
         except ErrorAutenticacion as e:
+            self.medidor.registrar("login_fallido")
             self._mostrar_errores_auth(p, e)
             return
+        self.medidor.registrar("login_exitoso")
         self._entrar(usuario)
 
     def hacer_registro(self):
         p = self._pantalla("registro")
+        if self._firebase_config:
+            return self._autenticar_en_firebase(
+                p.ids.usuario.text, p.ids.clave.text,
+                p.ids.repetir.text, nuevo=True)
+        # Compatibilidad local si Firebase no está configurado.
         try:
             usuario = autenticacion.registrar(
                 p.ids.usuario.text, p.ids.clave.text, p.ids.repetir.text)
         except ErrorAutenticacion as e:
             self._mostrar_errores_auth(p, e)
             return
+        self.medidor.registrar("registro_exitoso")
         self._entrar(usuario, nuevo=True)
 
-    def _entrar(self, usuario, nuevo=False):
+    def _entrar(self, usuario, nuevo=False, correo=None):
         """Sesión iniciada: se carga el perfil guardado en perfiles.json y se
         aplica a la interfaz."""
         self.usuario_actual = usuario
         perfil = almacenamiento.cargar_perfil(usuario)
         self._cargando = True
         try:
-            self.nombre_visible = perfil["nombre"]
+            self.nombre_visible = (correo.split("@")[0][:30]
+                                   if correo and perfil["nombre"] == usuario
+                                   else perfil["nombre"])
             # Ignorar rutas borradas o no reconocidas, sin romper el perfil.
             self.favoritas = [r for r in perfil["favoritas"] if r in RUTAS]
             self.viajes = perfil["viajes"]
@@ -368,11 +486,17 @@ class InterurbanoApp(MDApp):
             aj.switch_notif.active = perfil["notificar_favoritas"]
             pf = self._pantalla("perfil").ids
             pf.nombre_label.text = self.nombre_visible
-            pf.usuario_label.text = f"@{usuario}"
+            pf.usuario_label.text = correo if correo else f"@{usuario}"
             pf.viajes_num.text = str(self.viajes)
             pf.switch_consent.active = self.consentimiento
         finally:
             self._cargando = False
+        # Con correo y contraseña, los avisos se sincronizan automáticamente,
+        # sin pedir al usuario un interruptor técnico.
+        if self._firebase_config and self._firebase_sesion:
+            self.cambiar_firebase(True)
+        else:
+            self._pantalla("ajustes").ids.firebase_estado.text = "Modo local"
         self._limpiar_formularios()
         self.refrescar_avisos()
         self.cambiar_pantalla("home")
@@ -380,6 +504,21 @@ class InterurbanoApp(MDApp):
                     else f"Hola de nuevo, {self.nombre_visible}")
 
     def cerrar_sesion(self):
+        # Guarda preferencias antes de apagar conexiones externas.
+        self._guardar_perfil()
+        self._auth_generacion += 1
+        self._auth_en_progreso = False
+        self._firebase_generacion += 1
+        self.firebase_avisos_activo = False
+        self._firebase_cliente = None
+        if self._firebase_sesion:
+            self._firebase_sesion.cerrar()
+            self._firebase_sesion = None
+        self._firebase_ocupado = False
+        self.avisos = [a for a in self.avisos if a.get("fuente") != "firebase"]
+        self._pantalla("ajustes").ids.firebase_estado.text = (
+            "Se conectarán al iniciar sesión"
+        )
         if self.compartiendo:
             self.detener_compartir()
         # Aunque no haya un viaje activo, una búsqueda GPS/IP iniciada desde
@@ -389,7 +528,6 @@ class InterurbanoApp(MDApp):
             self._pantalla("home").ids.mapa.remove_marker(self.marcador_yo)
             self.marcador_yo = None
         self._pantalla("home").ids.ubicacion_estado.text = "Tu ubicación: sin consultar"
-        self._guardar_perfil()
         self.usuario_actual = ""
         self.linea_actual = ""
         p = self._pantalla("compartir").ids
@@ -411,6 +549,7 @@ class InterurbanoApp(MDApp):
                 "tema_oscuro": self.theme_cls.theme_style == "Dark",
                 "notificar_favoritas": self.notificar_favoritas,
                 "consentimiento": self.consentimiento,
+                "firebase_avisos": bool(self._firebase_config and self._firebase_sesion),
             })
         except OSError as e:
             registrar_error(e)
@@ -431,7 +570,10 @@ class InterurbanoApp(MDApp):
 
     def _guardar_avisos(self):
         try:
-            almacenamiento.guardar_avisos(self.avisos)
+            # Un aviso de Firebase no debe confundirse con un aviso local.
+            almacenamiento.guardar_avisos(
+                [a for a in self.avisos if a.get("fuente") != "firebase"]
+            )
         except OSError as e:
             registrar_error(e)
 
@@ -778,7 +920,10 @@ class InterurbanoApp(MDApp):
         self.gps_activo = False
 
     def on_stop(self):
+        self.medidor.registrar("aplicacion_cerrada")
         Window.unbind(size=self._actualizar_zona_segura)
+        self._firebase_generacion += 1
+        self.firebase_avisos_activo = False
         self.detener_gps()
         self._guardar_perfil()
         self._guardar_avisos()
@@ -788,6 +933,9 @@ class InterurbanoApp(MDApp):
     # --------------------------------------------------------
     def mostrar_detalle(self, ruta):
         d = RUTAS[ruta]
+        if self._medicion_intento:
+            self.medidor.completar_busqueda(self._medicion_intento)
+            self._medicion_intento = None
         es_fav = ruta in self.favoritas
         ocup, atraso, cambio = self._estado_ruta(ruta)
         ocup_txt = (f'{TIPOS_AVISO[ocup["tipo"]]["texto"]} ({self._hace(ocup["ts"])})'
@@ -828,8 +976,10 @@ class InterurbanoApp(MDApp):
     def alternar_favorita(self, ruta):
         if ruta in self.favoritas:
             self.favoritas.remove(ruta)
+            self.medidor.registrar("favorito_eliminado")
         else:
             self.favoritas.append(ruta)
+            self.medidor.registrar("favorito_agregado")
         self.dialogo.dismiss()
         self._guardar_perfil()
         self.refrescar_favoritos()
@@ -1065,13 +1215,14 @@ class InterurbanoApp(MDApp):
         self._snack("¡Aviso enviado! Gracias por ayudar a otros pasajeros.")
 
     def publicar_aviso(self, ruta, tipo, minutos=0, propio=True):
-        # TODO: enviar el aviso a un servidor y recibir los de otros usuarios
-        # (hoy queda solo en este dispositivo, guardado en data/avisos.json).
-        aviso = {"ruta": ruta, "tipo": tipo, "minutos": minutos,
-                 "ts": time.time(), "propio": propio,
+        aviso = {"id": uuid.uuid4().hex, "ruta": ruta, "tipo": tipo,
+                 "minutos": minutos, "ts": time.time(), "propio": propio,
                  "autor": self.usuario_actual if propio else ""}
         self.avisos.insert(0, aviso)
         self._guardar_avisos()
+        if propio:
+            self.medidor.registrar("aviso_publicado")
+            self._enviar_aviso_firebase(aviso)
         self.refrescar_avisos()
         if not propio and self.notificar_favoritas and ruta in self.favoritas:
             self.notificar(ruta, self._titulo_aviso(aviso))
@@ -1119,6 +1270,145 @@ class InterurbanoApp(MDApp):
     def alternar_solo_favoritas(self, activo):
         self.solo_favoritas = activo
         self.poblar_avisos()
+
+    # --------------------------------------------------------
+    # Firebase opcional — reportes comunitarios sin GPS ni usuario.
+    # Nunca sustituye login ni almacenamiento local.
+    # --------------------------------------------------------
+    def cambiar_firebase(self, activo):
+        """Compatibilidad interna; no es un ajuste visible al pasajero."""
+        if not self.root:
+            return
+        estado = self._pantalla("ajustes").ids.firebase_estado
+        if not activo:
+            self._firebase_generacion += 1
+            self.firebase_avisos_activo = False
+            self._firebase_cliente = None
+            self._firebase_ocupado = False
+            self.avisos = [a for a in self.avisos if a.get("fuente") != "firebase"]
+            estado.text = "Sin conexión"
+            self.refrescar_avisos()
+            return
+        if (not self.usuario_actual or not self._firebase_config
+                or not self._firebase_sesion):
+            estado.text = "Modo local · inicia sesión con correo para sincronizar"
+            return
+        self._firebase_generacion += 1
+        self._firebase_cliente = firebase_rtdb.FirebaseReportes(
+            *self._firebase_config, sesion=self._firebase_sesion
+        )
+        self.firebase_avisos_activo = True
+        estado.text = "Conectando reportes…"
+        self._refrescar_firebase()
+
+    def _refrescar_firebase(self):
+        if (not self.firebase_avisos_activo or self._firebase_cliente is None
+                or self._firebase_ocupado or not self.usuario_actual):
+            return
+        self._firebase_ocupado = True
+        cliente = self._firebase_cliente
+        generacion = self._firebase_generacion
+        usuario = self.usuario_actual
+
+        def trabajo():
+            try:
+                reportes, fallo = cliente.recientes(), None
+            except firebase_rtdb.FirebaseError as exc:
+                reportes, fallo = [], str(exc)
+            Clock.schedule_once(
+                lambda dt: self._aplicar_firebase(
+                    generacion, usuario, reportes, fallo
+                )
+            )
+        threading.Thread(target=trabajo, daemon=True, name="enruta-firebase-lectura").start()
+
+    def _aplicar_firebase(self, generacion, usuario, reportes, fallo):
+        if generacion != self._firebase_generacion or usuario != self.usuario_actual:
+            return
+        self._firebase_ocupado = False
+        estado = self._pantalla("ajustes").ids.firebase_estado
+        if fallo:
+            estado.text = fallo
+            return
+        locales = [a for a in self.avisos if a.get("fuente") != "firebase"]
+        ids = {a.get("id") for a in locales}
+        remotos = [a for a in reportes
+                   if a.get("id") not in ids and a.get("ruta") in RUTAS]
+        self.avisos = avisos_service.sanear_avisos(locales + remotos)
+        estado.text = f"{len(remotos)} reportes remotos recientes (no oficiales)"
+        self.refrescar_avisos()
+
+    def _enviar_aviso_firebase(self, aviso):
+        if not self.firebase_avisos_activo or self._firebase_cliente is None:
+            return
+        cliente = self._firebase_cliente
+        generacion = self._firebase_generacion
+        usuario = self.usuario_actual
+
+        def trabajo():
+            try:
+                cliente.publicar(aviso)
+                fallo = None
+            except firebase_rtdb.FirebaseError as exc:
+                fallo = str(exc)
+            Clock.schedule_once(lambda dt: self._aviso_firebase_listo(
+                generacion, usuario, fallo
+            ))
+        threading.Thread(target=trabajo, daemon=True, name="enruta-firebase-escritura").start()
+
+    def _aviso_firebase_listo(self, generacion, usuario, fallo):
+        if generacion != self._firebase_generacion or usuario != self.usuario_actual:
+            return
+        if fallo:
+            self._pantalla("ajustes").ids.firebase_estado.text = fallo
+            self._snack(fallo)
+        else:
+            self._pantalla("ajustes").ids.firebase_estado.text = (
+                "Aviso enviado a Firebase · sin identidad ni GPS"
+            )
+
+    def cambiar_analitica(self, activo):
+        """Consentimiento para la medición MJV local de esta sesión.
+
+        Los tests y las personas que no acepten nunca generan eventos.
+        """
+        if not hasattr(self, "medidor"):
+            return
+        anterior = self.medidor.activo
+        self.medidor.activo = bool(activo)
+        if self.root:
+            estado = self._pantalla("ajustes").ids.mjv_estado
+            estado.text = ("Métricas anónimas activadas (sin ubicación ni nombre)"
+                           if activo else "Métricas anónimas desactivadas")
+        if activo and not anterior:
+            self.medidor.registrar("aplicacion_iniciada")
+        if not activo:
+            self._medicion_intento = None
+
+    def refrescar_analitica(self):
+        """Resultados SOLO con eventos reales guardados en el dispositivo."""
+        datos = analitica.resumen(analitica.leer_eventos())
+        ids = self._pantalla("analitica").ids
+        ids.kpi_sesiones.text = str(datos["sesiones"])
+        ids.kpi_exito.text = (
+            f'{datos["exito_busqueda_pct"]}%' if datos["exito_busqueda_pct"] is not None
+            else "Sin datos"
+        )
+        ids.kpi_tiempo.text = (
+            f'{datos["mediana_busqueda_s"]} s' if datos["mediana_busqueda_s"] is not None
+            else "Sin datos"
+        )
+        ids.kpi_avisos.text = str(datos["avisos_publicados"])
+        ids.kpi_periodo.text = (
+            f'Desde {datos["periodo_inicio_utc"][:16]} UTC hasta '
+            f'{datos["periodo_fin_utc"][:16]} UTC'
+            if datos["periodo_inicio_utc"] else "Todavía no hay mediciones"
+        )
+        ids.kpi_fuente.text = (
+            f'{datos["consultas_exitosas"]} consultas con detalle / '
+            f'{datos["busquedas"]} entradas a Recorridos. '
+            f'{datos["eventos"]} eventos locales en total.'
+        )
 
     def simular_aviso(self):
         """Solo para la demo: simula que otro pasajero envió un aviso

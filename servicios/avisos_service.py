@@ -29,14 +29,21 @@ def sanear_avisos(registros):
         minutos = aviso.get("minutos", 0)
         if isinstance(minutos, bool) or not isinstance(minutos, int) or minutos < 0:
             continue
-        resultado.append({
+        registro = {
             "ruta": ruta,
             "tipo": tipo,
             "minutos": minutos,
             "ts": ts,
             "propio": aviso.get("propio") is True,
             "autor": aviso.get("autor") if isinstance(aviso.get("autor"), str) else "",
-        })
+        }
+        identificador = aviso.get("id")
+        if (isinstance(identificador, str) and len(identificador) == 32
+                and all(c in "0123456789abcdef" for c in identificador)):
+            registro["id"] = identificador
+        if aviso.get("fuente") == "firebase":
+            registro["fuente"] = "firebase"
+        resultado.append(registro)
     return sorted(resultado, key=lambda a: a["ts"], reverse=True)
 
 

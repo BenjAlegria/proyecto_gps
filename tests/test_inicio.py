@@ -33,6 +33,58 @@ class InicioTests(unittest.TestCase):
         self.app.avisos = []
         self.app.seleccionar_origen("Temuco")
 
+    def test_splash_y_autenticacion_remota_tienen_salida_segura(self):
+        self.assertIn("carga", self.app.root.ids.sm.screen_names)
+        self.app.cambiar_pantalla("carga")
+        self.assertEqual(self.app.root.ids.nav_bar.opacity, 0)
+        self.app._auth_generacion = 7
+        self.app._auth_en_progreso = True
+        from unittest.mock import Mock
+        sesion = Mock()
+        with patch.object(self.app, "_entrar") as entrar:
+            self.app._autenticacion_lista(
+                7, "uid-demostracion", sesion, "usuario@ejemplo.cl", None, False)
+            entrar.assert_called_once_with(
+                "uid-demostracion", nuevo=False, correo="usuario@ejemplo.cl")
+        self.assertFalse(self.app._auth_en_progreso)
+        self.app._firebase_sesion = None
+        self.app.cambiar_pantalla("home")
+
+    def test_sincronizacion_automatica_tras_login_remoto(self):
+        from unittest.mock import Mock
+        from servicios.almacenamiento import PERFIL_POR_DEFECTO
+        sesion = Mock(uid="uid-demostracion")
+        self.app._firebase_sesion = sesion
+        self.app._firebase_config = ("ClaveDemo", "https://demo.firebaseio.com")
+        with patch("servicios.almacenamiento.cargar_perfil",
+                   return_value={**PERFIL_POR_DEFECTO, "nombre":"Pasajero"}), \
+             patch.object(self.app, "cambiar_firebase") as sincronizar, \
+             patch.object(self.app, "_snack"):
+            self.app._entrar("uid-demostracion", correo="usuario@ejemplo.cl")
+            sincronizar.assert_called_once_with(True)
+        self.app._firebase_sesion = None
+        self.app._firebase_config = None
+        self.app.usuario_actual = ""
+        self.app.cambiar_pantalla("home")
+
+    def test_pantalla_analitica_muestra_datos_sin_fabricar(self):
+        with patch("servicios.analitica.leer_eventos", return_value=[]):
+            self.app.cambiar_pantalla("analitica")
+        p = self.app._pantalla("analitica")
+        self.assertEqual(p.ids.kpi_exito.text, "Sin datos")
+        self.assertEqual(p.ids.kpi_tiempo.text, "Sin datos")
+        self.assertEqual(p.ids.kpi_sesiones.text, "0")
+        self.app.cambiar_pantalla("home")
+
+    def test_firebase_no_configurado_no_realiza_peticion(self):
+        self.app.cambiar_pantalla("ajustes")
+        with patch.object(self.app, "_firebase_config", None), \
+                patch("servicios.firebase_rtdb.FirebaseReportes") as cliente:
+            self.app.cambiar_firebase(True)
+            self.assertFalse(self.app.firebase_avisos_activo)
+            cliente.assert_not_called()
+        self.app.cambiar_pantalla("home")
+
     def test_filtro_y_cambio_localidad(self):
         self.assertEqual(len(self.home.ids.lineas_box.children), 2)
         self.app.seleccionar_recorrido_home("Temuco -> Lautaro")

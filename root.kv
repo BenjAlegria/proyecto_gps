@@ -11,6 +11,8 @@ BoxLayout:
     ScreenManager:
         id: sm
         size_hint_y: 1
+        CargaScreen:
+            name: "carga"
         LoginScreen:
             name: "login"
         RegistroScreen:
@@ -25,6 +27,8 @@ BoxLayout:
             name: "avisos"
         AjustesScreen:
             name: "ajustes"
+        AnaliticaScreen:
+            name: "analitica"
         PerfilScreen:
             name: "perfil"
 
@@ -34,9 +38,9 @@ BoxLayout:
         theme_bg_color: "Custom"
         -md_bg_color: app.ui.fondo
         size_hint_y: None
-        height: 0 if sm.current in ("login", "registro") else dp(64) + app.safe_bottom
-        opacity: 0 if sm.current in ("login", "registro") else 1
-        disabled: sm.current in ("login", "registro")
+        height: 0 if sm.current in ("login", "registro", "carga") else dp(64) + app.safe_bottom
+        opacity: 0 if sm.current in ("login", "registro", "carga") else 1
+        disabled: sm.current in ("login", "registro", "carga")
         padding: dp(4), dp(4), dp(4), dp(4) + app.safe_bottom
         canvas.before:
             Color:
@@ -899,7 +903,7 @@ BoxLayout:
                     descripcion: "Consulta reportes de ocupación, atrasos y cambios de ruta."
                     icono: "bell-badge-outline"
                 UiNotice:
-                    text: "Estos reportes se guardan solo en este dispositivo; no son avisos oficiales ni llegan desde otros teléfonos."
+                    text: "Firebase habilitado: reportes comunitarios anónimos, no oficiales. El mapa sigue en modo demostración." if app.firebase_avisos_activo else "Modo local: reportes guardados solo en el dispositivo, no son avisos oficiales."
                     icon: "flask-outline"
                 UiSurface:
                     size_hint_y: None
@@ -1077,9 +1081,56 @@ BoxLayout:
                         on_release: app.actualizar_config_remota()
 
                 UiSection:
+                    text: "Privacidad"
+                UiSurface:
+                    size_hint_y: None
+                    height: dp(80)
+                    corners: [dp(17)]
+                    -bg: app.ui.fondo
+                    -stroke: app.ui.borde
+                    UiIcon:
+                        icon: "shield-check-outline"
+                        -icon_color: app.ui.azul
+                    BoxLayout:
+                        orientation: "vertical"
+                        UiText:
+                            text: "Ayudar a mejorar la app"
+                            font_size: "13sp"
+                            bold: True
+                        UiParagraph:
+                            id: mjv_estado
+                            text: "Compartir métricas anónimas de uso: desactivado"
+                            font_size: "10sp"
+                    UiSwitch:
+                        id: switch_mjv
+                        on_active: app.cambiar_analitica(self.active)
+
+                UiSection:
+                    text: "Estado de la conexión"
+                UiSurface:
+                    size_hint_y: None
+                    height: dp(70)
+                    corners: [dp(17)]
+                    -bg: app.ui.tarjeta
+                    -stroke: app.ui.borde
+                    UiIcon:
+                        icon: "cloud-check-outline"
+                        -icon_color: app.ui.azul
+                    BoxLayout:
+                        orientation: "vertical"
+                        UiText:
+                            text: "Avisos de la comunidad"
+                            font_size: "13sp"
+                            bold: True
+                        UiParagraph:
+                            id: firebase_estado
+                            text: "Se conectarán al iniciar sesión"
+                            font_size: "10sp"
+
+                UiSection:
                     text: "Herramientas de prueba"
                 UiNotice:
-                    text: "Esta app usa recorridos y reportes de demostración hasta que se conecte el servidor."
+                    text: "Recorridos y posiciones de buses son de demostración. Los reportes locales de prueba no provienen de operadores."
                     icon: "flask-outline"
                 UiButton:
                     primary: False
@@ -1363,7 +1414,7 @@ BoxLayout:
                         font_size: "12sp"
 
                     UiText:
-                        text: "TU USUARIO"
+                        text: "CORREO ELECTRÓNICO"
                         bold: True
                         font_size: "10sp"
                         -color: app.ui.secundario
@@ -1375,7 +1426,7 @@ BoxLayout:
                         MDTextFieldLeadingIcon:
                             icon: "account-outline"
                         MDTextFieldHintText:
-                            text: "Nombre de usuario"
+                            text: "correo@ejemplo.com"
                     UiError:
                         id: err_usuario
                         text: ""
@@ -1419,7 +1470,7 @@ BoxLayout:
                         on_release: app.cambiar_pantalla("registro")
 
                     UiNotice:
-                        text: "Tu GPS solo se utiliza con permiso. Por ahora, los datos se guardan en este dispositivo."
+                        text: "Tu ubicación no se comparte. Los avisos se sincronizan automáticamente tras iniciar sesión."
                         icon: "shield-check-outline"
 
 <RegistroScreen>:
@@ -1502,7 +1553,7 @@ BoxLayout:
                         font_size: "12sp"
 
                     UiText:
-                        text: "NOMBRE DE USUARIO"
+                        text: "CORREO ELECTRÓNICO"
                         bold: True
                         font_size: "10sp"
                         -color: app.ui.secundario
@@ -1514,7 +1565,7 @@ BoxLayout:
                         MDTextFieldLeadingIcon:
                             icon: "account-outline"
                         MDTextFieldHintText:
-                            text: "Usuario (3 a 20 caracteres)"
+                            text: "correo@ejemplo.com"
                     UiError:
                         id: err_usuario
                         text: ""
@@ -1535,7 +1586,7 @@ BoxLayout:
                         MDTextFieldHintText:
                             text: "Crea una contraseña"
                     UiParagraph:
-                        text: "Mínimo 6 caracteres, con al menos una letra y un número."
+                        text: "Al menos 8 caracteres para tu cuenta."
                         font_size: "10sp"
                     UiError:
                         id: err_clave
@@ -1581,5 +1632,155 @@ BoxLayout:
                         icon: "login"
                         on_release: app.cambiar_pantalla("login")
                     UiNotice:
-                        text: "Tus datos de acceso se guardan localmente. La conexión entre teléfonos aún no está habilitada."
+                        text: "La contraseña se verifica en Firebase cuando hay conexión; nunca se almacena en el dispositivo."
                         icon: "shield-check-outline"
+
+
+<AnaliticaScreen>:
+    BoxLayout:
+        orientation: "vertical"
+        UiHeader:
+            titulo: "Analítica MJV App"
+            subtitulo: "Mediciones de uso verificables"
+        UiScroll:
+            UiBody:
+                UiJourneyHero:
+                    etiqueta: "05  /  EVALUACIÓN"
+                    titulo: "Medimos para mejorar"
+                    descripcion: "KPIs calculados con eventos locales de navegación y uso, sin datos personales."
+                    icono: "chart-bar"
+                UiSection:
+                    text: "Indicadores del periodo"
+                GridLayout:
+                    cols: 2
+                    size_hint_y: None
+                    height: dp(210)
+                    spacing: dp(10)
+                    UiSurface:
+                        orientation: "vertical"
+                        padding: dp(12), dp(12)
+                        corners: [dp(16)]
+                        -bg: app.ui.tarjeta
+                        -stroke: app.ui.borde
+                        UiParagraph:
+                            text: "Sesiones medidas"
+                            font_size: "11sp"
+                        UiSection:
+                            id: kpi_sesiones
+                            text: "0"
+                            font_size: "24sp"
+                    UiSurface:
+                        orientation: "vertical"
+                        padding: dp(12), dp(12)
+                        corners: [dp(16)]
+                        -bg: app.ui.tarjeta
+                        -stroke: app.ui.borde
+                        UiParagraph:
+                            text: "Éxito al buscar"
+                            font_size: "11sp"
+                        UiSection:
+                            id: kpi_exito
+                            text: "Sin datos"
+                            font_size: "21sp"
+                    UiSurface:
+                        orientation: "vertical"
+                        padding: dp(12), dp(12)
+                        corners: [dp(16)]
+                        -bg: app.ui.tarjeta
+                        -stroke: app.ui.borde
+                        UiParagraph:
+                            text: "Tiempo mediano"
+                            font_size: "11sp"
+                        UiSection:
+                            id: kpi_tiempo
+                            text: "Sin datos"
+                            font_size: "21sp"
+                    UiSurface:
+                        orientation: "vertical"
+                        padding: dp(12), dp(12)
+                        corners: [dp(16)]
+                        -bg: app.ui.tarjeta
+                        -stroke: app.ui.borde
+                        UiParagraph:
+                            text: "Avisos publicados"
+                            font_size: "11sp"
+                        UiSection:
+                            id: kpi_avisos
+                            text: "0"
+                            font_size: "24sp"
+                UiSection:
+                    text: "Trazabilidad"
+                UiNotice:
+                    text: "Los indicadores no son resultados de una encuesta. Deben acompañarse de pruebas con participantes y periodo declarado."
+                    icon: "information-outline"
+                UiSurface:
+                    orientation: "vertical"
+                    size_hint_y: None
+                    height: dp(130)
+                    corners: [dp(17)]
+                    -bg: app.ui.fondo
+                    -stroke: app.ui.borde
+                    UiParagraph:
+                        id: kpi_periodo
+                        text: "Todavía no hay mediciones"
+                        font_size: "11sp"
+                    UiParagraph:
+                        id: kpi_fuente
+                        text: "Los eventos quedan guardados localmente."
+                        font_size: "11sp"
+                UiButton:
+                    primary: False
+                    text: "Actualizar indicadores"
+                    icon: "refresh"
+                    on_release: app.refrescar_analitica()
+                UiButton:
+                    primary: False
+                    text: "Volver a Ajustes"
+                    icon: "arrow-left"
+                    on_release: app.cambiar_pantalla("ajustes")
+
+
+<CargaScreen>:
+    BoxLayout:
+        orientation: "vertical"
+        canvas.before:
+            Color:
+                rgba: app.ui.marino
+            Rectangle:
+                pos: self.pos
+                size: self.size
+        AnchorLayout:
+            anchor_x: "center"
+            anchor_y: "center"
+            BoxLayout:
+                orientation: "vertical"
+                spacing: dp(13)
+                size_hint: None, None
+                size: min(dp(340), self.parent.width - dp(35)), dp(245)
+                AnchorLayout:
+                    size_hint_y: None
+                    height: dp(70)
+                    UiIcon:
+                        icon: "bus-side"
+                        font_size: "60sp"
+                        -icon_color: 1, 1, 1, 1
+                UiText:
+                    text: "EnRuta Ya!"
+                    bold: True
+                    font_size: "30sp"
+                    halign: "center"
+                    -color: 1, 1, 1, 1
+                UiParagraph:
+                    text: "Tu viaje comienza aquí"
+                    halign: "center"
+                    font_size: "13sp"
+                    -color: .77, .85, 1, 1
+                Widget:
+                    size_hint_y: None
+                    height: dp(8)
+                UiParagraph:
+                    id: carga_estado
+                    text: "Preparando la aplicación…"
+                    halign: "center"
+                    font_size: "12sp"
+                    -color: .95, .97, 1, 1

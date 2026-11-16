@@ -1,0 +1,20 @@
+{
+  "rules": {
+    ".read": false,
+    ".write": false,
+    "reportes": {
+      ".read": "auth != null && auth.token.firebase.sign_in_provider == 'password'",
+      ".indexOn": ["ts"],
+      "$id": {
+        ".write": "auth != null && auth.token.firebase.sign_in_provider == 'password' && !data.exists() && newData.child('uid').val() == auth.uid",
+        ".validate": "newData.hasChildren(['uid', 'ruta', 'tipo', 'minutos', 'ts'])",
+        "uid": { ".validate": "newData.isString() && newData.val() == auth.uid" },
+        "ruta": { ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 100" },
+        "tipo": { ".validate": "newData.val() == 'lleno' || newData.val() == 'asientos' || newData.val() == 'atrasado' || newData.val() == 'cambio_ruta'" },
+        "minutos": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 180" },
+        "ts": { ".validate": "newData.isNumber() && newData.val() * 1000 <= now + 60000 && newData.val() * 1000 >= now - 7200000" },
+        "$other": { ".validate": false }
+      }
+    }
+  }
+}
