@@ -108,7 +108,7 @@ def resumen(eventos):
     sesiones = set()
     intentos = set()
     exitos = set()
-    tiempos = []
+    duraciones = {}
     avisos = 0
     favoritos = 0
     fechas = []
@@ -129,12 +129,15 @@ def resumen(eventos):
             exitos.add(intento)
             ms = e.get("duracion_ms")
             if type(ms) is int and 0 <= ms <= 900_000:
-                tiempos.append(ms / 1000)
+                duraciones[intento] = ms / 1000
         elif evento == "aviso_publicado":
             avisos += 1
         elif evento == "favorito_agregado":
             favoritos += 1
     aciertos = len(intentos & exitos)
+    # Un tiempo sin evento de entrada correspondiente no es un dato
+    # válido de la tarea; jamás contaminar la mediana con registros sueltos.
+    tiempos = [v for k, v in duraciones.items() if k in intentos]
     return {
         "sesiones": len(sesiones),
         "eventos": len(eventos),
