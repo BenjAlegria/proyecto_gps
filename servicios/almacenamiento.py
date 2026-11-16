@@ -20,6 +20,7 @@ PERFIL_POR_DEFECTO = {
     "tema_oscuro": False,
     "notificar_favoritas": True,
     "consentimiento": False,
+    "firebase_avisos": False,
 }
 
 def leer_json(ruta, por_defecto=None):
@@ -75,7 +76,7 @@ def cargar_perfil(usuario):
     viajes = guardado.get("viajes")
     if type(viajes) is int and viajes >= 0:
         perfil["viajes"] = viajes
-    for clave in ("tema_oscuro", "notificar_favoritas", "consentimiento"):
+    for clave in ("tema_oscuro", "notificar_favoritas", "consentimiento", "firebase_avisos"):
         if type(guardado.get(clave)) is bool:
             perfil[clave] = guardado[clave]
     return perfil
