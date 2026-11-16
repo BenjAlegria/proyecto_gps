@@ -25,6 +25,8 @@ BoxLayout:
             name: "avisos"
         AjustesScreen:
             name: "ajustes"
+        AnaliticaScreen:
+            name: "analitica"
         PerfilScreen:
             name: "perfil"
 
@@ -899,7 +901,7 @@ BoxLayout:
                     descripcion: "Consulta reportes de ocupación, atrasos y cambios de ruta."
                     icono: "bell-badge-outline"
                 UiNotice:
-                    text: "Estos reportes se guardan solo en este dispositivo; no son avisos oficiales ni llegan desde otros teléfonos."
+                    text: "Firebase habilitado: reportes comunitarios anónimos, no oficiales. El mapa sigue en modo demostración." if app.firebase_avisos_activo else "Modo local: reportes guardados solo en el dispositivo, no son avisos oficiales."
                     icon: "flask-outline"
                 UiSurface:
                     size_hint_y: None
@@ -1077,9 +1079,48 @@ BoxLayout:
                         on_release: app.actualizar_config_remota()
 
                 UiSection:
+                    text: "Medición y evaluación"
+                UiNotice:
+                    text: "Analítica local MJV App: eventos anónimos de uso, sin GPS ni credenciales. Los KPIs se calculan desde datos reales."
+                    icon: "chart-bar"
+                UiButton:
+                    primary: False
+                    text: "Ver analítica y KPIs"
+                    icon: "chart-line"
+                    on_release: app.cambiar_pantalla("analitica")
+
+                UiSection:
+                    text: "Avisos comunitarios · Firebase"
+                UiNotice:
+                    text: "Opcional: al activarlo, los avisos nuevos se envían sin nombre ni GPS. Requiere configurar Firebase; el acceso a la app sigue siendo local."
+                    icon: "shield-check-outline"
+                UiSurface:
+                    size_hint_y: None
+                    height: dp(82)
+                    corners: [dp(17)]
+                    -bg: app.ui.fondo
+                    -stroke: app.ui.borde
+                    UiIcon:
+                        icon: "cloud-sync-outline"
+                        -icon_color: app.ui.azul
+                    BoxLayout:
+                        orientation: "vertical"
+                        UiText:
+                            text: "Avisos compartidos"
+                            font_size: "13sp"
+                            bold: True
+                        UiParagraph:
+                            id: firebase_estado
+                            text: "Firebase desactivado"
+                            font_size: "10sp"
+                    UiSwitch:
+                        id: switch_firebase
+                        on_active: app.cambiar_firebase(self.active)
+
+                UiSection:
                     text: "Herramientas de prueba"
                 UiNotice:
-                    text: "Esta app usa recorridos y reportes de demostración hasta que se conecte el servidor."
+                    text: "Recorridos y posiciones de buses son de demostración. Los reportes locales de prueba no provienen de operadores."
                     icon: "flask-outline"
                 UiButton:
                     primary: False
@@ -1583,3 +1624,107 @@ BoxLayout:
                     UiNotice:
                         text: "Tus datos de acceso se guardan localmente. La conexión entre teléfonos aún no está habilitada."
                         icon: "shield-check-outline"
+
+
+<AnaliticaScreen>:
+    BoxLayout:
+        orientation: "vertical"
+        UiHeader:
+            titulo: "Analítica MJV App"
+            subtitulo: "Mediciones de uso verificables"
+        UiScroll:
+            UiBody:
+                UiJourneyHero:
+                    etiqueta: "05  /  EVALUACIÓN"
+                    titulo: "Medimos para mejorar"
+                    descripcion: "KPIs calculados con eventos locales de navegación y uso, sin datos personales."
+                    icono: "chart-bar"
+                UiSection:
+                    text: "Indicadores del periodo"
+                GridLayout:
+                    cols: 2
+                    size_hint_y: None
+                    height: dp(210)
+                    spacing: dp(10)
+                    UiSurface:
+                        orientation: "vertical"
+                        padding: dp(12), dp(12)
+                        corners: [dp(16)]
+                        -bg: app.ui.tarjeta
+                        -stroke: app.ui.borde
+                        UiParagraph:
+                            text: "Sesiones medidas"
+                            font_size: "11sp"
+                        UiSection:
+                            id: kpi_sesiones
+                            text: "0"
+                            font_size: "24sp"
+                    UiSurface:
+                        orientation: "vertical"
+                        padding: dp(12), dp(12)
+                        corners: [dp(16)]
+                        -bg: app.ui.tarjeta
+                        -stroke: app.ui.borde
+                        UiParagraph:
+                            text: "Éxito al buscar"
+                            font_size: "11sp"
+                        UiSection:
+                            id: kpi_exito
+                            text: "Sin datos"
+                            font_size: "21sp"
+                    UiSurface:
+                        orientation: "vertical"
+                        padding: dp(12), dp(12)
+                        corners: [dp(16)]
+                        -bg: app.ui.tarjeta
+                        -stroke: app.ui.borde
+                        UiParagraph:
+                            text: "Tiempo mediano"
+                            font_size: "11sp"
+                        UiSection:
+                            id: kpi_tiempo
+                            text: "Sin datos"
+                            font_size: "21sp"
+                    UiSurface:
+                        orientation: "vertical"
+                        padding: dp(12), dp(12)
+                        corners: [dp(16)]
+                        -bg: app.ui.tarjeta
+                        -stroke: app.ui.borde
+                        UiParagraph:
+                            text: "Avisos publicados"
+                            font_size: "11sp"
+                        UiSection:
+                            id: kpi_avisos
+                            text: "0"
+                            font_size: "24sp"
+                UiSection:
+                    text: "Trazabilidad"
+                UiNotice:
+                    text: "Los indicadores no son resultados de una encuesta. Deben acompañarse de pruebas con participantes y periodo declarado."
+                    icon: "information-outline"
+                UiSurface:
+                    orientation: "vertical"
+                    size_hint_y: None
+                    height: dp(130)
+                    corners: [dp(17)]
+                    -bg: app.ui.fondo
+                    -stroke: app.ui.borde
+                    UiParagraph:
+                        id: kpi_periodo
+                        text: "Todavía no hay mediciones"
+                        font_size: "11sp"
+                    UiParagraph:
+                        id: kpi_fuente
+                        text: "Los eventos quedan guardados localmente."
+                        font_size: "11sp"
+                UiButton:
+                    primary: False
+                    text: "Actualizar indicadores"
+                    icon: "refresh"
+                    on_release: app.refrescar_analitica()
+                UiButton:
+                    primary: False
+                    text: "Volver a Ajustes"
+                    icon: "arrow-left"
+                    on_release: app.cambiar_pantalla("ajustes")
