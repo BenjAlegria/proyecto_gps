@@ -29,7 +29,7 @@ de toda la región.
 
 Se implementó un prototipo en Python, Kivy y KivyMD, con MapView y
 OpenStreetMap. Incluye registro/login, perfiles, favoritos,
-navegación, persistencia JSON, avisos, ajustes y vista de KPIs.
+navegación, persistencia JSON, avisos, ajustes y medición MJV App\nexportada fuera de la interfaz del pasajero.
 
 La estructura separa:
 - Vistas: `root.kv`, `componentes.kv`, `tema.py`.
@@ -37,21 +37,19 @@ La estructura separa:
 - Modelo/servicios: rutas, autenticación, persistencia,
   avisos, GPS, analítica y Firebase opcional.
 
-La sincronización con Firebase es una mejora **opcional** de avisos,
-desactivada por defecto y pendiente de validación con un proyecto
-real. No existe GPS colectivo entre dispositivos ni servidor de
+La sincronización de avisos de la comunidad se inicia\nautomáticamente después de acceder mediante correo y contraseña en\nFirebase Authentication. Requiere activar el proveedor y publicar las\nreglas en el proyecto real; está pendiente de validación entre dos\ninstancias. No existe GPS colectivo entre dispositivos ni servidor de
 localización en vivo. Los marcadores de buses y ETA son demos.
 
 **Evidencia de demo a adjuntar:** [CAPTURA 1: Login y Inicio],
 [CAPTURA 2: detalle de ruta y favorita],
 [CAPTURA 3: persistencia tras reiniciar],
-[CAPTURA 4: Analítica MJV App].
+[CAPTURA 4: resultados MJV App generados fuera de la interfaz].
 
 ## 3. Método MJV App, KPIs y periodo (RA3 · 20%)
 
 Se instrumentaron eventos locales con identificadores de sesión
 aleatorios, marca de tiempo UTC y referencias de intento de búsqueda.
-No se recopilan coordenadas, contraseñas ni nombres de usuarios.\nLa medición está desactivada por defecto y se activa manualmente,\ncon consentimiento, en Ajustes → Participar en medición.
+No se recopilan coordenadas, contraseñas ni nombres de usuarios.\nLa medición está desactivada por defecto y se activa manualmente,\ncon consentimiento, en Ajustes → Privacidad → Ayudar a mejorar la app.
 
 KPIs implementados:
 1. Éxito de consulta de recorrido = consultas con detalle /
