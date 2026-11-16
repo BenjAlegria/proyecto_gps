@@ -1,45 +1,54 @@
-# Declaración de uso de inteligencia artificial
+# Declaración de uso de inteligencia artificial — EnRuta Ya!
 
-Proyecto: **EnRuta Ya!** · Evaluación N°3, Desarrollo Móvil.
+**Asignatura:** Desarrollo Móvil (A+S), TINF1119. **Etapa:** PIF E4.
 
-## 1. IA usada
-- **Claude** (Anthropic), usado en el chat web/app como asistente de programación.
-- No se usó ninguna otra herramienta de IA. 
+Este archivo sustituye la declaración anterior centrada en E3: en las
+fases posteriores del proyecto también se utilizó ChatGPT/Codex.
 
-## 2. Modelo
-- Familia Claude (Anthropic). Versión exacta: 
+## Herramientas que deben declarar los integrantes
+- **Claude (Anthropic):** se utilizó en etapas anteriores para apoyar
+  prototipos, migración a KivyMD, formularios, validaciones,
+  documentación y correcciones de errores.
+- **ChatGPT (OpenAI):** apoyo a revisión de la rúbrica, rediseño,
+  refactorización, documentación de privacidad, generación de pruebas
+  y preparación del cliente Firebase y la instrumentación MJV App.
+- **Codex (OpenAI):** apoyo a generación y revisión de código Kivy,
+  cambios de interfaz y pruebas del repositorio.
+- **Figma:** herramienta de diseño empleada para los mockups; confirmar
+  si se usaron funcionalidades generativas de IA dentro de Figma.
 
-## 3. Prompts realizados
-Resumidos con fidelidad (los que explican decisiones del proyecto):
+**Verificación del equipo pendiente:** cada integrante debe
+comprobar si usó otras herramientas (y versiones concretas) para
+incluirlas. No atribuir a una sola persona decisiones del grupo.
 
-1. **Primeras versiones:** pedí la app de buses interurbanos en Kivy y luego su migración a KivyMD 2.0,
-   con `ScreenManager`, interfaz en `root.kv`, mapa con `kivy_garden.mapview`, panel de buses por
-   localidad y diálogo de consentimiento para compartir ubicación.
-2. **Avisos de pasajeros:** pedí avisos de "bus lleno / hay asientos / atrasado / cambio de ruta" con
-   anti-spam y notificación en rutas favoritas, a partir de los resultados de la encuesta.
-3. **Corrección de errores:** consulté por el error `FBO Initialization failed` del snackbar y por los
-   íconos de bus demasiado grandes al alejar el mapa.
-4. **Cierre de la Evaluación N°3:** pegué las instrucciones de la evaluación y pedí "añade, corrige,
-   termina el proyecto" para cumplir los requisitos (registro y login, JSON, notificaciones,
-   configuración remota, README y USO_IA).
-5. **Cómo integrarlo:** pedí que los cambios se pudieran aplicar por partes (config y datos, JSON, login,
-   notificaciones, configuración remota) y que me explicara cómo separar el código de `main.py`.
-6. **Entender el código:** pedí una explicación completa de cómo funciona la app, qué hace cada archivo,
-   cómo se conectan y qué pasa si se modifica algo, para poder defenderlo.
-7. **Preguntas de diseño:** qué pasa si dos pasajeros comparten ubicación en el mismo bus, y cómo
-   evitar que alguien envíe una posición falsa.
-8. **Pedí la app lo más completa posible:** de ahí salió el servidor para compartir ubicación y avisos.
-9. **Conceptos:** qué son los tests y qué pasa si se quitan.
-## 4. Outputs
-Lo que entregó la herramienta:
+## Ejemplos de solicitudes y contribuciones
+- Diseñar una app KivyMD con registro, login, mapa, favoritos,
+  reportes de viajeros y configuración remota.
+- Mejorar UX/UI para pantallas móviles manteniendo navegación.
+- Identificar errores de permisos GPS, callbacks tardíos y formatos JSON.
+- Probar Google Maps en rama aislada; abandonar el experimento por
+  dificultades de facturación y conservar MapView.
+- Incorporar pruebas, registrar eventos anónimos y generar KPIs
+  trazables para la rúbrica.
+- Preparar una integración opcional de Firebase con seguridad de reglas
+  y modo local de respaldo.
 
-- Estructura modular: `servicios/autenticacion.py`, `almacenamiento.py`, `config_remota.py`,
-  `notificaciones.py`, más `config.py` y `datos_rutas.py` (antes todo estaba en `main.py`).
-- Pantallas de **login y registro** en `root.kv` y su lógica en `main.py`
-  (`hacer_login`, `hacer_registro`, `_entrar`, `cerrar_sesion`).
-- Hash de contraseñas con PBKDF2-SHA256 y sal, validaciones y mensajes de error.
-- Guardado/lectura de JSON (`perfiles.json`, `avisos.json`, `usuarios.json`) con escritura segura.
-- Descarga de configuración remota en un hilo, con caché y valores por defecto, y el banner de
-  Inicio + resumen en Ajustes que la reflejan.
-- Pruebas automáticas (`tests/test_servicios.py`), el `README.md` y el borrador de este archivo.
+## Validación y responsabilidad humana
+El equipo conserva la responsabilidad por el diseño, la lógica, la
+seguridad, la exactitud de la información y la defensa oral. El código
+generado por IA no se asume correcto sin pruebas; debe revisarse
+con `python -m unittest discover -s tests -v` y demo real.
+La primera prueba de Google Maps presentó errores de sintaxis y API;
+se decidió no incluirla en la versión de evaluación.
 
+No se usó IA para inventar encuestas ni resultados MJV App.
+Los indicadores deben derivarse exclusivamente de eventos registrados
+y observaciones con participantes voluntarios.
+
+## Limitaciones a explicar al docente
+- Los datos de buses y ETA son simulados, no telemetría oficial.
+- Firebase es opcional y no reemplaza el login local.
+- Los resultados de medición solo serán válidos al registrar un
+  periodo y contexto de prueba reales.
+- Los riesgos de privacidad, accesibilidad y abuso de reportes
+  requieren revisión adicional antes de publicar la app.
