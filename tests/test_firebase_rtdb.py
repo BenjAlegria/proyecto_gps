@@ -40,6 +40,27 @@ class FirebaseTests(unittest.TestCase):
         self.assertNotIn("lat", enviado)
         self.assertEqual(len(enviado), 5)
 
+    def test_diagnostico_indice_sin_filtrar_token(self):
+        cliente = FirebaseReportes("key", "https://demo.firebaseio.com")
+        respuesta = Mock(status_code=400)
+        respuesta.json.return_value = {
+            "error": 'Index not defined, add ".indexOn": "ts"'
+        }
+        with self.assertRaises(FirebaseError) as captura:
+            cliente._json(respuesta, "consultar avisos")
+        self.assertIn("HTTP 400", str(captura.exception))
+        self.assertIn(".indexOn", str(captura.exception))
+        self.assertNotIn("auth=", str(captura.exception))
+
+    def test_diagnostico_permiso_de_escritura(self):
+        cliente = FirebaseReportes("key", "https://demo.firebaseio.com")
+        respuesta = Mock(status_code=401)
+        respuesta.json.return_value = {"error": "Permission denied"}
+        with self.assertRaises(FirebaseError) as captura:
+            cliente._json(respuesta, "publicar aviso")
+        self.assertIn("HTTP 401", str(captura.exception))
+        self.assertIn("reglas", str(captura.exception).lower())
+
     def test_recientes_descarta_reportes_viejos(self):
         t = Mock()
         auth = Mock()
