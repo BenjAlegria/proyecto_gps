@@ -1083,6 +1083,28 @@ BoxLayout:
                 UiNotice:
                     text: "Analítica local MJV App: eventos anónimos de uso, sin GPS ni credenciales. Los KPIs se calculan desde datos reales."
                     icon: "chart-bar"
+                UiSurface:
+                    size_hint_y: None
+                    height: dp(74)
+                    corners: [dp(17)]
+                    -bg: app.ui.fondo
+                    -stroke: app.ui.borde
+                    UiIcon:
+                        icon: "chart-line"
+                        -icon_color: app.ui.azul
+                    BoxLayout:
+                        orientation: "vertical"
+                        UiText:
+                            text: "Participar en medición"
+                            font_size: "13sp"
+                            bold: True
+                        UiParagraph:
+                            id: mjv_estado
+                            text: "Medición desactivada"
+                            font_size: "10sp"
+                    UiSwitch:
+                        id: switch_mjv
+                        on_active: app.cambiar_analitica(self.active)
                 UiButton:
                     primary: False
                     text: "Ver analítica y KPIs"
