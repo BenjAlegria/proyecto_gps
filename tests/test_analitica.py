@@ -29,6 +29,17 @@ class AnaliticaTests(unittest.TestCase):
             self.assertNotIn("lat", json.dumps(datos))
             self.assertNotIn("lon", json.dumps(datos))
 
+    def test_sin_consentimiento_no_escribe_archivo(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            ruta = Path(tmp) / "eventos.jsonl"
+            medidor = Registrador(str(ruta), activo=False)
+            self.assertFalse(medidor.registrar("aplicacion_iniciada"))
+            self.assertIsNone(medidor.iniciar_busqueda())
+            self.assertFalse(ruta.exists())
+            medidor.activo = True
+            self.assertTrue(medidor.registrar("aplicacion_iniciada"))
+            self.assertEqual(len(leer_eventos(str(ruta))), 1)
+
     def test_sin_datos_no_inventa_kpis(self):
         k = resumen([])
         self.assertIsNone(k["exito_busqueda_pct"])
