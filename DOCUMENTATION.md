@@ -47,7 +47,8 @@ Para el modo remoto opcional, ver [firebase/README.md](firebase/README.md).
 | Reglas de negocio | servicios/recorridos.py y avisos_service.py | Cálculos simulados, estado y caducidad |
 | Ubicación | servicios/ubicacion.py y MapView | Validación GPS, opción IP consentida |
 | Analítica | servicios/analitica.py | Registro de eventos y KPIs |
-| Sincronización opcional | servicios/firebase_rtdb.py | Firebase Auth anónimo y REST Realtime Database |
+| Identidad remota | servicios/firebase_auth.py | Correo y contraseña de Firebase Authentication, tokens solo en memoria |
+| Avisos comunitarios | servicios/firebase_rtdb.py | REST Realtime Database tras iniciar sesión |
 
 **Aclaración:** la app usa separación de responsabilidades y POO, no un
 MVC estricto con clases denominadas Model/View/Controller. No prometer
@@ -55,19 +56,21 @@ una arquitectura que el código no demuestra.
 
 ## 4. Funcionalidades demostrables
 
-1. **Registro/Login:** cuentas y contraseñas hasheadas guardadas en el
-   dispositivo, con controles de longitud y duplicados.
+1. **Registro/Login:** con Firebase configurado, correo y contraseña
+   validados por Firebase Authentication. Sin Firebase se mantiene el
+   modo local heredado para pruebas. Las contraseñas nunca se guardan
+   en JSON cuando se utiliza Firebase.
 2. **Inicio:** MapView OpenStreetMap, localidad de salida, destino,
    tarjetas de rutas, indicadores de demo y ubicación local.
 3. **Recorridos:** catálogo y detalle con datos referenciales.
 4. **Compartir:** permite seleccionar ruta, solicitar permiso de GPS
    local y crear avisos, sin transmitir coordenadas a un servidor.
 5. **Avisos:** reportes locales, anti-spam por sesión, vigencia e
-   indicador de favoritos. Puede sincronizar reportes anónimos
-   con Firebase si el usuario activa ese ajuste.
+   indicador de favoritos. Los avisos se sincronizan automáticamente
+   cuando hay una sesión de correo válida y conexión a Firebase.
 6. **Perfil:** favoritas, estadísticas locales y nombre visible.
-7. **Ajustes:** tema, notificaciones, configuración remota y la
-   opción de sincronización Firebase.
+7. **Ajustes:** tema, notificaciones, configuración remota,
+   consentimiento de métricas y estado informativo de conexión.
 8. **Analítica MJV App:** sesiones y KPIs obtenidos de eventos locales.
 
 Los eventos de analítica NO se suben a Firebase y no contienen usuario,
@@ -111,30 +114,38 @@ El periodo de recolección lo establecen la primera y la última
 marca de tiempo del archivo REAL. El reporte no inventa muestras ni
 conclusiones antes de medir.
 
-## 6. Firebase Realtime Database (opcional)
+## 6. Firebase Authentication + Realtime Database
 
-Este prototipo evita integrar una contraseña de MySQL, un archivo de
-cuenta de servicio o una clave privilegiada dentro de Kivy. Usa REST
-con Firebase Authentication anónima para publicar y consultar avisos.
+Cuando se configuran `ENRUTA_FIREBASE_API_KEY` y
+`ENRUTA_FIREBASE_DATABASE_URL`, el usuario se registra o ingresa con
+**correo y contraseña**. El servicio `servicios/firebase_auth.py`
+obtiene un UID y tokens temporales desde Identity Toolkit REST, que
+permanecen en memoria, sin persistir la contraseña ni el refresh token.
 
-Configuración de desarrollador: variables de entorno
-`ENRUTA_FIREBASE_API_KEY` y `ENRUTA_FIREBASE_DATABASE_URL`.
-El usuario activa el switch **Ajustes → Avisos compartidos**.
+La app muestra un **splash al abrir** y una pantalla de carga durante
+el registro o inicio de sesión. Cuando Firebase confirma la identidad,
+se habilitan **automáticamente** las lecturas y publicaciones de
+`/reportes` a través de `servicios/firebase_rtdb.py`, sin un switch
+de sincronización en Ajustes. La consulta es por sondeo aproximadamente
+cada 90 segundos, no por WebSocket.
 
-Estructura remota: `/reportes/<id>` con `uid` anónimo, ruta, tipo,
-minutos y timestamp, **sin nombre ni GPS**.
+Las reglas `firebase/database.rules.json` exigen
+`auth.token.firebase.sign_in_provider == 'password'` y no permiten
+datos de ubicación, correo o nombre en los avisos. Deben publicarse
+manualmente en la consola de Firebase. La autenticación Email/Password
+debe habilitarse en el proyecto.
 
-Seguridad: las reglas están en `firebase/database.rules.json`.
-Rechazan accesos no autenticados, modificaciones de reportes
-anteriores y campos ajenos al esquema. La autenticación de Firebase
-es independiente de la cuenta de login local. Los reportes se consultan
-por sondeo (no WebSocket). Si falla la conexión, quedan los datos
-locales; no se garantiza sincronización inmediata ni envío diferido.
-El comportamiento remoto exige verificar el proyecto real: el código
-solo contiene el cliente y tests simulados.
+**Limitaciones:** los perfiles/favoritos siguen guardándose en JSON
+local por UID, no se sincronizan entre dispositivos. Las cuentas
+anteriores de login local no migran automáticamente; conservan sus
+archivos. Si Firebase falla tras autenticar, la app funciona
+localmente con los datos ya disponibles. El inicio de sesión remoto
+requiere internet y se solicita nuevamente al reiniciar la app,
+porque no guardamos tokens persistentes.
 
-La configuración de Firebase es una **opción adicional**, no es
-un criterio obligatorio explícito de la rúbrica E4.
+Más detalles en [firebase/README.md](firebase/README.md). El servicio
+de Firebase no es un criterio explícito de la rúbrica; no confundir
+un backend de avisos con un rastreador GPS en vivo.
 
 ## 7. Seguridad y responsabilidad social
 
@@ -161,7 +172,7 @@ es compartido.
 
 Tests automatizados: `tests/test_inicio.py`, `test_servicios.py`,
 `test_logica.py`, `test_analitica.py` y `test_firebase_rtdb.py`.
-Las pruebas Firebase usan mocks, sin tráfico real. Verificar en Windows
+Las pruebas de Firebase Auth y Realtime Database usan mocks, sin tráfico real. Verificar en Windows
 el resultado completo tras hacer pull, y conservar capturas para defensa.
 
 La rúbrica permite demo en el equipo de desarrollo si no se logra APK,
