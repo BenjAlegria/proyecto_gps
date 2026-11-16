@@ -46,7 +46,7 @@ def configuracion(entorno=None):
 
 
 class FirebaseReportes:
-    def __init__(self, api_key, database_url, transporte=None, reloj=None):
+    def __init__(self, api_key, database_url, transporte=None, reloj=None, sesion=None):
         self.api_key = api_key
         self.url = database_url.rstrip("/")
         self.transporte = transporte or requests
@@ -56,6 +56,7 @@ class FirebaseReportes:
         self.refresh_token = None
         self.expira = 0
         self._lock = threading.RLock()
+        self.sesion = sesion
 
     def _json(self, respuesta, etapa):
         """Devuelve diagnóstico de estado sin URLs, API keys ni tokens.
@@ -99,6 +100,14 @@ class FirebaseReportes:
             raise FirebaseError(f"{etapa}: respuesta inválida de Firebase.") from None
 
     def _autenticar(self):
+        if self.sesion is not None:
+            from servicios.firebase_auth import ErrorFirebaseAuth
+            try:
+                token = self.sesion.token()
+            except ErrorFirebaseAuth as exc:
+                raise FirebaseError(exc.mensaje) from None
+            self.uid = self.sesion.uid
+            return token
         with self._lock:
             if self.id_token and self.expira > self.reloj() + 60:
                 return self.id_token
