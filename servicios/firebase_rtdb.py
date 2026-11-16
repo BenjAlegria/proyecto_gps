@@ -58,12 +58,45 @@ class FirebaseReportes:
         self._lock = threading.RLock()
 
     def _json(self, respuesta, etapa):
+        """Devuelve diagnóstico de estado sin URLs, API keys ni tokens.
+
+        La respuesta de requests puede contener una URL con auth=<ID_TOKEN>
+        en sus excepciones; nunca se propaga esa excepción sin sanear.
+        """
+        estado = getattr(respuesta, "status_code", None)
+        if isinstance(estado, int) and estado >= 400:
+            descripcion = ""
+            try:
+                datos = respuesta.json()
+                if isinstance(datos, dict):
+                    valor = datos.get("error", "")
+                    if isinstance(valor, str):
+                        descripcion = valor.lower()
+                    elif isinstance(valor, dict):
+                        descripcion = str(valor.get("message", "")).lower()
+            except (ValueError, TypeError):
+                pass
+            if ("index" in descripcion or ".indexon" in descripcion):
+                causa = 'Falta índice "ts" en las reglas de Realtime Database (.indexOn).'
+            elif estado in (401, 403):
+                causa = "Permiso denegado. Revisa reglas publicadas y Authentication anónima."
+            elif estado == 404:
+                causa = "No se encontró Realtime Database. Revisa la URL."
+            elif estado == 400:
+                causa = "Consulta o formato no aceptado. Verifica reglas y datos."
+            elif estado == 429:
+                causa = "Demasiadas solicitudes a Firebase."
+            elif estado >= 500:
+                causa = "Servicio Firebase temporalmente no disponible."
+            else:
+                causa = "No se pudo completar la solicitud."
+            raise FirebaseError(f"{etapa}: HTTP {estado}. {causa}")
         try:
             respuesta.raise_for_status()
             return respuesta.json()
         except (requests.RequestException, ValueError):
-            # Nunca propagar la URL: contiene auth=<ID_TOKEN>.
-            raise FirebaseError("Firebase no respondió en " + etapa + ". Verifica reglas y red.") from None
+            # Importante: NO utilizar str(exc) porque requests expone el URL.
+            raise FirebaseError(f"{etapa}: respuesta inválida de Firebase.") from None
 
     def _autenticar(self):
         with self._lock:
