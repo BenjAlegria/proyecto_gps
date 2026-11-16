@@ -51,7 +51,7 @@ localización en vivo. Los marcadores de buses y ETA son demos.
 
 Se instrumentaron eventos locales con identificadores de sesión
 aleatorios, marca de tiempo UTC y referencias de intento de búsqueda.
-No se recopilan coordenadas, contraseñas ni nombres de usuarios.
+No se recopilan coordenadas, contraseñas ni nombres de usuarios.\nLa medición está desactivada por defecto y se activa manualmente,\ncon consentimiento, en Ajustes → Participar en medición.
 
 KPIs implementados:
 1. Éxito de consulta de recorrido = consultas con detalle /
