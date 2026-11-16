@@ -109,6 +109,8 @@ En **Ajustes → Ver analítica y KPIs** se muestran sesiones anónimas,
 porcentaje de búsquedas exitosas, tiempo mediano para encontrar un
 recorrido y avisos publicados. Los eventos se guardan localmente en
 `data/analitica_eventos.jsonl`, sin nombres, coordenadas ni IP.
+La medición está **desactivada por defecto**. Durante las pruebas autorizadas,
+activar **Ajustes → Participar en medición** antes de realizar las tareas.
 Para generar los resultados y el gráfico con **datos reales**:
 
 ```powershell
