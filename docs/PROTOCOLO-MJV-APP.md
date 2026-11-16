@@ -5,6 +5,19 @@ Evaluar si un pasajero puede encontrar un recorrido de bus y
 guardar información útil en EnRuta Ya!. **No evalúa precisión de GPS
 ni calidad de rutas oficiales**, porque el mapa contiene demos.
 
+## Activación con consentimiento (obligatoria)
+
+Antes de registrar a cada participante: explicar qué se medirá, solicitar
+permiso y activar **Ajustes → Participar en medición**. Por defecto está
+**desactivado** y no se generan eventos, incluso si se ejecutan tests.
+Si la persona no acepta, dejarlo apagado. Al finalizar, desactivar
+el interruptor. Se reactiva manualmente en cada ejecución de la app.
+
+Para una recolección nueva, respaldar o apartar cualquier archivo
+`data/analitica_eventos.jsonl` de pruebas previas, de modo que el
+periodo de medición solo incluya sesiones autorizadas. No eliminar
+eventos de un estudio real sin documentarlo.
+
 ## Instrumento
 - Observación estructurada de tareas presenciales.
 - Eventos automáticos anónimos en
