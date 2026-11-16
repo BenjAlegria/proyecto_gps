@@ -20,7 +20,7 @@ jobs:
         run: python -m compileall -q main.py servicios tests tools
       - name: Ejecutar tests sin Kivy ni conexión a Firebase
         run: |
-          python -m unittest tests.test_analitica tests.test_firebase_rtdb tests.test_logica tests.test_servicios -v
+          python -m unittest tests.test_analitica tests.test_firebase_auth tests.test_firebase_rtdb tests.test_logica tests.test_servicios -v
       - name: Comprobar exportador vacío sin inventar mediciones
         run: |
           python tools/generar_resultados_mjv.py --eventos /tmp/no-existe.jsonl --salida /tmp/mjv-vacio
