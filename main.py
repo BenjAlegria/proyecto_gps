@@ -1224,8 +1224,8 @@ class InterurbanoApp(MDApp):
         def trabajo():
             try:
                 reportes, fallo = cliente.recientes(), None
-            except firebase_rtdb.FirebaseError:
-                reportes, fallo = [], "No se pudo sincronizar; datos locales disponibles."
+            except firebase_rtdb.FirebaseError as exc:
+                reportes, fallo = [], str(exc)
             Clock.schedule_once(
                 lambda dt: self._aplicar_firebase(
                     generacion, usuario, reportes, fallo
@@ -1260,8 +1260,8 @@ class InterurbanoApp(MDApp):
             try:
                 cliente.publicar(aviso)
                 fallo = None
-            except firebase_rtdb.FirebaseError:
-                fallo = "Aviso guardado solo en este dispositivo; sin conexión Firebase."
+            except firebase_rtdb.FirebaseError as exc:
+                fallo = str(exc)
             Clock.schedule_once(lambda dt: self._aviso_firebase_listo(
                 generacion, usuario, fallo
             ))
