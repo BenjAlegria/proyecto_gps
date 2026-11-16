@@ -60,6 +60,17 @@ class AnaliticaTests(unittest.TestCase):
             p.write_text('no json\n{"evento": "login_exitoso", "sesion": "s", "ts": "fecha"}\n')
             self.assertEqual(len(leer_eventos(str(p))), 1)
 
+    def test_mediana_ignora_duracion_sin_intento_real(self):
+        datos = [
+            {"evento":"busqueda_iniciada", "intento":"a",
+             "sesion":"s", "ts":"2026-11-16T10:00:00Z"},
+            {"evento":"recorrido_consultado", "intento":"a",
+             "duracion_ms":2000, "sesion":"s", "ts":"2026-11-16T10:00:02Z"},
+            {"evento":"recorrido_consultado", "intento":"b",
+             "duracion_ms":900000, "sesion":"s", "ts":"2026-11-16T10:00:02Z"},
+        ]
+        self.assertEqual(resumen(datos)["mediana_busqueda_s"], 2.0)
+
     def test_exito_considera_intentos_sin_conversion(self):
         eventos = [
             {"evento":"busqueda_iniciada","intento":"a","sesion":"s","ts":"2026-11-16T10:00:00Z"},
