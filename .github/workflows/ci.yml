@@ -1,0 +1,27 @@
+name: EnRuta Ya CI
+on:
+  push:
+    branches: ["feature/ajustesV2"]
+  pull_request:
+    branches: ["audit/fase-1"]
+
+jobs:
+  syntax-and-services:
+    name: Compilar Python y probar servicios
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+      - name: Dependencias servicios
+        run: python -m pip install --upgrade pip requests
+      - name: Verificar sintaxis de toda la app
+        run: python -m compileall -q main.py servicios tests tools
+      - name: Ejecutar tests sin Kivy ni conexión a Firebase
+        run: |
+          python -m unittest tests.test_analitica tests.test_firebase_rtdb tests.test_logica tests.test_servicios -v
+      - name: Comprobar exportador vacío sin inventar mediciones
+        run: |
+          python tools/generar_resultados_mjv.py --eventos /tmp/no-existe.jsonl --salida /tmp/mjv-vacio
+          grep -q "Sin datos" /tmp/mjv-vacio/RESULTADOS.md
