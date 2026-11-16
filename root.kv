@@ -1079,42 +1079,34 @@ BoxLayout:
                         on_release: app.actualizar_config_remota()
 
                 UiSection:
-                    text: "Medición y evaluación"
-                UiNotice:
-                    text: "Analítica local MJV App: eventos anónimos de uso, sin GPS ni credenciales. Los KPIs se calculan desde datos reales."
-                    icon: "chart-bar"
+                    text: "Privacidad"
                 UiSurface:
                     size_hint_y: None
-                    height: dp(74)
+                    height: dp(80)
                     corners: [dp(17)]
                     -bg: app.ui.fondo
                     -stroke: app.ui.borde
                     UiIcon:
-                        icon: "chart-line"
+                        icon: "shield-check-outline"
                         -icon_color: app.ui.azul
                     BoxLayout:
                         orientation: "vertical"
                         UiText:
-                            text: "Participar en medición"
+                            text: "Ayudar a mejorar la app"
                             font_size: "13sp"
                             bold: True
                         UiParagraph:
                             id: mjv_estado
-                            text: "Medición desactivada"
+                            text: "Compartir métricas anónimas de uso: desactivado"
                             font_size: "10sp"
                     UiSwitch:
                         id: switch_mjv
                         on_active: app.cambiar_analitica(self.active)
-                UiButton:
-                    primary: False
-                    text: "Ver analítica y KPIs"
-                    icon: "chart-line"
-                    on_release: app.cambiar_pantalla("analitica")
 
                 UiSection:
-                    text: "Avisos comunitarios · Firebase"
+                    text: "Avisos en comunidad"
                 UiNotice:
-                    text: "Opcional: al activarlo, los avisos nuevos se envían sin nombre ni GPS. Requiere configurar Firebase; el acceso a la app sigue siendo local."
+                    text: "Recibe y comparte reportes de viajes. No se envían tus coordenadas ni tu nombre."
                     icon: "shield-check-outline"
                 UiSurface:
                     size_hint_y: None
@@ -1128,12 +1120,12 @@ BoxLayout:
                     BoxLayout:
                         orientation: "vertical"
                         UiText:
-                            text: "Avisos compartidos"
+                            text: "Sincronizar avisos"
                             font_size: "13sp"
                             bold: True
                         UiParagraph:
                             id: firebase_estado
-                            text: "Firebase desactivado"
+                            text: "Sincronización desactivada"
                             font_size: "10sp"
                     UiSwitch:
                         id: switch_firebase
