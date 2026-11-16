@@ -57,7 +57,7 @@ class InicioTests(unittest.TestCase):
         self.app._firebase_sesion = sesion
         self.app._firebase_config = ("ClaveDemo", "https://demo.firebaseio.com")
         with patch("servicios.almacenamiento.cargar_perfil",
-                   return_value={**PERFIL_POR_DEFECTO, "nombre":"Pasajero"}), \\
+                   return_value={**PERFIL_POR_DEFECTO, "nombre":"Pasajero"}), \
              patch.object(self.app, "cambiar_firebase") as sincronizar, \\
              patch.object(self.app, "_snack"):
             self.app._entrar("uid-demostracion", correo="usuario@ejemplo.cl")
