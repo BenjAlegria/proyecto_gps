@@ -28,9 +28,13 @@ def configuracion(entorno=None):
     url = entorno.get("ENRUTA_FIREBASE_DATABASE_URL", "").strip().rstrip("/")
     if not api_key or not url:
         return None
-    parsed = urlparse(url)
+    try:
+        parsed = urlparse(url)
+        puerto = parsed.port
+    except ValueError:
+        raise FirebaseError("URL Firebase inválida.") from None
     host = (parsed.hostname or "").lower()
-    if (parsed.scheme != "https" or parsed.port is not None
+    if (parsed.scheme != "https" or puerto is not None
             or parsed.username or parsed.password or parsed.path
             or parsed.query or parsed.fragment
             or not (host.endswith(".firebasedatabase.app")
