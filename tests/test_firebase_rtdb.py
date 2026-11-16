@@ -54,7 +54,7 @@ class FirebaseTests(unittest.TestCase):
             "a"*32: {"ruta":"Temuco -> Lautaro", "tipo":"lleno",
                      "minutos":0, "ts":900},
             "b"*32: {"ruta":"Temuco -> Lautaro", "tipo":"lleno",
-                     "minutos":0, "ts":1}
+                     "minutos":0, "ts":-8000}
         }
         t.get.return_value = datos
         cl = FirebaseReportes("key","https://demo.firebaseio.com",
