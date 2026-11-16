@@ -3,6 +3,7 @@ import random
 import threading
 import time
 import traceback
+import uuid
 
 from kivy.animation import Animation
 from kivy.base import ExceptionHandler, ExceptionManager
@@ -36,7 +37,7 @@ from config import (CONFIG_REMOTA_DEFECTO, HISTORIAL_S, ICONO_BUS, LOG_ERRORES,
                     OPCIONES_ATRASO)
 from datos_rutas import (COORDENADAS, GRIS, LOCALIDADES, NARANJA, ROJO, RUTAS,
                          TIPOS_AVISO, VERDE)
-from servicios import almacenamiento, autenticacion, config_remota, avisos_service, recorridos, ubicacion
+from servicios import almacenamiento, autenticacion, config_remota, avisos_service, recorridos, ubicacion, analitica, firebase_rtdb
 from servicios.autenticacion import ErrorAutenticacion
 from servicios.notificaciones import notificar as enviar_notificacion
 from tema import PaletaVisual
@@ -135,6 +136,10 @@ class AjustesScreen(Screen):
     pass
 
 
+class AnaliticaScreen(Screen):
+    pass
+
+
 class AvisoSnackbar(MDSnackbar):
     """MDSnackbar que no revienta al crearse.
 
@@ -186,6 +191,7 @@ class InterurbanoApp(MDApp):
     panel_expandido = False
     consentimiento = False   # ¿el usuario aceptó compartir ubicación?
     compartiendo = BooleanProperty(False)
+    firebase_avisos_activo = BooleanProperty(False)
     linea_actual = ""
     favoritas = []
     viajes = 0
@@ -214,6 +220,17 @@ class InterurbanoApp(MDApp):
         self.favoritas = []
         self.avisos = []
         self._ultimo_aviso = {}
+        self.medidor = analitica.Registrador()
+        self.medidor.registrar("aplicacion_iniciada")
+        self._medicion_intento = None
+        self._firebase_cliente = None
+        self._firebase_generacion = 0
+        self._firebase_ocupado = False
+        self.firebase_avisos_activo = False
+        try:
+            self._firebase_config = firebase_rtdb.configuracion()
+        except firebase_rtdb.FirebaseError:
+            self._firebase_config = None
         self.gps_activo = False
         self.marcador_yo = None
         self._solicitud_ubicacion = 0
@@ -288,7 +305,16 @@ class InterurbanoApp(MDApp):
             m.ajustar_zoom(zoom)
 
     def cambiar_pantalla(self, nombre):
+        anterior = self.root.ids.sm.current
         self.root.ids.sm.current = nombre
+        if nombre != anterior:
+            self.medidor.registrar("pantalla_abierta", pantalla=nombre)
+            if nombre == "recorridos":
+                self._medicion_intento = self.medidor.iniciar_busqueda()
+            elif anterior == "recorridos":
+                self._medicion_intento = None
+        if nombre == "analitica":
+            self.refrescar_analitica()
 
     def _pantalla(self, nombre):
         return self.root.ids.sm.get_screen(nombre)
@@ -335,8 +361,10 @@ class InterurbanoApp(MDApp):
         try:
             usuario = autenticacion.iniciar_sesion(p.ids.usuario.text, p.ids.clave.text)
         except ErrorAutenticacion as e:
+            self.medidor.registrar("login_fallido")
             self._mostrar_errores_auth(p, e)
             return
+        self.medidor.registrar("login_exitoso")
         self._entrar(usuario)
 
     def hacer_registro(self):
@@ -347,6 +375,7 @@ class InterurbanoApp(MDApp):
         except ErrorAutenticacion as e:
             self._mostrar_errores_auth(p, e)
             return
+        self.medidor.registrar("registro_exitoso")
         self._entrar(usuario, nuevo=True)
 
     def _entrar(self, usuario, nuevo=False):
@@ -778,7 +807,10 @@ class InterurbanoApp(MDApp):
         self.gps_activo = False
 
     def on_stop(self):
+        self.medidor.registrar("aplicacion_cerrada")
         Window.unbind(size=self._actualizar_zona_segura)
+        self._firebase_generacion += 1
+        self.firebase_avisos_activo = False
         self.detener_gps()
         self._guardar_perfil()
         self._guardar_avisos()
@@ -788,6 +820,9 @@ class InterurbanoApp(MDApp):
     # --------------------------------------------------------
     def mostrar_detalle(self, ruta):
         d = RUTAS[ruta]
+        if self._medicion_intento:
+            self.medidor.completar_busqueda(self._medicion_intento)
+            self._medicion_intento = None
         es_fav = ruta in self.favoritas
         ocup, atraso, cambio = self._estado_ruta(ruta)
         ocup_txt = (f'{TIPOS_AVISO[ocup["tipo"]]["texto"]} ({self._hace(ocup["ts"])})'
@@ -828,8 +863,10 @@ class InterurbanoApp(MDApp):
     def alternar_favorita(self, ruta):
         if ruta in self.favoritas:
             self.favoritas.remove(ruta)
+            self.medidor.registrar("favorito_eliminado")
         else:
             self.favoritas.append(ruta)
+            self.medidor.registrar("favorito_agregado")
         self.dialogo.dismiss()
         self._guardar_perfil()
         self.refrescar_favoritos()
@@ -1065,13 +1102,14 @@ class InterurbanoApp(MDApp):
         self._snack("¡Aviso enviado! Gracias por ayudar a otros pasajeros.")
 
     def publicar_aviso(self, ruta, tipo, minutos=0, propio=True):
-        # TODO: enviar el aviso a un servidor y recibir los de otros usuarios
-        # (hoy queda solo en este dispositivo, guardado en data/avisos.json).
-        aviso = {"ruta": ruta, "tipo": tipo, "minutos": minutos,
-                 "ts": time.time(), "propio": propio,
+        aviso = {"id": uuid.uuid4().hex, "ruta": ruta, "tipo": tipo,
+                 "minutos": minutos, "ts": time.time(), "propio": propio,
                  "autor": self.usuario_actual if propio else ""}
         self.avisos.insert(0, aviso)
         self._guardar_avisos()
+        if propio:
+            self.medidor.registrar("aviso_publicado")
+            self._enviar_aviso_firebase(aviso)
         self.refrescar_avisos()
         if not propio and self.notificar_favoritas and ruta in self.favoritas:
             self.notificar(ruta, self._titulo_aviso(aviso))
@@ -1119,6 +1157,31 @@ class InterurbanoApp(MDApp):
     def alternar_solo_favoritas(self, activo):
         self.solo_favoritas = activo
         self.poblar_avisos()
+
+    def refrescar_analitica(self):
+        """Resultados SOLO con eventos reales guardados en el dispositivo."""
+        datos = analitica.resumen(analitica.leer_eventos())
+        ids = self._pantalla("analitica").ids
+        ids.kpi_sesiones.text = str(datos["sesiones"])
+        ids.kpi_exito.text = (
+            f'{datos["exito_busqueda_pct"]}%' if datos["exito_busqueda_pct"] is not None
+            else "Sin datos"
+        )
+        ids.kpi_tiempo.text = (
+            f'{datos["mediana_busqueda_s"]} s' if datos["mediana_busqueda_s"] is not None
+            else "Sin datos"
+        )
+        ids.kpi_avisos.text = str(datos["avisos_publicados"])
+        ids.kpi_periodo.text = (
+            f'Desde {datos["periodo_inicio_utc"][:16]} UTC hasta '
+            f'{datos["periodo_fin_utc"][:16]} UTC'
+            if datos["periodo_inicio_utc"] else "Todavía no hay mediciones"
+        )
+        ids.kpi_fuente.text = (
+            f'{datos["consultas_exitosas"]} consultas con detalle / '
+            f'{datos["busquedas"]} entradas a Recorridos. '
+            f'{datos["eventos"]} eventos locales en total.'
+        )
 
     def simular_aviso(self):
         """Solo para la demo: simula que otro pasajero envió un aviso
