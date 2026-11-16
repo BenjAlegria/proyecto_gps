@@ -1,22 +1,21 @@
 # EnRuta Ya!
 
-App móvil para consultar la hora de llegada de los buses interurbanos
-y ver su ubicación en un mapa (Lautaro, Nueva Imperial, Carahue, Padre
-Las Casas → Temuco, entre otros recorridos). Como la empresa de buses
-no cuenta con GPS en sus vehículos, la posición del bus en el mapa la
-aporta un usuario que va viajando en él y acepta compartir su
-ubicación mientras dura el viaje.
+Prototipo académico de aplicación Kivy/KivyMD para consultar recorridos
+interurbanos de La Araucanía y avisos comunitarios. Incluye un mapa
+MapView/OpenStreetMap con posiciones de buses **demostrativas**. Un pasajero
+puede consultar su propio GPS con permiso, pero **no existe todavía
+seguimiento en vivo entre celulares**.
+
+**Rama de entrega:** `feature/ajustesV2`, basada en el diseño aprobado
+de `audit/fase-1`. La integración Google Maps se descartó.
 
 ## Problema que resuelve
-Según la encuesta aplicada (17 respuestas, ver
-`FUNDAMENTACION-UX-UI.md`), el 76% de los usuarios de buses
-interurbanos en la Araucanía se informa hoy por memoria o
-preguntándole al conductor, no por un canal oficial confiable, y el
-71% ha quedado con el bus lleno sin poder subir. La utilidad percibida
-de una app que muestre horarios y ubicación en vivo fue de 4.7/5.
-EnRuta Ya! resuelve esa falta de información centralizando
-horarios y mostrando la ubicación real del bus en un mapa, aportada
-por los propios pasajeros ante la ausencia de GPS en los buses.
+La encuesta diagnóstica del equipo tuvo 17 respuestas (ver
+`FUNDAMENTACION-UX-UI.md`): 59% declaró informarse mediante experiencia
+o memoria, 35% preguntando al conductor y 71% reportó dificultades
+por buses llenos. La utilidad percibida de una app de consulta fue
+4,7/5. Estos datos justifican el diseño, pero no prueban el impacto
+real del prototipo ni representan a toda la población.
 
 ## Usuario objetivo
 Personas que viajan en bus interurbano entre comunas de la Araucanía
@@ -37,9 +36,9 @@ ocasionalmente para trámites médicos.
 2. **Recorridos** — listado de todos los recorridos con su próximo
    bus; cada tarjeta abre el mismo detalle.
 3. **Compartir** — el usuario elige su línea y, tras aceptar un
-   diálogo de consentimiento, comparte su ubicación durante el viaje
-   (por ahora simulada localmente, ver limitaciones). Además puede
-   **avisar a otros pasajeros** el estado de su línea con cuatro
+   diálogo de consentimiento, inicia el GPS **local si el dispositivo lo
+   permite**. No transmite GPS a otros teléfonos. Además puede
+   registrar avisos de su línea con cuatro
    botones: *Bus lleno*, *Hay asientos*, *Atrasado* (pregunta cuántos
    minutos) y *Cambio de ruta*.
 4. **Avisos** — lista de los avisos de las últimas 2 horas, con
@@ -67,7 +66,7 @@ llega un aviso de una ruta favorita se muestra una notificación dentro
 de la app y, si el dispositivo lo permite (plyer), del sistema.
 
 ## Requisitos
-- Python 3.10 o superior (probado con 3.12)
+- Python 3.10 o superior (ejecutado por el equipo con Python 3.10.11)
 - Git
 - Conexión a internet (tiles del mapa y configuración remota; sin internet la app
   igual abre y usa los valores guardados)
@@ -99,10 +98,47 @@ python main.py
 5. Cierra la app, ábrela de nuevo e inicia sesión: tus favoritas, nombre, tema,
    viajes y los avisos siguen ahí.
 
-Pruebas automáticas de los servicios (sin interfaz):
+Pruebas automatizadas (incluyen regresiones de interfaz Kivy):
 ```bash
 python -m unittest discover tests -v
 ```
+
+## Analítica MJV App — requisito de la rúbrica E4
+
+En **Ajustes → Ver analítica y KPIs** se muestran sesiones anónimas,
+porcentaje de búsquedas exitosas, tiempo mediano para encontrar un
+recorrido y avisos publicados. Los eventos se guardan localmente en
+`data/analitica_eventos.jsonl`, sin nombres, coordenadas ni IP.
+Para generar los resultados y el gráfico con **datos reales**:
+
+```powershell
+python tools/generar_resultados_mjv.py
+```
+
+Completar el periodo, participantes y observaciones en
+`docs/PROTOCOLO-MJV-APP.md` y `docs/REGISTRO-PRUEBAS-USUARIOS.csv`.
+El generador no inventa resultados si faltan eventos.
+
+## Firebase (base de datos opcional)
+
+Se añadió un cliente seguro de **Firebase Realtime Database** que
+permite compartir solo avisos anónimos, sin ubicación ni nombre.
+El modo local funciona sin Firebase y la opción está desactivada
+por defecto. Habilitación, reglas y variables:
+[firebase/README.md](firebase/README.md).
+
+**Limitación:** el login existente sigue siendo local, Firebase usa
+autenticación anónima independiente y sondeo de avisos. Debe validarse
+con un proyecto Firebase real antes de afirmar sincronización completa.
+
+## Entregables de evaluación
+
+- [DOCUMENTATION.md](DOCUMENTATION.md) — arquitectura, privacidad y KPIs.
+- [INFORME-FINAL.md](INFORME-FINAL.md) — informe estructurado; completar
+  resultados y capturas reales antes de presentar.
+- [docs/PROTOCOLO-MJV-APP.md](docs/PROTOCOLO-MJV-APP.md) — método de medición.
+- [USO_IA.md](USO_IA.md) — declaración actualizada de uso de IA.
+- [FUNDAMENTACION-UX-UI.md](FUNDAMENTACION-UX-UI.md) — encuesta diagnóstica.
 
 ## Estructura del proyecto
 ```
