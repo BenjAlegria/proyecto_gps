@@ -31,14 +31,17 @@ _BLOQUEO = threading.Lock()
 class Registrador:
     """Eventos pseudónimos por ejecución. Nunca identifica al usuario."""
 
-    def __init__(self, archivo=RUTA_EVENTOS, reloj=None, cronometro=None):
+    def __init__(self, archivo=RUTA_EVENTOS, reloj=None, cronometro=None, activo=True):
         self.archivo = archivo
         self.sesion = uuid.uuid4().hex
+        self.activo = activo
         self.reloj = reloj or time.time
         self.cronometro = cronometro or time.monotonic
         self._intentos = {}
 
     def registrar(self, nombre, *, pantalla=None, intento=None, duracion_ms=None):
+        if not self.activo:
+            return False
         if nombre not in EVENTOS:
             raise ValueError("Evento no permitido")
         evento = {
@@ -64,6 +67,8 @@ class Registrador:
             return False
 
     def iniciar_busqueda(self):
+        if not self.activo:
+            return None
         intento = uuid.uuid4().hex
         self._intentos[intento] = self.cronometro()
         self.registrar("busqueda_iniciada", intento=intento, pantalla="recorridos")
