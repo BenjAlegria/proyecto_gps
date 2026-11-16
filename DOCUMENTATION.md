@@ -82,7 +82,7 @@ Archivo privado local: `data/analitica_eventos.jsonl`, un JSON por línea:
 {"id":"uuid_aleatorio","sesion":"uuid_anonimo","evento":"busqueda_iniciada","ts":"ISO_8601_UTC","intento":"uuid_aleatorio","pantalla":"recorridos"}
 ~~~
 
-No se registra identidad real. La sesión identifica una ejecución de
+La captura está desactivada por defecto y solo funciona tras activar **Ajustes → Participar en medición** con consentimiento. No se registra identidad real. La sesión identifica una ejecución de
 la app, no a una persona; `intento` vincula la apertura de Recorridos
 con el detalle consultado. Eventos: aplicación iniciada/cerrada,
 login exitoso/fallido, registro, pantalla, inicio de búsqueda,
