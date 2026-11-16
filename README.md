@@ -26,7 +26,7 @@ aunque también incluye trabajadores y personas que lo usan
 ocasionalmente para trámites médicos.
 
 ## Pantallas
-0. **Login / Registro** — pantallas de entrada: crear cuenta o iniciar sesión (ver *Servicios*).
+0. **Bienvenida / Login / Registro** — splash de carga y acceso con correo y contraseña de Firebase cuando está configurado.
 1. **Inicio** — mapa a pantalla completa con barra superior (perfil,
    selector de localidad, acceso directo a Compartir), botón flotante
    para centrarse en la ubicación real del usuario, un banner con el mensaje de la
@@ -46,7 +46,7 @@ ocasionalmente para trámites médicos.
 5. **Ajustes** — tema oscuro/claro, interruptor de notificaciones, resumen de la
    **configuración remota** con botón *Actualizar*, botón de demo que simula el
    aviso de otro pasajero y *Cerrar sesión*.
-6. **Perfil** — accesible desde el ícono de la barra superior; usuario, nombre
+6. **Perfil** — accesible desde el ícono de la barra superior; cuenta, nombre
    editable con validación, contador de viajes y favoritas,
    interruptor de permiso de ubicación y lista de rutas favoritas.
 
@@ -121,17 +121,23 @@ Completar el periodo, participantes y observaciones en
 `docs/PROTOCOLO-MJV-APP.md` y `docs/REGISTRO-PRUEBAS-USUARIOS.csv`.
 El generador no inventa resultados si faltan eventos.
 
-## Firebase (base de datos opcional)
+## Firebase — cuentas con correo y sincronización de avisos
 
-Se añadió un cliente seguro de **Firebase Realtime Database** que
-permite compartir solo avisos anónimos, sin ubicación ni nombre.
-El modo local funciona sin Firebase y la opción está desactivada
-por defecto. Habilitación, reglas y variables:
-[firebase/README.md](firebase/README.md).
+Con `ENRUTA_FIREBASE_API_KEY` y `ENRUTA_FIREBASE_DATABASE_URL` configuradas,
+el **registro e inicio de sesión usan Firebase Authentication (correo y
+contraseña)**. Una pantalla de bienvenida acompaña el inicio de la app y
+una pantalla de carga aparece mientras se verifica el acceso.
 
-**Limitación:** el login existente sigue siendo local, Firebase usa
-autenticación anónima independiente y sondeo de avisos. Debe validarse
-con un proyecto Firebase real antes de afirmar sincronización completa.
+**Los avisos comunitarios se sincronizan automáticamente al iniciar
+sesión**, sin activar un interruptor en Ajustes. Los tokens viven en
+memoria y no se guardan contraseñas en el dispositivo. Si no se ha
+configurado Firebase, se mantiene el login local heredado para pruebas.
+
+**Alcance actual:** se sincronizan **avisos**, no GPS, perfiles ni
+favoritas entre dispositivos; las preferencias se guardan localmente
+por UID. Las cuentas locales anteriores no se migran por sí solas.
+Para activar el nuevo proveedor, publicar las reglas y hacer las
+pruebas: [firebase/README.md](firebase/README.md).
 
 ## Entregables de evaluación
 
@@ -181,8 +187,8 @@ descarga un JSON.
 
 | Servicio | Dónde está en el código | Cómo funciona |
 |---|---|---|
-| **Registro** | `servicios/autenticacion.py` → `registrar()`; pantalla `RegistroScreen` en `root.kv`; `hacer_registro()` en `main.py` | Valida usuario y contraseña, crea la cuenta en `data/usuarios.json` |
-| **Login** | `autenticacion.iniciar_sesion()`; `LoginScreen`; `hacer_login()` / `_entrar()` en `main.py` | Compara el hash de la contraseña; si es válido carga el perfil y abre Inicio |
+| **Registro** | `servicios/firebase_auth.py` y `hacer_registro()` en `main.py` | Con Firebase configurado crea una cuenta por correo. Sin Firebase, solo conserva registro local heredado |
+| **Login** | `servicios/firebase_auth.py`, `LoginScreen`, `_entrar()` en `main.py` | Firebase valida correo/contraseña, la app guarda sesión en memoria e inicia sincronización de avisos automáticamente |
 | **Validación de contraseña** | `autenticacion.validar_contrasena()` | Mínimo 6 caracteres, una letra y un número, y que coincida con la repetición |
 | **Persistencia en JSON** | `servicios/almacenamiento.py` (`leer_json`, `guardar_json`, `cargar_perfil`, `guardar_perfil`, `cargar_avisos`, `guardar_avisos`); `_guardar_perfil()` y `_guardar_avisos()` en `main.py` | Se guarda al cambiar favoritas, nombre, tema, ajustes, viajes y al publicar un aviso; se recupera al iniciar sesión / abrir la app |
 | **Notificaciones** | `servicios/notificaciones.py` → `notificar()`; `InterurbanoApp.notificar()` en `main.py` | Se disparan por eventos: aviso en una ruta favorita (`publicar_aviso`), fin de viaje (`detener_compartir`) y el botón de demo (`simular_aviso`) |
