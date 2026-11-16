@@ -220,8 +220,8 @@ class InterurbanoApp(MDApp):
         self.favoritas = []
         self.avisos = []
         self._ultimo_aviso = {}
-        self.medidor = analitica.Registrador()
-        self.medidor.registrar("aplicacion_iniciada")
+        # Nunca medir antes de pedir consentimiento explícito.
+        self.medidor = analitica.Registrador(activo=False)
         self._medicion_intento = None
         self._firebase_cliente = None
         self._firebase_generacion = 0
@@ -1277,6 +1277,24 @@ class InterurbanoApp(MDApp):
             self._pantalla("ajustes").ids.firebase_estado.text = (
                 "Aviso enviado a Firebase · sin identidad ni GPS"
             )
+
+    def cambiar_analitica(self, activo):
+        """Consentimiento para la medición MJV local de esta sesión.
+
+        Los tests y las personas que no acepten nunca generan eventos.
+        """
+        if not hasattr(self, "medidor"):
+            return
+        anterior = self.medidor.activo
+        self.medidor.activo = bool(activo)
+        if self.root:
+            estado = self._pantalla("ajustes").ids.mjv_estado
+            estado.text = ("Medición activa en este dispositivo (sin GPS ni nombre)"
+                           if activo else "Medición desactivada")
+        if activo and not anterior:
+            self.medidor.registrar("aplicacion_iniciada")
+        if not activo:
+            self._medicion_intento = None
 
     def refrescar_analitica(self):
         """Resultados SOLO con eventos reales guardados en el dispositivo."""
