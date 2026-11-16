@@ -33,6 +33,24 @@ class InicioTests(unittest.TestCase):
         self.app.avisos = []
         self.app.seleccionar_origen("Temuco")
 
+    def test_pantalla_analitica_muestra_datos_sin_fabricar(self):
+        with patch("servicios.analitica.leer_eventos", return_value=[]):
+            self.app.cambiar_pantalla("analitica")
+        p = self.app._pantalla("analitica")
+        self.assertEqual(p.ids.kpi_exito.text, "Sin datos")
+        self.assertEqual(p.ids.kpi_tiempo.text, "Sin datos")
+        self.assertEqual(p.ids.kpi_sesiones.text, "0")
+        self.app.cambiar_pantalla("home")
+
+    def test_firebase_no_configurado_no_realiza_peticion(self):
+        self.app.cambiar_pantalla("ajustes")
+        with patch.object(self.app, "_firebase_config", None), \
+                patch("servicios.firebase_rtdb.FirebaseReportes") as cliente:
+            self.app.cambiar_firebase(True)
+            self.assertFalse(self.app.firebase_avisos_activo)
+            cliente.assert_not_called()
+        self.app.cambiar_pantalla("home")
+
     def test_filtro_y_cambio_localidad(self):
         self.assertEqual(len(self.home.ids.lineas_box.children), 2)
         self.app.seleccionar_recorrido_home("Temuco -> Lautaro")
