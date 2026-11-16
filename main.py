@@ -1289,8 +1289,8 @@ class InterurbanoApp(MDApp):
         self.medidor.activo = bool(activo)
         if self.root:
             estado = self._pantalla("ajustes").ids.mjv_estado
-            estado.text = ("Medición activa en este dispositivo (sin GPS ni nombre)"
-                           if activo else "Medición desactivada")
+            estado.text = ("Métricas anónimas activadas (sin ubicación ni nombre)"
+                           if activo else "Métricas anónimas desactivadas")
         if activo and not anterior:
             self.medidor.registrar("aplicacion_iniciada")
         if not activo:
