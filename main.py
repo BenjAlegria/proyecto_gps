@@ -267,6 +267,8 @@ class InterurbanoApp(MDApp):
         self.actualizar_config_remota()
         # Cada minuto se actualizan los "hace X min" y se descartan avisos vencidos.
         Clock.schedule_interval(lambda dt: self.refrescar_avisos(), 60)
+        # Revisión remota opcional; nunca consulta Firebase si está apagado.
+        Clock.schedule_interval(lambda dt: self._refrescar_firebase(), 90)
 
     def _actualizar_zona_segura(self, *args):
         """Reserva el borde inferior solo si la ventana invade barras Android.
@@ -400,8 +402,11 @@ class InterurbanoApp(MDApp):
             pf.usuario_label.text = f"@{usuario}"
             pf.viajes_num.text = str(self.viajes)
             pf.switch_consent.active = self.consentimiento
+            aj.switch_firebase.active = perfil.get("firebase_avisos", False)
         finally:
             self._cargando = False
+        if perfil.get("firebase_avisos", False):
+            self.cambiar_firebase(True)
         self._limpiar_formularios()
         self.refrescar_avisos()
         self.cambiar_pantalla("home")
@@ -409,6 +414,14 @@ class InterurbanoApp(MDApp):
                     else f"Hola de nuevo, {self.nombre_visible}")
 
     def cerrar_sesion(self):
+        # Guarda preferencias antes de apagar conexiones externas.
+        self._guardar_perfil()
+        self._firebase_generacion += 1
+        self.firebase_avisos_activo = False
+        self._firebase_cliente = None
+        self._firebase_ocupado = False
+        self.avisos = [a for a in self.avisos if a.get("fuente") != "firebase"]
+        self._pantalla("ajustes").ids.switch_firebase.active = False
         if self.compartiendo:
             self.detener_compartir()
         # Aunque no haya un viaje activo, una búsqueda GPS/IP iniciada desde
@@ -418,7 +431,6 @@ class InterurbanoApp(MDApp):
             self._pantalla("home").ids.mapa.remove_marker(self.marcador_yo)
             self.marcador_yo = None
         self._pantalla("home").ids.ubicacion_estado.text = "Tu ubicación: sin consultar"
-        self._guardar_perfil()
         self.usuario_actual = ""
         self.linea_actual = ""
         p = self._pantalla("compartir").ids
@@ -440,6 +452,7 @@ class InterurbanoApp(MDApp):
                 "tema_oscuro": self.theme_cls.theme_style == "Dark",
                 "notificar_favoritas": self.notificar_favoritas,
                 "consentimiento": self.consentimiento,
+                "firebase_avisos": self.firebase_avisos_activo,
             })
         except OSError as e:
             registrar_error(e)
@@ -460,7 +473,10 @@ class InterurbanoApp(MDApp):
 
     def _guardar_avisos(self):
         try:
-            almacenamiento.guardar_avisos(self.avisos)
+            # Un aviso de Firebase no debe confundirse con un aviso local.
+            almacenamiento.guardar_avisos(
+                [a for a in self.avisos if a.get("fuente") != "firebase"]
+            )
         except OSError as e:
             registrar_error(e)
 
@@ -1157,6 +1173,104 @@ class InterurbanoApp(MDApp):
     def alternar_solo_favoritas(self, activo):
         self.solo_favoritas = activo
         self.poblar_avisos()
+
+    # --------------------------------------------------------
+    # Firebase opcional — reportes comunitarios sin GPS ni usuario.
+    # Nunca sustituye login ni almacenamiento local.
+    # --------------------------------------------------------
+    def cambiar_firebase(self, activo):
+        if self._cargando or not self.root:
+            return
+        ids = self._pantalla("ajustes").ids
+        if not activo:
+            self._firebase_generacion += 1
+            self.firebase_avisos_activo = False
+            self._firebase_cliente = None
+            self._firebase_ocupado = False
+            self.avisos = [a for a in self.avisos if a.get("fuente") != "firebase"]
+            ids.firebase_estado.text = "Solo reportes locales"
+            self._guardar_perfil()
+            self.refrescar_avisos()
+            return
+        if not self.usuario_actual or not self._firebase_config:
+            ids.firebase_estado.text = "Firebase sin configurar. Continúa el modo local."
+            if ids.switch_firebase.active:
+                ids.switch_firebase.active = False
+            return
+        self._firebase_generacion += 1
+        self._firebase_cliente = firebase_rtdb.FirebaseReportes(
+            *self._firebase_config
+        )
+        self.firebase_avisos_activo = True
+        ids.firebase_estado.text = "Firebase configurado · conectando…"
+        self._guardar_perfil()
+        self._refrescar_firebase()
+
+    def _refrescar_firebase(self):
+        if (not self.firebase_avisos_activo or self._firebase_cliente is None
+                or self._firebase_ocupado or not self.usuario_actual):
+            return
+        self._firebase_ocupado = True
+        cliente = self._firebase_cliente
+        generacion = self._firebase_generacion
+        usuario = self.usuario_actual
+
+        def trabajo():
+            try:
+                reportes, fallo = cliente.recientes(), None
+            except firebase_rtdb.FirebaseError:
+                reportes, fallo = [], "No se pudo sincronizar; datos locales disponibles."
+            Clock.schedule_once(
+                lambda dt: self._aplicar_firebase(
+                    generacion, usuario, reportes, fallo
+                )
+            )
+        threading.Thread(target=trabajo, daemon=True, name="enruta-firebase-lectura").start()
+
+    def _aplicar_firebase(self, generacion, usuario, reportes, fallo):
+        if generacion != self._firebase_generacion or usuario != self.usuario_actual:
+            return
+        self._firebase_ocupado = False
+        estado = self._pantalla("ajustes").ids.firebase_estado
+        if fallo:
+            estado.text = fallo
+            return
+        locales = [a for a in self.avisos if a.get("fuente") != "firebase"]
+        ids = {a.get("id") for a in locales}
+        remotos = [a for a in reportes
+                   if a.get("id") not in ids and a.get("ruta") in RUTAS]
+        self.avisos = avisos_service.sanear_avisos(locales + remotos)
+        estado.text = f"{len(remotos)} reportes remotos recientes (no oficiales)"
+        self.refrescar_avisos()
+
+    def _enviar_aviso_firebase(self, aviso):
+        if not self.firebase_avisos_activo or self._firebase_cliente is None:
+            return
+        cliente = self._firebase_cliente
+        generacion = self._firebase_generacion
+        usuario = self.usuario_actual
+
+        def trabajo():
+            try:
+                cliente.publicar(aviso)
+                fallo = None
+            except firebase_rtdb.FirebaseError:
+                fallo = "Aviso guardado solo en este dispositivo; sin conexión Firebase."
+            Clock.schedule_once(lambda dt: self._aviso_firebase_listo(
+                generacion, usuario, fallo
+            ))
+        threading.Thread(target=trabajo, daemon=True, name="enruta-firebase-escritura").start()
+
+    def _aviso_firebase_listo(self, generacion, usuario, fallo):
+        if generacion != self._firebase_generacion or usuario != self.usuario_actual:
+            return
+        if fallo:
+            self._pantalla("ajustes").ids.firebase_estado.text = fallo
+            self._snack(fallo)
+        else:
+            self._pantalla("ajustes").ids.firebase_estado.text = (
+                "Aviso enviado a Firebase · sin identidad ni GPS"
+            )
 
     def refrescar_analitica(self):
         """Resultados SOLO con eventos reales guardados en el dispositivo."""
