@@ -105,12 +105,12 @@ python -m unittest discover tests -v
 
 ## Analítica MJV App — requisito de la rúbrica E4
 
-En **Ajustes → Ver analítica y KPIs** se muestran sesiones anónimas,
-porcentaje de búsquedas exitosas, tiempo mediano para encontrar un
-recorrido y avisos publicados. Los eventos se guardan localmente en
-`data/analitica_eventos.jsonl`, sin nombres, coordenadas ni IP.
-La medición está **desactivada por defecto**. Durante las pruebas autorizadas,
-activar **Ajustes → Participar en medición** antes de realizar las tareas.
+La app registra eventos anónimos solo si se activa **Ajustes →
+Privacidad → Ayudar a mejorar la app** con consentimiento. No muestra
+KPIs ni un panel de estadísticas al pasajero; el análisis se realiza
+fuera de la interfaz para la evaluación universitaria.
+Los eventos se guardan en `data/analitica_eventos.jsonl`, sin nombres,
+coordenadas ni IP. La medición está **desactivada por defecto**.
 Para generar los resultados y el gráfico con **datos reales**:
 
 ```powershell
