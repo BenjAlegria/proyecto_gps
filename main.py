@@ -421,7 +421,13 @@ class InterurbanoApp(MDApp):
         self._firebase_cliente = None
         self._firebase_ocupado = False
         self.avisos = [a for a in self.avisos if a.get("fuente") != "firebase"]
-        self._pantalla("ajustes").ids.switch_firebase.active = False
+        # Evitar que el evento del switch sobrescriba la preferencia
+        # guardada durante el cierre de sesión.
+        self._cargando = True
+        try:
+            self._pantalla("ajustes").ids.switch_firebase.active = False
+        finally:
+            self._cargando = False
         if self.compartiendo:
             self.detener_compartir()
         # Aunque no haya un viaje activo, una búsqueda GPS/IP iniciada desde
