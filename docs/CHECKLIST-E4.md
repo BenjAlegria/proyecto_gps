@@ -1,58 +1,56 @@
-# Lista de verificación final — E4 PIF EnRuta Ya! (16-11-2026)
+# Lista de verificación E4 — EnRuta Ya! (17-11-2026)
 
-## Entregables exigidos por la rúbrica
-- [x] Código fuente GitHub en rama de trabajo `feature/ajustesV2`.
-- [x] README con instrucciones de uso, arquitectura y limitaciones.
-- [x] DOCUMENTATION.md (vistas/modelos/controladores, seguridad y KPI).
-- [x] INFORME-FINAL.md (borrador estructurado, por completar con medición real).
-- [x] Encuesta diagnóstica N=17 en `FUNDAMENTACION-UX-UI.md`.
-- [x] Declaración actualizada de IA en `USO_IA.md`.
-- [x] Analítica local por eventos y generador de gráfico SVG.
-- [x] Firebase RTDB opcional con reglas y tests simulados.
-- [ ] **Ejecutar pruebas visuales de Kivy en Windows** con esta rama.
-- [ ] **Crear proyecto Firebase y validar 2 instancias** si el tiempo lo permite.
-- [ ] **Realizar pruebas con personas voluntarias**, registrar periodo, N y escenario.
-- [ ] **Generar resultados y gráficos** con eventos reales, analizar y proponer 2 mejoras.
-- [ ] **Revisar y completar Informe Final** sin placeholders.
-- [ ] **Ensayar la demo de 8–10 minutos y roles del equipo**.
-- [ ] **APK Android real** si resulta viable; opcional respecto a demo de PC.
-- [ ] **Rotar contraseña MySQL expuesta en feature/ajusteV1** y revisar historial.
+Esta es nuestra lista de evidencias, separando lo que realmente tenemos de lo que debemos producir antes de la presentación. Marcamos como logrado solo aquello que pudimos confirmar revisando el repositorio o las pruebas.
 
-## Demostración recomendada (sección 1/2, 8–10 min)
+## Código y documentación
 
-1. Presentar problema con la encuesta y conectar 4 funcionalidades (1–1.5 min).
-2. Mostrar Registro/Login, Inicio con MapView, búsqueda y detalle (1.5 min).
-3. Agregar favorita, cerrar/reabrir y comprobar persistencia JSON (1 min).
-4. Publicar aviso local; explicar por qué es reporte ciudadano y no dato oficial (1 min).
-5. En Ajustes habilitar Participar en medición con consentimiento, entrar a
-   Recorridos, abrir detalle y volver a Analítica para mostrar KPI (1.5 min).
-6. Mostrar resultados MJV del periodo real, gráficos e interpretación (1.5–2 min).
-7. Describir arquitectura, Firebase opcional, ética, limitaciones, IA y mejoras (1.5 min).
+- [x] Conservamos la arquitectura final con **Kivy/KivyMD + API PHP + MySQL**.
+- [x] Elaboramos la interfaz visual de 10 pantallas en `feature/diseno-v3-sobre-backend-final`.
+- [x] Verificamos apertura/navegación de diez pantallas con Kivy en Linux/Xvfb y en tres tamaños, en tema claro y oscuro.
+- [x] Actualizamos `README.md` con la tecnología y las limitaciones actuales.
+- [x] Actualizamos `DOCUMENTATION.md`, `INFORME-FINAL.md`, este checklist y protocolo MJV.
+- [x] Conservamos investigación diagnóstica de 17 respuestas en `FUNDAMENTACION-UX-UI.md`.
+- [x] Tenemos código del medidor de eventos y del generador de indicadores.
+- [x] Declaramos el uso de herramientas en `USO_IA.md`; cada integrante debe comprobar su parte.
 
-**Ojo:** para el KPI de búsqueda, activar la medición **antes** de entrar
-a Recorridos y abrir un detalle. Nunca inventar los números.
+## Evidencia pendiente (no señalar como realizada)
 
-## Puesta en marcha
+- [ ] Probar **APK Android real** y verificar instalación, permisos y conexión (a cargo del compañero).
+- [ ] Probar con dos dispositivos reales creación/acceso a cuenta, reportes, votos y recuperación de red.
+- [ ] Revisar y actualizar los tests antiguos que siguen refiriéndose a Firebase y pantallas anteriores.
+- [ ] Ejecutar pruebas MJV con consentimiento de personas voluntarias; completar `docs/REGISTRO-PRUEBAS-USUARIOS.csv`.
+- [ ] Registrar periodo, lugar/modalidad, N de participantes y commit exacto evaluado.
+- [ ] Generar `docs/resultados_mjv/RESULTADOS.md` y `grafico_eventos.svg` **a partir de datos reales**.
+- [ ] Interpretar KPIs y observaciones; justificar al menos dos propuestas de mejora.
+- [ ] Comprobar accesibilidad con usuarios/tamaños reales y documentar limitaciones.
+- [ ] Confirmar credenciales/secretos del servidor y corregir cualquier exposición en ramas antiguas.
+- [ ] Ensayar exposición y **defensa individual** del banco de 84 preguntas, mostrando código y cálculos.
 
-~~~powershell
-git fetch origin
-git switch --track origin/feature/ajustesV2
-# O si ya existe:
-# git switch feature/ajustesV2
-# git pull --ff-only origin feature/ajustesV2
+## Secuencia que ensayaremos
 
-python -m unittest discover -s tests -v
-python main.py
-~~~
+1. Explicamos el problema y la encuesta diagnóstica (**RA1**).
+2. Mostramos login, invitado, Inicio, Recorridos y Detalle (**RA2**).
+3. Publicamos un aviso de prueba; explicamos API PHP/MySQL, votación y caché.
+4. Mostramos `main.py → _medir()`, `servicios/analitica.py → Registrador` y el JSONL.
+5. Explicamos el consentimiento y el ciclo **Medir → Jugar → Validar**.
+6. Mostramos con resultados **reales** éxito y tiempo de consulta; si no los tenemos, explicamos que la medición no ha concluido.
+7. Conectamos observaciones con dos decisiones y sus limitaciones (**RA3 / ética**).
 
-Si hay cambios locales, respaldarlos antes de cambiar rama.
-Firebase es opcional: si no existe configuración, mantenerlo apagado.
+## Para exportar los KPIs
 
-Para generar resultados después de las pruebas:
-
-~~~powershell
+```powershell
 python tools/generar_resultados_mjv.py
-~~~
+```
 
-Incluir el gráfico de `docs/resultados_mjv/grafico_eventos.svg` en la
-presentación y discutir el resultado junto con los registros manuales.
+Este comando **no fabrica mediciones**. Si falta el archivo de eventos o no hay búsquedas, muestra «Sin datos». El CSV de pruebas manuales está vacío y debe llenarse solo con participantes que hayan aceptado.
+
+## Información que debemos saber defender
+
+- `main.py`: pantalla → callback, hilos, sincronización, consentimiento, GPS y búsqueda.
+- `servicios/api_cliente.py`: solicitudes HTTP, caché y cola offline.
+- `backend/api/index.php`: autenticación, autorización, consultas y eventos recibidos.
+- `backend/sql/enruta_schema.sql`: diez tablas MySQL.
+- `servicios/analitica.py`: evento local, `json.dumps`, UTC, `a`, `resumen()`.
+- `tools/generar_resultados_mjv.py`: generación del reporte y gráfico SVG.
+
+**Nota:** no afirmamos que el GPS de buses en vivo esté terminado. Solo compartimos reportes comunitarios entre usuarios; el GPS de un viaje sigue siendo local.
