@@ -633,65 +633,110 @@ BoxLayout:
 
 
 <LineaCard>:
+    # Tarjeta de recorrido compartida por Recorridos y Favoritas.
+    style: "outlined"
     theme_bg_color: "Custom"
-    -md_bg_color: app.ui.tarjeta
-    style: "elevated"
-    orientation: "horizontal"
+    -md_bg_color: app.ui.fondo
+    theme_line_color: "Custom"
+    -line_color: app.ui.borde
+    orientation: "vertical"
     size_hint_y: None
-    height: dp(84)
-    padding: dp(12), dp(8)
-    spacing: dp(10)
-    radius: [dp(18)]
+    height: dp(172)
+    radius: [dp(17)]
+    padding: dp(14), dp(12)
+    spacing: dp(7)
     on_release: app.mostrar_detalle(root.rid)
 
-    MDIcon:
-        icon: "bus"
-        theme_text_color: "Custom"
-        text_color: (1, 1, 1, 0.9) if app.theme_cls.theme_style == "Dark" else (0.10, 0.12, 0.15, 1)
-        size_hint_x: None
-        width: dp(32)
-        pos_hint: {"center_y": 0.5}
-
     BoxLayout:
-        orientation: "vertical"
+        size_hint_y: None
+        height: dp(45)
+        spacing: dp(10)
+        UiSurface:
+            size_hint: None, None
+            size: dp(42), dp(42)
+            pos_hint: {"center_y": .5}
+            corners: [dp(13)]
+            -bg: app.ui.suave
+            -stroke: 0, 0, 0, 0
+            padding: 0
+            AnchorLayout:
+                UiIcon:
+                    icon: "bus-side"
+                    font_size: "23sp"
+                    -icon_color: app.ui.azul
+        BoxLayout:
+            orientation: "vertical"
+            UiText:
+                text: root.ruta.split("->")[0].strip()
+                bold: True
+                font_size: "14sp"
+            BoxLayout:
+                spacing: dp(4)
+                UiIcon:
+                    icon: "arrow-right"
+                    size: dp(16), dp(16)
+                    font_size: "14sp"
+                    -icon_color: app.ui.azul
+                UiText:
+                    text: root.ruta.split("->")[-1].strip()
+                    font_size: "12sp"
+                    -color: app.ui.secundario
+        BoxLayout:
+            orientation: "vertical"
+            size_hint_x: None
+            width: dp(76)
+            UiText:
+                text: root.minutos
+                bold: True
+                font_size: "18sp"
+                -color: app.ui.azul
+                halign: "right"
+            UiText:
+                text: "Tiempo aprox."
+                -color: app.ui.secundario
+                font_size: "10sp"
+                halign: "right"
 
-        MDLabel:
-            text: root.ruta
-            bold: True
-            font_style: "Body"
-            role: "medium"
+    UiText:
+        text: root.detalle
+        font_size: "11sp"
+        -color: app.ui.secundario
+        size_hint_y: None
+        height: dp(20)
 
-        MDLabel:
-            text: root.detalle
-            font_style: "Body"
-            role: "small"
-
-        MDLabel:
+    UiSurface:
+        size_hint_y: None
+        height: dp(30)
+        padding: dp(9), 0
+        spacing: dp(7)
+        corners: [dp(10)]
+        -bg: app.ui.suave
+        -stroke: 0, 0, 0, 0
+        UiIcon:
+            icon: "information-outline"
+            font_size: "16sp"
+            size: dp(18), dp(20)
+            -icon_color: app.ui.estado(root.aviso_color, app.ui.texto)
+        UiText:
             text: root.aviso
+            font_size: "11sp"
             bold: True
-            font_style: "Body"
-            role: "small"
-            theme_text_color: "Custom"
-            text_color: root.aviso_color
+            -color: app.ui.estado(root.aviso_color, app.ui.texto)
 
     BoxLayout:
-        orientation: "vertical"
-        size_hint_x: None
-        width: dp(70)
-
-        MDLabel:
-            text: root.minutos
-            halign: "right"
+        size_hint_y: None
+        height: dp(22)
+        spacing: dp(8)
+        UiText:
+            text: "Ver detalle y favoritas"
+            font_size: "11sp"
             bold: True
-            theme_text_color: "Custom"
-            text_color: 0.05, 0.62, 0.43, 1
-
-        MDLabel:
-            text: "duración"
-            halign: "right"
-            font_style: "Body"
-            role: "small"
-
+            -color: app.ui.azul
+        UiIcon:
+            icon: "arrow-right"
+            size: dp(20), dp(20)
+            font_size: "17sp"
+            -icon_color: app.ui.azul
 
 <AvisoCard>:
     theme_bg_color: "Custom"
@@ -1065,46 +1110,44 @@ BoxLayout:
 <RecorridosScreen>:
     BoxLayout:
         orientation: "vertical"
-
-        TopBar:
-            MDLabel:
-                text: "Recorridos"
-                bold: True
-                theme_text_color: "Custom"
-                text_color: app.ui.texto
-                pos_hint: {"center_y": 0.5}
-
-        BoxLayout:
-            orientation: "vertical"
-            padding: dp(16), dp(10), dp(16), dp(8)
-            spacing: dp(8)
-
-            UiJourneyHero:
-                etiqueta: "02 / RECORRIDOS"
-                titulo: "Encuentra tu próximo viaje"
-                descripcion: "Consulta líneas, destinos y opiniones de la comunidad."
-                icono: "bus-clock"
-
-            MDLabel:
-                id: recorridos_resumen
-                text: ""
-                font_style: "Body"
-                role: "medium"
-                size_hint_y: None
-                height: dp(24)
-
-            ScrollView:
+        UiHeader:
+            titulo: "Recorridos"
+            subtitulo: "Conexiones de La Araucanía"
+        UiScroll:
+            UiBody:
+                UiJourneyHero:
+                    etiqueta: "01  /  EXPLORAR"
+                    titulo: "¿Hacia dónde vamos?"
+                    descripcion: "Encuentra las rutas de la región y elige tu próxima conexión."
+                    icono: "routes"
+                UiNotice:
+                    text: "Horarios, tarifas y tiempos referenciales. Las rutas pueden ser aportadas por usuarios; revisa su estado de verificación."
+                    icon: "information-outline"
+                BoxLayout:
+                    size_hint_y: None
+                    height: dp(36)
+                    spacing: dp(8)
+                    UiIcon:
+                        icon: "bus-multiple"
+                        size: dp(24), dp(24)
+                        font_size: "21sp"
+                        -icon_color: app.ui.azul
+                    UiSection:
+                        text: "Rutas disponibles"
+                    UiIcon:
+                        icon: "arrow-down"
+                        font_size: "17sp"
+                        -icon_color: app.ui.secundario
+                UiParagraph:
+                    id: recorridos_resumen
+                    text: ""
+                    font_size: "11sp"
                 MDBoxLayout:
                     id: recorridos_box
                     orientation: "vertical"
-                    spacing: dp(8)
-                    padding: 0, 0, 0, dp(8)
                     adaptive_height: True
+                    spacing: dp(12)
 
-
-# ----------------------------------------------------------
-# Compartir: exige patente o viaje agendado
-# ----------------------------------------------------------
 <CompartirScreen>:
     BoxLayout:
         orientation: "vertical"
@@ -1293,65 +1336,76 @@ BoxLayout:
 <AvisosScreen>:
     BoxLayout:
         orientation: "vertical"
-
-        TopBar:
-            MDLabel:
-                text: "Avisos"
-                bold: True
-                theme_text_color: "Custom"
-                text_color: app.ui.texto
-                pos_hint: {"center_y": 0.5}
-
-        BoxLayout:
-            orientation: "vertical"
-            padding: dp(16), dp(10), dp(16), dp(8)
-            spacing: dp(8)
-
-            UiJourneyHero:
-                etiqueta: "04 / COMUNIDAD"
-                titulo: "Viaja mejor informado"
-                descripcion: "Revisa reportes recientes y valora su utilidad."
-                icono: "bell-outline"
-
-            MDCard:
-                theme_bg_color: "Custom"
-                -md_bg_color: app.ui.tarjeta
-                style: "outlined"
-                orientation: "horizontal"
-                size_hint_y: None
-                height: dp(56)
-                padding: dp(12), dp(6)
-                radius: [dp(18)]
-
-                MDLabel:
-                    text: "Solo mis rutas favoritas"
-                    font_style: "Body"
-                    role: "medium"
-
-                UiSwitch:
-                    pos_hint: {"center_y": 0.5}
-                    on_active: app.alternar_solo_favoritas(self.active)
-
-            MDLabel:
-                id: avisos_vacio
-                text: ""
-                font_style: "Body"
-                role: "small"
-                size_hint_y: None
-                height: dp(40)
-
-            ScrollView:
+        UiHeader:
+            titulo: "Avisos"
+            subtitulo: "Novedades en tus recorridos"
+        UiScroll:
+            UiBody:
+                UiJourneyHero:
+                    etiqueta: "03  /  COMUNIDAD"
+                    titulo: "Mantente al tanto"
+                    descripcion: "Consulta reportes de ocupación, atrasos y cambios de ruta."
+                    icono: "bell-badge-outline"
+                UiNotice:
+                    text: "Reportes de pasajeros sincronizados con el servidor; no reemplazan avisos oficiales."
+                    icon: "flask-outline"
+                UiSurface:
+                    size_hint_y: None
+                    height: dp(70)
+                    corners: [dp(16)]
+                    -bg: app.ui.fondo
+                    -stroke: app.ui.borde
+                    UiSurface:
+                        size_hint: None, None
+                        size: dp(36), dp(36)
+                        pos_hint: {"center_y": .5}
+                        padding: 0
+                        corners: [dp(12)]
+                        -bg: app.ui.suave
+                        -stroke: 0, 0, 0, 0
+                        AnchorLayout:
+                            UiIcon:
+                                icon: "star-outline"
+                                font_size: "20sp"
+                                -icon_color: app.ui.azul
+                    BoxLayout:
+                        orientation: "vertical"
+                        UiText:
+                            text: "Solo mis favoritas"
+                            -color: app.ui.texto
+                            bold: True
+                            font_size: "13sp"
+                        UiText:
+                            text: "Filtra los reportes por tus rutas"
+                            -color: app.ui.secundario
+                            font_size: "10sp"
+                    UiSwitch:
+                        id: filtro_favoritas
+                        on_active: app.alternar_solo_favoritas(self.active)
+                BoxLayout:
+                    size_hint_y: None
+                    height: dp(34)
+                    spacing: dp(8)
+                    UiIcon:
+                        icon: "history"
+                        size: dp(23), dp(23)
+                        font_size: "20sp"
+                        -icon_color: app.ui.azul
+                    UiSection:
+                        text: "Reportes recientes"
+                UiParagraph:
+                    text: "Los reportes vencidos se mantienen en el historial hasta 2 horas."
+                    font_size: "11sp"
+                UiParagraph:
+                    id: avisos_vacio
+                    -height: dp(40)
+                    text: ""
                 MDBoxLayout:
                     id: avisos_box
-                    orientation: "vertical"
-                    spacing: dp(8)
-                    padding: 0, 0, 0, dp(8)
                     adaptive_height: True
+                    orientation: "vertical"
+                    spacing: dp(12)
 
-
-# ----------------------------------------------------------
-# Ajustes
-# ----------------------------------------------------------
 <AjustesScreen>:
     BoxLayout:
         orientation: "vertical"
