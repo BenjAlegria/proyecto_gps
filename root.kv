@@ -422,7 +422,7 @@ BoxLayout:
     height: dp(84)
     padding: dp(12), dp(8)
     spacing: dp(10)
-    radius: [12]
+    radius: [dp(18)]
     on_release: app.mostrar_detalle(root.rid)
 
     MDIcon:
@@ -481,7 +481,7 @@ BoxLayout:
     height: dp(112)
     padding: dp(12), dp(8)
     spacing: dp(10)
-    radius: [12]
+    radius: [dp(18)]
 
     MDIcon:
         icon: root.icono
@@ -559,7 +559,7 @@ BoxLayout:
     size_hint_y: None
     height: dp(88)
     padding: dp(8)
-    radius: [14]
+    radius: [dp(18)]
 
     MDIcon:
         icon: root.icono
@@ -705,12 +705,14 @@ BoxLayout:
 
                 # --- ¿Este recorrido es real? (votación) ---
                 MDCard:
+                    theme_bg_color: "Custom"
+                    -md_bg_color: app.ui.tarjeta
                     style: "outlined"
                     orientation: "vertical"
                     size_hint_y: None
                     height: dp(124)
                     padding: dp(14), dp(8)
-                    radius: [14]
+                    radius: [dp(18)]
 
                     MDLabel:
                         text: "¿Este recorrido es real?"
@@ -757,13 +759,15 @@ BoxLayout:
 
                 # --- Estado actual según los avisos ---
                 MDCard:
+                    theme_bg_color: "Custom"
+                    -md_bg_color: app.ui.tarjeta
                     style: "outlined"
                     orientation: "horizontal"
                     size_hint_y: None
                     height: dp(60)
                     padding: dp(14), dp(8)
                     spacing: dp(10)
-                    radius: [14]
+                    radius: [dp(18)]
 
                     MDIcon:
                         icon: "information-outline"
@@ -854,6 +858,12 @@ BoxLayout:
             padding: dp(12), dp(8), dp(12), dp(4)
             spacing: dp(8)
 
+            UiJourneyHero:
+                etiqueta: "02 / RECORRIDOS"
+                titulo: "Encuentra tu próximo viaje"
+                descripcion: "Consulta líneas, destinos y opiniones de la comunidad."
+                icono: "bus-clock"
+
             MDLabel:
                 id: recorridos_resumen
                 text: ""
@@ -892,6 +902,12 @@ BoxLayout:
                 padding: dp(12), dp(8), dp(12), dp(12)
                 spacing: dp(10)
                 adaptive_height: True
+
+                UiJourneyHero:
+                    etiqueta: "03 / COMPARTIR"
+                    titulo: "Ayuda a otros pasajeros"
+                    descripcion: "Comparte reportes y la información de tu viaje con control."
+                    icono: "map-marker-check-outline"
 
                 MDLabel:
                     text: "¿Vas en la micro? Elige tu línea e identifica el bus con su patente o agenda el viaje. Solo cuentas registradas."
@@ -1070,13 +1086,21 @@ BoxLayout:
             padding: dp(12), dp(8), dp(12), dp(4)
             spacing: dp(8)
 
+            UiJourneyHero:
+                etiqueta: "04 / COMUNIDAD"
+                titulo: "Viaja mejor informado"
+                descripcion: "Revisa reportes recientes y valora su utilidad."
+                icono: "bell-outline"
+
             MDCard:
+                theme_bg_color: "Custom"
+                -md_bg_color: app.ui.tarjeta
                 style: "outlined"
                 orientation: "horizontal"
                 size_hint_y: None
                 height: dp(56)
                 padding: dp(12), dp(6)
-                radius: [14]
+                radius: [dp(18)]
 
                 MDLabel:
                     text: "Solo mis rutas favoritas"
@@ -1126,13 +1150,21 @@ BoxLayout:
                 spacing: dp(10)
                 adaptive_height: True
 
+                UiJourneyHero:
+                    etiqueta: "05 / PREFERENCIAS"
+                    titulo: "Viaja a tu manera"
+                    descripcion: "Controla apariencia, privacidad y conexión con el servidor."
+                    icono: "tune-variant"
+
                 MDCard:
+                    theme_bg_color: "Custom"
+                    -md_bg_color: app.ui.tarjeta
                     style: "outlined"
                     orientation: "horizontal"
                     size_hint_y: None
                     height: dp(64)
                     padding: dp(12), dp(8)
-                    radius: [14]
+                    radius: [dp(18)]
 
                     MDLabel:
                         text: "Tema oscuro"
@@ -1145,12 +1177,14 @@ BoxLayout:
                         on_active: app.cambiar_tema(self.active)
 
                 MDCard:
+                    theme_bg_color: "Custom"
+                    -md_bg_color: app.ui.tarjeta
                     style: "outlined"
                     orientation: "horizontal"
                     size_hint_y: None
                     height: dp(72)
                     padding: dp(12), dp(8)
-                    radius: [14]
+                    radius: [dp(18)]
 
                     MDLabel:
                         text: "Avisarme de atrasos y buses llenos en mis rutas favoritas"
@@ -1164,12 +1198,14 @@ BoxLayout:
                         on_active: app.cambiar_notificaciones(self.active)
 
                 MDCard:
+                    theme_bg_color: "Custom"
+                    -md_bg_color: app.ui.tarjeta
                     style: "outlined"
                     orientation: "vertical"
                     size_hint_y: None
                     height: dp(96)
                     padding: dp(12), dp(8)
-                    radius: [14]
+                    radius: [dp(18)]
 
                     BoxLayout:
                         MDLabel:
@@ -1189,13 +1225,15 @@ BoxLayout:
                         role: "small"
 
                 MDCard:
+                    theme_bg_color: "Custom"
+                    -md_bg_color: app.ui.tarjeta
                     style: "outlined"
                     orientation: "vertical"
                     size_hint_y: None
                     height: dp(150)
                     padding: dp(12), dp(8)
                     spacing: dp(4)
-                    radius: [14]
+                    radius: [dp(18)]
 
                     MDLabel:
                         text: "Conexión con el servidor"
@@ -1224,13 +1262,15 @@ BoxLayout:
                             text: "Sincronizar ahora"
 
                 MDCard:
+                    theme_bg_color: "Custom"
+                    -md_bg_color: app.ui.tarjeta
                     style: "outlined"
                     orientation: "vertical"
                     size_hint_y: None
                     height: dp(150)
                     padding: dp(12), dp(8)
                     spacing: dp(4)
-                    radius: [14]
+                    radius: [dp(18)]
 
                     MDLabel:
                         text: "Configuración remota"
@@ -1303,14 +1343,22 @@ BoxLayout:
                 padding: dp(12), dp(10), dp(12), dp(8)
                 adaptive_height: True
 
+                UiJourneyHero:
+                    etiqueta: "TU CUENTA"
+                    titulo: "Tu espacio en EnRuta"
+                    descripcion: "Tus recorridos, aportes y preferencias personales."
+                    icono: "account-circle-outline"
+
                 MDCard:
+                    theme_bg_color: "Custom"
+                    -md_bg_color: app.ui.tarjeta
                     style: "filled"
                     orientation: "horizontal"
                     size_hint_y: None
                     height: dp(88)
                     padding: dp(14)
                     spacing: dp(14)
-                    radius: [16]
+                    radius: [dp(18)]
 
                     MDIcon:
                         icon: "account-circle"
@@ -1336,13 +1384,15 @@ BoxLayout:
                             role: "small"
 
                 MDCard:
+                    theme_bg_color: "Custom"
+                    -md_bg_color: app.ui.tarjeta
                     style: "outlined"
                     orientation: "horizontal"
                     size_hint_y: None
                     height: dp(76)
                     padding: dp(14)
                     spacing: dp(12)
-                    radius: [16]
+                    radius: [dp(18)]
 
                     MDIcon:
                         id: nivel_icono
@@ -1402,10 +1452,12 @@ BoxLayout:
                     spacing: dp(10)
 
                     MDCard:
+                        theme_bg_color: "Custom"
+                        -md_bg_color: app.ui.tarjeta
                         style: "elevated"
                         orientation: "vertical"
                         padding: dp(8)
-                        radius: [14]
+                        radius: [dp(18)]
 
                         MDLabel:
                             id: viajes_num
@@ -1422,10 +1474,12 @@ BoxLayout:
                             role: "small"
 
                     MDCard:
+                        theme_bg_color: "Custom"
+                        -md_bg_color: app.ui.tarjeta
                         style: "elevated"
                         orientation: "vertical"
                         padding: dp(8)
-                        radius: [14]
+                        radius: [dp(18)]
 
                         MDLabel:
                             id: fav_num
@@ -1442,12 +1496,14 @@ BoxLayout:
                             role: "small"
 
                 MDCard:
+                    theme_bg_color: "Custom"
+                    -md_bg_color: app.ui.tarjeta
                     style: "outlined"
                     orientation: "horizontal"
                     size_hint_y: None
                     height: dp(64)
                     padding: dp(12), dp(8)
-                    radius: [14]
+                    radius: [dp(18)]
 
                     MDLabel:
                         text: "Permitir compartir mi ubicación durante viajes"
