@@ -821,6 +821,10 @@ BoxLayout:
     titulo: ""
     valor: ""
     style: "outlined"
+    theme_bg_color: "Custom"
+    -md_bg_color: app.ui.tarjeta
+    theme_line_color: "Custom"
+    -line_color: app.ui.borde
     orientation: "vertical"
     size_hint_y: None
     height: dp(88)
@@ -854,259 +858,238 @@ BoxLayout:
 <DetalleScreen>:
     BoxLayout:
         orientation: "vertical"
+        canvas.before:
+            Color:
+                rgba: app.ui.fondo
+            Rectangle:
+                pos: self.pos
+                size: self.size
 
-        MDBoxLayout:
+        BoxLayout:
             size_hint_y: None
-            height: dp(58)
-            padding: dp(6), 0
-            spacing: dp(6)
-            md_bg_color: app.ui.marino
-
-            MDIconButton:
-                icon: "arrow-left"
-                icon_color: 1, 1, 1, 1
-                pos_hint: {"center_y": 0.5}
+            height: dp(70)
+            padding: dp(16), dp(9)
+            spacing: dp(10)
+            canvas.after:
+                Color:
+                    rgba: app.ui.borde
+                Line:
+                    points: self.x, self.y, self.right, self.y
+                    width: .7
+            UiAction:
+                size_hint: None, None
+                size: dp(44), dp(44)
+                corners: [dp(14)]
+                -bg: app.ui.suave
+                -stroke: 0, 0, 0, 0
+                padding: 0
+                pos_hint: {"center_y": .5}
                 on_release: app.cerrar_detalle()
-
-            MDLabel:
-                text: "Detalle del recorrido"
-                bold: True
-                theme_text_color: "Custom"
-                text_color: 1, 1, 1, 1
-                pos_hint: {"center_y": 0.5}
-
-        # Mapa con la línea punto A -> punto B (fuera del scroll para poder moverlo)
-        MapView:
-            id: mapa_detalle
-            lat: -38.7359
-            lon: -72.5904
-            zoom: 10
-            size_hint_y: None
-            height: dp(200)
-
-        ScrollView:
-            MDBoxLayout:
+                AnchorLayout:
+                    UiIcon:
+                        icon: "arrow-left"
+                        -icon_color: app.ui.azul
+            BoxLayout:
                 orientation: "vertical"
-                spacing: dp(12)
-                padding: dp(12)
-                adaptive_height: True
-
-                # --- Cabecera: nombre, A -> B y estado de verificación ---
-                MDBoxLayout:
-                    orientation: "horizontal"
+                UiText:
+                    text: "Detalle del recorrido"
+                    bold: True
+                    font_size: "17sp"
+                UiText:
+                    text: "Información aportada por la comunidad"
+                    -color: app.ui.secundario
+                    font_size: "10sp"
                     size_hint_y: None
-                    height: dp(104)
-                    padding: dp(16)
-                    spacing: dp(10)
-                    radius: [18]
-                    md_bg_color: app.ui.marino
+                    height: dp(20)
+            UiIcon:
+                icon: "bus-side"
+                -icon_color: app.ui.azul
+                pos_hint: {"center_y": .5}
 
-                    MDIcon:
-                        icon: "bus"
-                        theme_text_color: "Custom"
-                        text_color: 1, 1, 1, 1
-                        size_hint_x: None
-                        width: dp(40)
-                        pos_hint: {"center_y": 0.5}
+        UiSurface:
+            size_hint_y: None
+            height: dp(232)
+            corners: [dp(18)]
+            -bg: app.ui.tarjeta
+            -stroke: app.ui.borde
+            padding: dp(7)
+            MapView:
+                id: mapa_detalle
+                lat: -38.7359
+                lon: -72.5904
+                zoom: 10
 
-                    BoxLayout:
-                        orientation: "vertical"
-
-                        MDLabel:
-                            id: det_titulo
-                            text: ""
-                            bold: True
-                            font_style: "Title"
-                            role: "medium"
-                            theme_text_color: "Custom"
-                            text_color: 1, 1, 1, 1
-
-                        MDLabel:
-                            id: det_ruta_texto
-                            text: ""
-                            font_style: "Body"
-                            role: "small"
-                            theme_text_color: "Custom"
-                            text_color: 1, 1, 1, 0.9
-
-                        MDLabel:
-                            id: det_parada
-                            text: ""
-                            font_style: "Body"
-                            role: "small"
-                            theme_text_color: "Custom"
-                            text_color: 1, 1, 1, 0.75
-
+        UiScroll:
+            UiBody:
+                UiSurface:
+                    orientation: "vertical"
+                    size_hint_y: None
+                    height: dp(166)
+                    corners: [dp(20)]
+                    -bg: app.ui.marino
+                    -stroke: 0, 0, 0, 0
+                    spacing: dp(5)
+                    padding: dp(18), dp(14)
+                    UiText:
+                        text: "TU RECORRIDO  /  INFORMACIÓN"
+                        bold: True
+                        font_size: "10sp"
+                        size_hint_y: None
+                        height: dp(22)
+                        -color: .71, .84, 1, 1
+                    UiText:
+                        id: det_titulo
+                        text: ""
+                        bold: True
+                        font_size: "20sp"
+                        -color: 1, 1, 1, 1
+                    UiText:
+                        id: det_ruta_texto
+                        text: ""
+                        -color: .88, .92, 1, 1
+                        font_size: "12sp"
+                        size_hint_y: None
+                        height: dp(24)
+                    UiText:
+                        id: det_parada
+                        text: ""
+                        -color: .76, .86, 1, 1
+                        font_size: "10sp"
+                        size_hint_y: None
+                        height: dp(21)
                     MDLabel:
                         id: det_ver
                         text: ""
-                        halign: "right"
-                        bold: True
-                        size_hint_x: None
-                        width: dp(96)
+                        font_style: "Body"
+                        role: "small"
+                        size_hint_y: None
+                        height: dp(23)
                         theme_text_color: "Custom"
-                        text_color: 1, 1, 1, 0.85
+                        text_color: .83, .92, 1, 1
 
-                # --- Frecuencia, duración y tarifa ---
-                MDBoxLayout:
+                UiSection:
+                    text: "Datos del recorrido"
+                BoxLayout:
                     orientation: "horizontal"
                     size_hint_y: None
-                    height: dp(88)
+                    height: dp(100)
                     spacing: dp(8)
-
                     DatoRuta:
                         id: det_frecuencia
                         icono: "timer-sand"
                         titulo: "Frecuencia"
-
                     DatoRuta:
                         id: det_duracion
                         icono: "clock-outline"
                         titulo: "Duración"
-
                     DatoRuta:
                         id: det_tarifa
                         icono: "cash"
                         titulo: "Tarifa"
 
-                # --- ¿Este recorrido es real? (votación) ---
-                MDCard:
-                    theme_bg_color: "Custom"
-                    -md_bg_color: app.ui.tarjeta
-                    style: "outlined"
+                UiSection:
+                    text: "¿Este recorrido es real?"
+                UiSurface:
                     orientation: "vertical"
                     size_hint_y: None
-                    height: dp(124)
-                    padding: dp(14), dp(8)
-                    radius: [dp(18)]
-
-                    MDLabel:
-                        text: "¿Este recorrido es real?"
-                        bold: True
-                        size_hint_y: None
-                        height: dp(28)
-
+                    height: dp(144)
+                    corners: [dp(17)]
+                    -bg: app.ui.tarjeta
+                    -stroke: app.ui.borde
+                    spacing: dp(6)
                     BoxLayout:
                         size_hint_y: None
                         height: dp(44)
-                        spacing: dp(6)
-
+                        spacing: dp(8)
                         MDIconButton:
                             id: det_like
                             icon: "thumb-up-outline"
                             style: "tonal"
-                            pos_hint: {"center_y": 0.5}
+                            pos_hint: {"center_y": .5}
                             on_release: app.votar_recorrido(1)
-
-                        MDLabel:
+                        UiText:
                             id: det_n_ok
                             text: "0"
-                            size_hint_x: None
-                            width: dp(36)
+                            font_size: "15sp"
                             bold: True
-
+                            size_hint_x: None
+                            width: dp(35)
                         MDIconButton:
                             id: det_dislike
                             icon: "thumb-down-outline"
                             style: "tonal"
-                            pos_hint: {"center_y": 0.5}
+                            pos_hint: {"center_y": .5}
                             on_release: app.votar_recorrido(-1)
-
-                        MDLabel:
+                        UiText:
                             id: det_n_mal
                             text: "0"
+                            font_size: "15sp"
                             bold: True
-
-                    MDLabel:
+                    UiParagraph:
                         id: det_confianza
-                        text: ""
-                        font_style: "Body"
-                        role: "small"
+                        text: "La comunidad aún no verificó este recorrido."
+                        font_size: "11sp"
+                    UiParagraph:
+                        text: "Los votos ayudan a identificar rutas confiables."
+                        font_size: "10sp"
 
-                # --- Estado actual según los avisos ---
-                MDCard:
-                    theme_bg_color: "Custom"
-                    -md_bg_color: app.ui.tarjeta
-                    style: "outlined"
-                    orientation: "horizontal"
+                UiSurface:
                     size_hint_y: None
-                    height: dp(60)
-                    padding: dp(14), dp(8)
-                    spacing: dp(10)
-                    radius: [dp(18)]
-
-                    MDIcon:
+                    height: dp(72)
+                    corners: [dp(17)]
+                    -bg: app.ui.suave
+                    -stroke: 0, 0, 0, 0
+                    UiIcon:
                         icon: "information-outline"
-                        size_hint_x: None
-                        width: dp(28)
-                        pos_hint: {"center_y": 0.5}
-
+                        -icon_color: app.ui.azul
                     BoxLayout:
                         orientation: "vertical"
-
-                        MDLabel:
-                            text: "Estado ahora"
-                            font_style: "Body"
-                            role: "small"
-
+                        UiText:
+                            text: "Estado actual"
+                            bold: True
+                            font_size: "12sp"
                         MDLabel:
                             id: det_estado
                             text: ""
-                            bold: True
                             font_style: "Body"
-                            role: "medium"
+                            role: "small"
                             theme_text_color: "Custom"
-                            text_color: 0.5, 0.52, 0.58, 1
+                            text_color: app.ui.texto
 
                 MDButton:
                     style: "tonal"
                     size_hint_y: None
-                    height: dp(44)
-                    pos_hint: {"center_x": 0.5}
+                    height: dp(48)
+                    pos_hint: {"center_x": .5}
                     on_release: app.alternar_favorita(app.id_detalle)
-
                     MDButtonIcon:
                         id: det_fav_icono
                         icon: "star-outline"
-
                     MDButtonText:
                         id: det_fav_texto
                         text: "Agregar a favoritas"
 
-                # --- Avisos de este recorrido, con votos ---
-                MDLabel:
-                    text: "Avisos recientes de este recorrido"
-                    bold: True
-                    font_style: "Title"
-                    role: "small"
-                    size_hint_y: None
-                    height: dp(28)
-
-                MDLabel:
-                    text: "Vota si cada aviso es correcto: así sube la confianza de quienes informan bien."
-                    font_style: "Body"
-                    role: "small"
-                    size_hint_y: None
-                    height: dp(36)
-
+                UiSection:
+                    text: "Avisos recientes"
+                UiParagraph:
+                    text: "Consulta y valora los avisos que han compartido otros pasajeros."
+                    font_size: "11sp"
                 MDLabel:
                     id: det_vacio
                     text: "Aún no hay avisos para este recorrido."
                     font_style: "Body"
                     role: "small"
+                    theme_text_color: "Custom"
+                    text_color: app.ui.secundario
                     size_hint_y: None
                     height: dp(40)
-
                 MDBoxLayout:
                     id: det_avisos_box
-                    orientation: "vertical"
-                    spacing: dp(8)
                     adaptive_height: True
+                    orientation: "vertical"
+                    spacing: dp(12)
 
 
-# ----------------------------------------------------------
-# Recorridos
-# ----------------------------------------------------------
 <RecorridosScreen>:
     BoxLayout:
         orientation: "vertical"
