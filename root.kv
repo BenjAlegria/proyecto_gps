@@ -1409,196 +1409,205 @@ BoxLayout:
 <AjustesScreen>:
     BoxLayout:
         orientation: "vertical"
-
-        TopBar:
-            MDLabel:
-                text: "Ajustes"
-                bold: True
-                theme_text_color: "Custom"
-                text_color: app.ui.texto
-                pos_hint: {"center_y": 0.5}
-
-        ScrollView:
-            MDBoxLayout:
-                orientation: "vertical"
-                padding: dp(16), dp(10), dp(16), dp(22)
-                spacing: dp(10)
-                adaptive_height: True
-
+        UiHeader:
+            titulo: "Ajustes"
+            subtitulo: "Personaliza tu experiencia"
+        UiScroll:
+            UiBody:
                 UiJourneyHero:
-                    etiqueta: "05 / PREFERENCIAS"
+                    etiqueta: "04  /  PREFERENCIAS"
                     titulo: "Viaja a tu manera"
-                    descripcion: "Controla apariencia, privacidad y conexión con el servidor."
+                    descripcion: "Controla cómo se ve la aplicación y qué novedades quieres recibir."
                     icono: "tune-variant"
 
-                MDCard:
-                    theme_bg_color: "Custom"
-                    -md_bg_color: app.ui.tarjeta
-                    style: "outlined"
-                    orientation: "horizontal"
+                UiSection:
+                    text: "Tu experiencia"
+                UiSurface:
                     size_hint_y: None
-                    height: dp(64)
-                    padding: dp(12), dp(8)
-                    radius: [dp(18)]
-
-                    MDLabel:
-                        text: "Tema oscuro"
-                        font_style: "Body"
-                        role: "medium"
-
+                    height: dp(76)
+                    corners: [dp(17)]
+                    -bg: app.ui.fondo
+                    -stroke: app.ui.borde
+                    UiSurface:
+                        size_hint: None, None
+                        size: dp(38), dp(38)
+                        pos_hint: {"center_y": .5}
+                        corners: [dp(13)]
+                        -bg: app.ui.suave
+                        -stroke: 0, 0, 0, 0
+                        padding: 0
+                        AnchorLayout:
+                            UiIcon:
+                                icon: "weather-night"
+                                font_size: "21sp"
+                                -icon_color: app.ui.azul
+                    BoxLayout:
+                        orientation: "vertical"
+                        UiText:
+                            text: "Modo oscuro"
+                            bold: True
+                            font_size: "13sp"
+                        UiText:
+                            text: "Diseño cómodo para la noche"
+                            -color: app.ui.secundario
+                            font_size: "10sp"
                     UiSwitch:
                         id: switch_tema
-                        pos_hint: {"center_y": 0.5}
                         on_active: app.cambiar_tema(self.active)
 
-                MDCard:
-                    theme_bg_color: "Custom"
-                    -md_bg_color: app.ui.tarjeta
-                    style: "outlined"
-                    orientation: "horizontal"
+                UiSurface:
                     size_hint_y: None
-                    height: dp(72)
-                    padding: dp(12), dp(8)
-                    radius: [dp(18)]
-
-                    MDLabel:
-                        text: "Avisarme de atrasos y buses llenos en mis rutas favoritas"
-                        font_style: "Body"
-                        role: "medium"
-
+                    height: dp(82)
+                    corners: [dp(17)]
+                    -bg: app.ui.fondo
+                    -stroke: app.ui.borde
+                    UiSurface:
+                        size_hint: None, None
+                        size: dp(38), dp(38)
+                        pos_hint: {"center_y": .5}
+                        corners: [dp(13)]
+                        -bg: app.ui.suave
+                        -stroke: 0, 0, 0, 0
+                        padding: 0
+                        AnchorLayout:
+                            UiIcon:
+                                icon: "bell-outline"
+                                font_size: "21sp"
+                                -icon_color: app.ui.azul
+                    BoxLayout:
+                        orientation: "vertical"
+                        UiText:
+                            text: "Notificaciones"
+                            bold: True
+                            font_size: "13sp"
+                        UiParagraph:
+                            text: "Avisos locales sobre tus rutas favoritas"
+                            font_size: "10sp"
                     UiSwitch:
                         id: switch_notif
                         active: True
-                        pos_hint: {"center_y": 0.5}
                         on_active: app.cambiar_notificaciones(self.active)
 
-                MDCard:
-                    theme_bg_color: "Custom"
-                    -md_bg_color: app.ui.tarjeta
-                    style: "outlined"
-                    orientation: "vertical"
+                UiSection:
+                    text: "Privacidad"
+                UiSurface:
                     size_hint_y: None
-                    height: dp(96)
-                    padding: dp(12), dp(8)
-                    radius: [dp(18)]
-
+                    height: dp(84)
+                    corners: [dp(17)]
+                    -bg: app.ui.fondo
+                    -stroke: app.ui.borde
+                    UiIcon:
+                        icon: "shield-check-outline"
+                        -icon_color: app.ui.azul
                     BoxLayout:
-                        MDLabel:
-                            text: "Ayudar con métricas anónimas"
-                            font_style: "Body"
-                            role: "medium"
+                        orientation: "vertical"
+                        UiText:
+                            text: "Ayudar a mejorar la app"
+                            bold: True
+                            font_size: "13sp"
+                        UiParagraph:
+                            id: mjv_estado
+                            text: "Métricas anónimas desactivadas"
+                            font_size: "10sp"
+                    UiSwitch:
+                        id: switch_metricas
+                        on_active: app.cambiar_analitica(self.active)
 
-                        MDSwitch:
-                            id: switch_metricas
-                            pos_hint: {"center_y": 0.5}
-                            on_active: app.cambiar_analitica(self.active)
-
-                    MDLabel:
-                        id: mjv_estado
-                        text: "Métricas anónimas desactivadas"
-                        font_style: "Body"
-                        role: "small"
-
-                MDCard:
-                    theme_bg_color: "Custom"
-                    -md_bg_color: app.ui.tarjeta
-                    style: "outlined"
+                UiSection:
+                    text: "Avisos de la comunidad"
+                UiSurface:
                     orientation: "vertical"
                     size_hint_y: None
-                    height: dp(150)
-                    padding: dp(12), dp(8)
-                    spacing: dp(4)
-                    radius: [dp(18)]
-
-                    MDLabel:
-                        text: "Conexión con el servidor"
-                        bold: True
-                        font_style: "Body"
-                        role: "medium"
+                    height: max(dp(135), conexion_estado.height + dp(91))
+                    corners: [dp(17)]
+                    -bg: app.ui.tarjeta
+                    -stroke: app.ui.borde
+                    spacing: dp(8)
+                    BoxLayout:
                         size_hint_y: None
-                        height: dp(24)
-
-                    MDLabel:
+                        height: dp(30)
+                        spacing: dp(8)
+                        UiIcon:
+                            icon: "cloud-check-outline"
+                            font_size: "20sp"
+                            -icon_color: app.ui.azul
+                        UiText:
+                            text: "Estado de sincronización"
+                            bold: True
+                            font_size: "13sp"
+                    UiParagraph:
                         id: conexion_estado
-                        text: ""
-                        font_style: "Body"
-                        role: "small"
-
-                    MDButton:
-                        style: "text"
-                        size_hint_y: None
-                        height: dp(36)
+                        text: "Comprobando conexión…"
+                        -color: app.ui.texto
+                        font_size: "11sp"
+                    UiButton:
+                        primary: False
+                        text: "Actualizar avisos"
+                        icon: "refresh"
                         on_release: app.sincronizar(manual=True, completo=True)
 
-                        MDButtonIcon:
-                            icon: "sync"
-
-                        MDButtonText:
-                            text: "Sincronizar ahora"
-
-                MDCard:
-                    theme_bg_color: "Custom"
-                    -md_bg_color: app.ui.tarjeta
-                    style: "outlined"
+                UiSection:
+                    text: "Información de la app"
+                UiSurface:
                     orientation: "vertical"
                     size_hint_y: None
-                    height: dp(150)
-                    padding: dp(12), dp(8)
-                    spacing: dp(4)
-                    radius: [dp(18)]
-
-                    MDLabel:
-                        text: "Configuración remota"
-                        bold: True
-                        font_style: "Body"
-                        role: "medium"
+                    height: max(dp(173), cfg_estado.height + dp(110))
+                    corners: [dp(17)]
+                    -bg: app.ui.tarjeta
+                    -stroke: app.ui.borde
+                    spacing: dp(9)
+                    BoxLayout:
                         size_hint_y: None
-                        height: dp(24)
-
-                    MDLabel:
+                        height: dp(29)
+                        spacing: dp(8)
+                        UiIcon:
+                            icon: "cloud-check-outline"
+                            size: dp(21), dp(21)
+                            font_size: "19sp"
+                            -icon_color: app.ui.azul
+                        UiText:
+                            text: "Configuración remota"
+                            bold: True
+                            font_size: "13sp"
+                    UiParagraph:
                         id: cfg_estado
-                        text: ""
-                        font_style: "Body"
-                        role: "small"
-
-                    MDButton:
-                        style: "text"
-                        size_hint_y: None
-                        height: dp(36)
+                        text: "Consultando configuración…"
+                        -color: app.ui.texto
+                        font_size: "11sp"
+                    UiButton:
+                        primary: False
+                        text: "Actualizar configuración"
+                        icon: "refresh"
                         on_release: app.actualizar_config_remota()
 
-                        MDButtonIcon:
-                            icon: "cloud-refresh-outline"
-
-                        MDButtonText:
-                            text: "Actualizar"
-
-                MDButton:
-                    style: "outlined"
-                    size_hint_y: None
-                    height: dp(40)
-                    pos_hint: {"center_x": 0.5}
+                UiSection:
+                    text: "Tu sesión"
+                UiAction:
+                    height: dp(52)
+                    corners: [dp(15)]
+                    -bg: app.ui.tarjeta
+                    -stroke: app.ui.borde
                     on_release: app.cerrar_sesion()
-
-                    MDButtonIcon:
+                    UiIcon:
                         icon: "logout"
-
-                    MDButtonText:
+                        -icon_color: app.ui.rojo
+                    UiText:
                         id: cerrar_texto
                         text: "Cerrar sesión"
-
-                MDLabel:
-                    text: "EnRuta Ya! v3.0"
+                        bold: True
+                        font_size: "12sp"
+                        -color: app.ui.rojo
+                    UiIcon:
+                        icon: "arrow-right"
+                        -icon_color: app.ui.rojo
+                UiText:
+                    text: "EnRuta Ya!  ·  Versión 3.0"
+                    font_size: "10sp"
                     halign: "center"
-                    font_style: "Body"
-                    role: "small"
+                    -color: app.ui.secundario
                     size_hint_y: None
-                    height: dp(20)
+                    height: dp(30)
 
-
-# ----------------------------------------------------------
-# Perfil (nivel y puntos; el invitado ve solo el resumen)
-# ----------------------------------------------------------
 <PerfilScreen>:
     BoxLayout:
         orientation: "vertical"
