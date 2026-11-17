@@ -208,213 +208,430 @@ BoxLayout:
 # ----------------------------------------------------------
 # Inicio: mapa con la línea A -> B + panel de buses
 # ----------------------------------------------------------
+<HomeSurface@UiSurface>:
+    -md_bg_color: app.ui.fondo
+    -bg: self.md_bg_color
+    -stroke: 0, 0, 0, 0
+    radius: [dp(16)]
+    corners: self.radius
+    padding: 0
+
+<HomeText@UiText>:
+
+<HomeIcon@UiIcon>:
+    -text_color: app.ui.azul
+    -icon_color: self.text_color
+
+<HomeAction@ButtonBehavior+HomeSurface>:
+    size_hint: None, None
+    size: dp(48), dp(48)
+    radius: [dp(24)]
+
+<HomeSelector@ButtonBehavior+BoxLayout>:
+    orientation: "vertical"
+    padding: dp(12), dp(6)
+
+
 <HomeScreen>:
-    on_size: app.ajustar_panel_home()
+    on_size: if app.root: app.ajustar_panel_home()
+    BoxLayout:
+        orientation: "vertical"
+        canvas.before:
+            Color:
+                rgba: app.ui.fondo
+            Rectangle:
+                pos: self.pos
+                size: self.size
 
-    FloatLayout:
-
-        MapView:
-            id: mapa
-            lat: -38.7359
-            lon: -72.5904
-            zoom: 10
-            size_hint: 1, 1
-            pos_hint: {"x": 0, "y": 0}
-
-        TopBar:
+        # Cabecera: identidad breve para dejar espacio al mapa.
+        BoxLayout:
             id: home_header
-            pos_hint: {"top": 1}
-
-            LocalidadChip:
-                id: origen_btn
-                on_release: app.abrir_menu_origen(self)
-
-                MDIcon:
-                    icon: "map-marker"
-                    theme_text_color: "Custom"
-                    text_color: (1, 1, 1, 1) if app.theme_cls.theme_style == "Dark" else AZUL_CLARO
-                    pos_hint: {"center_y": 0.5}
-
-                MDLabel:
-                    id: origen_text
-                    text: "Elegir localidad"
-                    theme_text_color: "Custom"
-                    text_color: (0.95, 0.96, 0.98, 1) if app.theme_cls.theme_style == "Dark" else (0.10, 0.12, 0.15, 1)
+            size_hint_y: None
+            height: dp(76)
+            padding: dp(18), dp(12), dp(16), dp(8)
+            spacing: dp(11)
+            HomeSurface:
+                size_hint: None, None
+                size: dp(44), dp(44)
+                pos_hint: {"center_y": .5}
+                radius: [dp(14)]
+                -md_bg_color: app.ui.suave
+                AnchorLayout:
+                    HomeIcon:
+                        icon: "bus-side"
+                        font_size: "25sp"
+                        size: dp(29), dp(29)
+                        -text_color: app.ui.azul
+            BoxLayout:
+                orientation: "vertical"
+                HomeText:
+                    text: "EnRuta Ya!"
+                    font_size: "20sp"
                     bold: True
+                    -color: app.ui.texto
+                HomeText:
+                    text: "Rutas de La Araucanía"
+                    font_size: "11sp"
+                    size_hint_y: None
+                    height: dp(18)
+                    -color: app.ui.secundario
+            HomeAction:
+                id: home_perfil
+                pos_hint: {"center_y": .5}
+                size: dp(44), dp(44)
+                radius: [dp(15)]
+                -md_bg_color: app.ui.tarjeta
+                on_release: app.cambiar_pantalla("perfil")
+                AnchorLayout:
+                    HomeIcon:
+                        icon: "account-circle-outline"
+                        font_size: "25sp"
+                        -text_color: app.ui.texto
 
-                MDIcon:
-                    icon: "menu-down"
-                    theme_text_color: "Custom"
-                    text_color: (1, 1, 1, 1) if app.theme_cls.theme_style == "Dark" else AZUL_CLARO
-                    pos_hint: {"center_y": 0.5}
-
-            MDIconButton:
-                icon: "share-variant"
-                icon_color: app.ui.azul
-                pos_hint: {"center_y": 0.5}
-                on_release: app.cambiar_pantalla("compartir")
-                canvas.before:
-                    Color:
-                        rgba: 1, 1, 1, 0.18
-                    Ellipse:
-                        pos: self.pos
-                        size: self.size
-
-        MDBoxLayout:
+        # Selector de ruta: un solo control visual con dos zonas pulsables.
+        BoxLayout:
             id: home_selectors
-            size_hint: 0.92, None
-            height: dp(44)
-            spacing: dp(8)
-            pos_hint: {"center_x": 0.5}
-            y: self.parent.height - home_header.height - self.height - dp(6)
+            size_hint_y: None
+            height: dp(80)
+            padding: dp(16), dp(2), dp(16), dp(12)
+            HomeSurface:
+                -md_bg_color: app.ui.tarjeta
+                -stroke: app.ui.borde
+                radius: [dp(18)]
+                padding: dp(3), 0
+                HomeSelector:
+                    id: origen_btn
+                    padding: dp(10), dp(9)
+                    on_release: app.abrir_menu_origen(self)
+                    HomeText:
+                        text: "SALIDA"
+                        -color: app.ui.secundario
+                        font_size: "9sp"
+                        bold: True
+                        size_hint_y: None
+                        height: dp(16)
+                    HomeText:
+                        id: origen_text
+                        text: "Elegir localidad"
+                        -color: app.ui.texto
+                        font_size: "12sp"
+                        bold: True
+                HomeSurface:
+                    size_hint: None, None
+                    size: dp(32), dp(32)
+                    pos_hint: {"center_y": .5}
+                    radius: [dp(16)]
+                    -md_bg_color: app.ui.fondo
+                    AnchorLayout:
+                        HomeIcon:
+                            icon: "arrow-right"
+                            font_size: "18sp"
+                            -text_color: app.ui.azul
+                HomeSelector:
+                    id: recorrido_btn
+                    padding: dp(10), dp(9)
+                    on_release: app.abrir_recorrido_home(self)
+                    HomeText:
+                        text: "DESTINO"
+                        -color: app.ui.secundario
+                        font_size: "9sp"
+                        bold: True
+                        size_hint_y: None
+                        height: dp(16)
+                    HomeText:
+                        id: recorrido_text
+                        text: "Todos los destinos"
+                        -color: app.ui.texto
+                        font_size: "12sp"
+                        bold: True
+                HomeIcon:
+                    icon: "chevron-down"
+                    -text_color: app.ui.secundario
+                    size: dp(16), dp(22)
+                    font_size: "17sp"
+                    pos_hint: {"center_y": .5}
 
-            LocalidadChip:
-                id: recorrido_btn
-                size_hint_x: 0.58
-                on_release: app.abrir_recorrido_home(self)
-
-                MDIcon:
-                    icon: "map-marker-path"
-                    theme_text_color: "Custom"
-                    text_color: (1, 1, 1, 1) if app.theme_cls.theme_style == "Dark" else AZUL_CLARO
-                    pos_hint: {"center_y": 0.5}
-
-                MDLabel:
-                    id: recorrido_text
-                    text: "Todos los destinos"
-                    shorten: True
-                    shorten_from: "right"
-                    theme_text_color: "Custom"
-                    text_color: (0.95, 0.96, 0.98, 1) if app.theme_cls.theme_style == "Dark" else (0.10, 0.12, 0.15, 1)
-
-                MDIcon:
-                    icon: "menu-down"
-                    theme_text_color: "Custom"
-                    text_color: (1, 1, 1, 1) if app.theme_cls.theme_style == "Dark" else AZUL_CLARO
-                    pos_hint: {"center_y": 0.5}
-
-            MDLabel:
-                id: ubicacion_estado
-                text: "Tu ubicación: sin consultar"
-                font_style: "Body"
-                role: "small"
-                shorten: True
-                shorten_from: "right"
-                halign: "right"
-                valign: "center"
-
-        MDBoxLayout:
+        # Estado de conexión: no bloquea las rutas almacenadas.
+        UiSurface:
             id: barra_offline
-            size_hint: 0.92, None
-            height: 0 if app.en_linea else dp(26)
+            size_hint_y: None
+            height: dp(32) if not app.en_linea else 0
             opacity: 0 if app.en_linea else 1
-            padding: dp(10), 0
-            pos_hint: {"center_x": 0.5}
-            y: self.parent.height - home_header.height - home_selectors.height - dp(10) - self.height
-            canvas.before:
-                Color:
-                    rgba: 0.96, 0.62, 0.07, 0.96
-                RoundedRectangle:
-                    pos: self.pos
-                    size: self.size
-                    radius: [dp(10)]
-
-            MDLabel:
+            -bg: app.ui.suave
+            -stroke: 0, 0, 0, 0
+            padding: dp(18), 0
+            spacing: dp(9)
+            UiIcon:
+                icon: "cloud-off-outline"
+                size: dp(18), dp(22)
+                font_size: "17sp"
+                -icon_color: app.ui.rojo
+            UiText:
                 text: app.texto_conexion
-                font_style: "Body"
-                role: "small"
-                shorten: True
-                shorten_from: "right"
-                valign: "center"
-                theme_text_color: "Custom"
-                text_color: 0.10, 0.10, 0.10, 1
+                -color: app.ui.texto
+                font_size: "10sp"
 
-        MDBoxLayout:
+        # Mensaje de la configuración remota. Sigue siendo un elemento independiente
+        # para que la altura del mapa se ajuste cuando no hay banner.
+        BoxLayout:
             id: banner
-            size_hint: 0.92, None
-            height: dp(38)
-            padding: dp(12), 0
-            spacing: dp(8)
+            size_hint_y: None
+            height: dp(30) if banner_texto.text else 0
+            padding: dp(20), 0
+            spacing: dp(7)
             opacity: 0
-            pos_hint: {"center_x": 0.5}
-            y: self.parent.height - home_header.height - home_selectors.height - barra_offline.height - dp(14) - self.height
             canvas.before:
                 Color:
-                    rgba: app.ui.tarjeta
-                RoundedRectangle:
+                    rgba: app.ui.suave
+                Rectangle:
                     pos: self.pos
                     size: self.size
-                    radius: [dp(12)]
-
-            MDIcon:
-                icon: "cloud-check-outline"
-                adaptive_size: True
-                pos_hint: {"center_y": 0.5}
-                theme_text_color: "Custom"
-                text_color: AZUL_CLARO
-
-            MDLabel:
+            HomeIcon:
+                icon: "information-outline"
+                size: dp(16), dp(20)
+                font_size: "14sp"
+                -text_color: app.ui.azul
+            HomeText:
                 id: banner_texto
                 text: ""
-                shorten: True
-                shorten_from: "right"
-                font_style: "Body"
-                role: "small"
-                valign: "center"
+                -color: app.ui.texto
+                font_size: "10sp"
 
-        MDIconButton:
-            style: "filled"
-            icon: "crosshairs-gps"
-            pos_hint: {"right": 0.96, "top": 0.64}
-            on_release: app.localizarme()
+        # El mapa conserva todos los identificadores y eventos originales.
+        RelativeLayout:
+            id: map_container
+            size_hint_y: 1
+            MapView:
+                id: mapa
+                lat: -38.7359
+                lon: -72.5904
+                zoom: 10
+                size_hint: 1, 1
 
-        MDBoxLayout:
-            id: panel_buses
-            orientation: "vertical"
-            size_hint: 1, None
-            height: dp(48)
-            pos_hint: {"x": 0, "y": 0}
-            padding: dp(4), 0
-            spacing: dp(2)
-
-            canvas.before:
-                Color:
-                    rgba: app.ui.tarjeta
-                RoundedRectangle:
-                    pos: self.pos
-                    size: self.size
-                    radius: [dp(21), dp(21), 0, 0]
-
-            PanelHeader:
-                size_hint_y: None
-                height: dp(46)
-                padding: dp(12), 0
-                on_release: app.alternar_panel_buses()
-
-                MDLabel:
-                    id: lineas_titulo
-                    text: "Buses de la localidad"
+            # Las posiciones y tiempos aún son simulados: aviso destacado.
+            HomeSurface:
+                id: demo_chip
+                size_hint: None, None
+                size: dp(192), dp(32)
+                pos_hint: {"x": .04}
+                y: self.parent.height - self.height - dp(12)
+                padding: dp(11), 0
+                spacing: dp(7)
+                radius: [dp(16)]
+                -md_bg_color: app.ui.marino
+                HomeIcon:
+                    icon: "flask-outline"
+                    font_size: "16sp"
+                    size: dp(18), dp(20)
+                    -text_color: 1, 1, 1, 1
+                HomeText:
+                    text: "DATOS DE LA COMUNIDAD"
+                    -color: 1, 1, 1, 1
+                    font_size: "10sp"
                     bold: True
 
-                MDIcon:
-                    id: panel_icono
-                    icon: "chevron-up"
-                    adaptive_size: True
-                    pos_hint: {"center_y": 0.5}
+            HomeSurface:
+                id: location_chip
+                size_hint: None, None
+                width: min(dp(242), self.parent.width - dp(32))
+                height: dp(32)
+                pos_hint: {"x": .04}
+                y: self.parent.height - dp(88)
+                padding: dp(11), 0
+                spacing: dp(7)
+                radius: [dp(16)]
+                -md_bg_color: app.ui.fondo
+                -stroke: app.ui.borde
+                HomeIcon:
+                    icon: "crosshairs"
+                    font_size: "16sp"
+                    size: dp(18), dp(20)
+                    -text_color: app.ui.azul
+                HomeText:
+                    id: ubicacion_estado
+                    text: "Tu ubicación: sin consultar"
+                    -color: app.ui.texto
+                    font_size: "10sp"
+
+            HomeAction:
+                id: localizar_btn
+                pos_hint: {"right": .96}
+                y: dp(16)
+                radius: [dp(18)]
+                -md_bg_color: .157, .404, .910, 1
+                on_release: app.localizarme()
+                canvas.before:
+                    Color:
+                        rgba: .07, .17, .28, .15
+                    RoundedRectangle:
+                        pos: self.x - dp(3), self.y - dp(4)
+                        size: self.width + dp(6), self.height + dp(7)
+                        radius: [dp(20)]
+                AnchorLayout:
+                    HomeIcon:
+                        icon: "crosshairs-gps"
+                        font_size: "24sp"
+                        -text_color: 1, 1, 1, 1
+
+        # Panel plegable, más claro y preparado para mostrar las rutas.
+        HomeSurface:
+            id: panel_buses
+            orientation: "vertical"
+            size_hint_y: None
+            height: dp(48)
+            padding: dp(16), 0
+            radius: [dp(22), dp(22), 0, 0]
+            -md_bg_color: app.ui.fondo
+
+            PanelHeader:
+                id: panel_header
+                orientation: "vertical"
+                size_hint_y: None
+                height: dp(48)
+                on_release: app.alternar_panel_buses()
+                AnchorLayout:
+                    size_hint_y: None
+                    height: dp(12)
+                    Widget:
+                        size_hint: None, None
+                        size: dp(34), dp(4)
+                        canvas:
+                            Color:
+                                rgba: app.ui.borde
+                            RoundedRectangle:
+                                pos: self.pos
+                                size: self.size
+                                radius: [dp(3)]
+                BoxLayout:
+                    spacing: dp(9)
+                    HomeIcon:
+                        icon: "bus-clock"
+                        size: dp(22), dp(22)
+                        font_size: "20sp"
+                        -text_color: app.ui.azul
+                    HomeText:
+                        id: lineas_titulo
+                        text: "Rutas disponibles"
+                        font_size: "15sp"
+                        bold: True
+                    HomeText:
+                        text: "Ver recorridos"
+                        font_size: "10sp"
+                        halign: "right"
+                        -color: app.ui.secundario
+                    HomeIcon:
+                        id: panel_icono
+                        icon: "chevron-up"
+                        -text_color: app.ui.azul
 
             ScrollView:
-                size_hint_y: 1
+                id: buses_scroll
+                opacity: 1 if panel_buses.height > dp(50) else 0
+                disabled: panel_buses.height <= dp(50)
+                do_scroll_x: False
+                bar_width: dp(2)
                 MDBoxLayout:
                     id: lineas_box
                     orientation: "vertical"
-                    spacing: dp(6)
-                    padding: dp(8), 0, dp(8), dp(8)
+                    spacing: dp(10)
+                    padding: 0, dp(8), 0, dp(12)
                     adaptive_height: True
 
+<HomeBusCard>:
+    style: "outlined"
+    orientation: "vertical"
+    size_hint_y: None
+    height: dp(160)
+    padding: dp(12), dp(10)
+    spacing: dp(6)
+    radius: [dp(16)]
+    theme_bg_color: "Custom"
+    -md_bg_color: app.ui.tarjeta
+    theme_line_color: "Custom"
+    -line_color: app.ui.borde
+    on_release: app.mostrar_detalle(root.rid)
 
-# ----------------------------------------------------------
-# Tarjetas
-# ----------------------------------------------------------
+    BoxLayout:
+        size_hint_y: None
+        height: dp(36)
+        spacing: dp(10)
+        HomeSurface:
+            size_hint_x: None
+            width: dp(36)
+            radius: [dp(10)]
+            -md_bg_color: .157, .404, .910, .12
+            AnchorLayout:
+                HomeIcon:
+                    icon: "bus-side"
+        BoxLayout:
+            orientation: "vertical"
+            HomeText:
+                text: root.ruta.split("->")[0].strip()
+                bold: True
+                font_size: "14sp"
+            BoxLayout:
+                spacing: dp(4)
+                HomeIcon:
+                    icon: "arrow-right"
+                    size: dp(16), dp(16)
+                    font_size: "14sp"
+                HomeText:
+                    text: root.ruta.split("->")[-1].strip()
+                    font_size: "12sp"
+        BoxLayout:
+            orientation: "vertical"
+            size_hint_x: None
+            width: dp(64)
+            HomeText:
+                text: root.minutos
+                font_size: "19sp"
+                bold: True
+                halign: "right"
+                -color: app.ui.azul
+            HomeText:
+                text: "Tiempo"
+                font_size: "9sp"
+                halign: "right"
+                -color: app.ui.secundario
+
+    HomeSurface:
+        size_hint_y: None
+        height: dp(25)
+        padding: dp(8), 0
+        spacing: dp(6)
+        radius: [dp(8)]
+        -md_bg_color: app.ui.estado(root.aviso_color, app.ui.texto)[:3] + [.10]
+        HomeIcon:
+            icon: root.estado_icono
+            size: dp(16), dp(18)
+            font_size: "14sp"
+            -text_color: app.ui.estado(root.aviso_color, app.ui.texto)
+        HomeText:
+            text: root.aviso
+            -color: app.ui.estado(root.aviso_color, app.ui.texto)
+            font_size: "10sp"
+            bold: True
+    BoxLayout:
+        HomeText:
+            text: "Ocupación"
+            -color: app.ui.secundario
+            font_size: "10sp"
+        HomeText:
+            text: root.ocupacion
+            bold: True
+            font_size: "11sp"
+            halign: "right"
+    HomeText:
+        text: root.actualizacion
+        -color: app.ui.secundario
+        font_size: "10sp"
+    HomeText:
+        text: "Reportes comunitarios · sin GPS de buses en vivo"
+        -color: app.ui.secundario
+        font_size: "9sp"
+
+
+
 <LineaCard>:
     theme_bg_color: "Custom"
     -md_bg_color: app.ui.tarjeta
