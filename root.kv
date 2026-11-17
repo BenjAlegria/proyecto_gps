@@ -1151,188 +1151,187 @@ BoxLayout:
 <CompartirScreen>:
     BoxLayout:
         orientation: "vertical"
-
-        TopBar:
-            MDLabel:
-                text: "Compartir ubicación"
-                bold: True
-                theme_text_color: "Custom"
-                text_color: app.ui.texto
-                pos_hint: {"center_y": 0.5}
-
-        ScrollView:
-            MDBoxLayout:
-                orientation: "vertical"
-                padding: dp(16), dp(10), dp(16), dp(22)
-                spacing: dp(10)
-                adaptive_height: True
-
+        UiHeader:
+            titulo: "Compartir viaje"
+            subtitulo: "El control de tu ubicación es tuyo"
+        UiScroll:
+            UiBody:
                 UiJourneyHero:
-                    etiqueta: "03 / COMPARTIR"
-                    titulo: "Ayuda a otros pasajeros"
-                    descripcion: "Comparte reportes y la información de tu viaje con control."
-                    icono: "map-marker-check-outline"
+                    etiqueta: "02  /  COLABORAR"
+                    titulo: "Viaja y ayuda a otros"
+                    descripcion: "Activa tu ubicación voluntariamente y comparte el estado de tu recorrido."
+                    icono: "map-marker-radius-outline"
+                UiNotice:
+                    text: "Tu ubicación GPS se utiliza localmente con permiso. Los avisos sí se comparten mediante el servidor."
+                    icon: "shield-check-outline"
 
-                MDLabel:
-                    text: "¿Vas en la micro? Elige tu línea e identifica el bus con su patente o agenda el viaje. Solo cuentas registradas."
+                BoxLayout:
                     size_hint_y: None
-                    height: dp(72)
-
-                MDButton:
+                    height: dp(35)
+                    spacing: dp(9)
+                    UiSurface:
+                        size_hint: None, None
+                        size: dp(30), dp(30)
+                        corners: [dp(10)]
+                        -bg: app.ui.suave
+                        -stroke: 0, 0, 0, 0
+                        padding: 0
+                        AnchorLayout:
+                            UiIcon:
+                                icon: "numeric-1-circle-outline"
+                                font_size: "21sp"
+                                -icon_color: app.ui.azul
+                    UiSection:
+                        text: "Elige tu línea"
+                UiAction:
                     id: linea_btn
-                    style: "outlined"
-                    size_hint_y: None
-                    height: dp(40)
+                    height: dp(58)
+                    corners: [dp(15)]
+                    -bg: app.ui.fondo
+                    -stroke: app.ui.borde
                     on_release: app.abrir_menu_linea(self)
-
-                    MDButtonIcon:
-                        icon: "bus"
-
-                    MDButtonText:
+                    UiIcon:
+                        icon: "bus-side"
+                        -icon_color: app.ui.azul
+                    UiText:
                         id: linea_text
                         text: "Elegir mi línea"
-
-                    MDButtonIcon:
-                        icon: "menu-down"
-
-                MDLabel:
+                        bold: True
+                        font_size: "13sp"
+                    UiIcon:
+                        icon: "chevron-down"
+                        -icon_color: app.ui.secundario
+                UiError:
                     id: linea_error
                     text: ""
-                    theme_text_color: "Error"
-                    size_hint_y: None
-                    height: dp(20)
-
+                UiSection:
+                    text: "Identifica tu viaje"
+                UiParagraph:
+                    text: "Indica la patente del bus o agenda tu recorrido para iniciar el viaje."
+                    font_size: "11sp"
                 UiField:
                     id: patente_field
-                    mode: "outlined"
-                    size_hint_y: None
-                    height: dp(64)
-                    multiline: False
-                    write_tab: False
-
                     MDTextFieldLeadingIcon:
                         icon: "card-text-outline"
-
                     MDTextFieldHintText:
-                        text: "Patente del bus (ej.: AB1234 o BCDF12)"
-
+                        text: "Patente del bus (AB1234 o BCDF12)"
                 UiField:
                     id: agenda_field
-                    mode: "outlined"
-                    size_hint_y: None
-                    height: dp(64)
-                    multiline: False
-                    write_tab: False
-
                     MDTextFieldLeadingIcon:
                         icon: "calendar-clock-outline"
-
                     MDTextFieldHintText:
                         text: "Agendar viaje: DD/MM HH:MM (opcional)"
-
-                MDLabel:
+                UiError:
                     id: patente_error
                     text: ""
-                    theme_text_color: "Error"
-                    font_style: "Body"
-                    role: "small"
-                    size_hint_y: None
-                    height: dp(36)
 
-                MDButton:
+                BoxLayout:
+                    size_hint_y: None
+                    height: dp(35)
+                    spacing: dp(9)
+                    UiSurface:
+                        size_hint: None, None
+                        size: dp(30), dp(30)
+                        corners: [dp(10)]
+                        -bg: app.ui.suave
+                        -stroke: 0, 0, 0, 0
+                        padding: 0
+                        AnchorLayout:
+                            UiIcon:
+                                icon: "numeric-2-circle-outline"
+                                font_size: "21sp"
+                                -icon_color: app.ui.azul
+                    UiSection:
+                        text: "Inicia tu viaje"
+                UiAction:
                     id: compartir_btn
-                    style: "filled"
-                    size_hint_y: None
-                    height: dp(44)
-                    pos_hint: {"center_x": 0.5}
+                    height: dp(54)
+                    corners: [dp(15)]
+                    -bg: (.72, .16, .16, 1) if app.compartiendo else (.157, .404, .910, 1)
                     on_release: app.alternar_compartir()
-
-                    MDButtonText:
+                    UiIcon:
+                        icon: "stop-circle-outline" if app.compartiendo else "map-marker-radius-outline"
+                        -icon_color: 1, 1, 1, 1
+                    UiText:
                         id: compartir_btn_text
                         text: "INICIAR VIAJE"
-
-                MDLabel:
-                    id: estado_label
-                    text: "Tu ubicación no se está compartiendo."
-                    halign: "center"
-                    font_style: "Body"
-                    role: "small"
+                        -color: 1, 1, 1, 1
+                        bold: True
+                        halign: "center"
+                        font_size: "12sp"
+                    UiIcon:
+                        icon: "arrow-right" if not app.compartiendo else "close-circle-outline"
+                        -icon_color: 1, 1, 1, 1
+                UiSurface:
                     size_hint_y: None
-                    height: dp(24)
+                    height: max(dp(70), estado_label.texture_size[1] + dp(34))
+                    corners: [dp(15)]
+                    -bg: app.ui.suave if app.compartiendo else app.ui.tarjeta
+                    -stroke: 0, 0, 0, 0
+                    UiIcon:
+                        icon: "broadcast" if app.compartiendo else "map-marker-off-outline"
+                        -icon_color: app.ui.exito if app.compartiendo else app.ui.secundario
+                    UiParagraph:
+                        id: estado_label
+                        text: "Tu ubicación no se está compartiendo."
+                        -color: app.ui.texto
+                        font_size: "12sp"
+                        pos_hint: {"center_y": .5}
+                UiParagraph:
+                    text: "Puedes detener el viaje cuando quieras. Tu consentimiento es necesario para iniciar."
+                    font_size: "11sp"
 
-                MDLabel:
-                    text: "Avisar a otros pasajeros"
-                    bold: True
+                BoxLayout:
                     size_hint_y: None
-                    height: dp(28)
-
-                MDLabel:
-                    text: "Usa la línea elegida arriba. Otros pasajeros podrán votar si tu aviso es correcto y así ganas puntos."
-                    font_style: "Body"
-                    role: "small"
-                    size_hint_y: None
-                    height: dp(48)
-
+                    height: dp(35)
+                    spacing: dp(9)
+                    UiSurface:
+                        size_hint: None, None
+                        size: dp(30), dp(30)
+                        corners: [dp(10)]
+                        -bg: app.ui.suave
+                        -stroke: 0, 0, 0, 0
+                        padding: 0
+                        AnchorLayout:
+                            UiIcon:
+                                icon: "numeric-3-circle-outline"
+                                font_size: "21sp"
+                                -icon_color: app.ui.azul
+                    UiSection:
+                        text: "Reporta lo que ocurre"
+                UiParagraph:
+                    text: "Reporta lo que ocurre. Los demás pasajeros podrán valorar tu aviso."
+                    font_size: "11sp"
                 GridLayout:
-                    cols: 2
-                    spacing: dp(8)
+                    cols: 1 if self.width < dp(290) else 2
                     size_hint_y: None
-                    height: dp(96)
-                    row_default_height: dp(44)
-                    row_force_default: True
-
-                    MDButton:
-                        style: "tonal"
-                        theme_width: "Custom"
-                        size_hint_x: 1
+                    height: dp(222) if self.cols == 1 else dp(108)
+                    spacing: dp(10)
+                    UiButton:
+                        primary: False
+                        text: "Bus lleno"
+                        -tinta: app.ui.rojo
+                        icon: "account-group-outline"
                         on_release: app.enviar_aviso("lleno")
-
-                        MDButtonIcon:
-                            icon: "account-group"
-
-                        MDButtonText:
-                            text: "Bus lleno"
-
-                    MDButton:
-                        style: "tonal"
-                        theme_width: "Custom"
-                        size_hint_x: 1
+                    UiButton:
+                        primary: False
+                        text: "Hay asientos"
+                        -tinta: app.ui.exito
+                        icon: "seat-passenger"
                         on_release: app.enviar_aviso("asientos")
-
-                        MDButtonIcon:
-                            icon: "seat-passenger"
-
-                        MDButtonText:
-                            text: "Hay asientos"
-
-                    MDButton:
-                        style: "tonal"
-                        theme_width: "Custom"
-                        size_hint_x: 1
+                    UiButton:
+                        primary: False
+                        text: "Atraso"
+                        -tinta: app.ui.aviso
+                        icon: "clock-alert-outline"
                         on_release: app.abrir_menu_atraso(self)
-
-                        MDButtonIcon:
-                            icon: "clock-alert"
-
-                        MDButtonText:
-                            text: "Atrasado"
-
-                    MDButton:
-                        style: "tonal"
-                        theme_width: "Custom"
-                        size_hint_x: 1
+                    UiButton:
+                        primary: False
+                        text: "Desvío"
+                        -tinta: app.ui.aviso
+                        icon: "map-marker-alert-outline"
                         on_release: app.enviar_aviso("cambio_ruta")
 
-                        MDButtonIcon:
-                            icon: "map-marker-alert"
-
-                        MDButtonText:
-                            text: "Cambio de ruta"
-
-
-# ----------------------------------------------------------
-# Avisos
-# ----------------------------------------------------------
 <AvisosScreen>:
     BoxLayout:
         orientation: "vertical"
