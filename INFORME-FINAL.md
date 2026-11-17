@@ -1,130 +1,114 @@
-# Informe Final — Proyecto Integrado EnRuta Ya!
+# Informe final — Proyecto Integrado EnRuta Ya!
 
-**Desarrollo Móvil (A+S), TINF1119 · Evaluación E4 · 2026**
+**Instituto Tecnológico UC Temuco · Desarrollo Móvil (A+S) · TINF1119 · E4 · 2026**  
+**Versión del proyecto que presentamos:** interfaz de `feature/diseno-v3-sobre-backend-final` y funcionalidades integradas desde `feature/Ajuste3-PLSFINAL`.
 
-> Documento de entrega preparado para completar con **datos reales**
-> de medición. No confundir encuesta diagnóstica con resultados de uso.
+> Redactamos este informe como equipo, usando lo que efectivamente aparece en el proyecto y en nuestra encuesta. **Aún debemos incorporar las pruebas con personas, el periodo de medición y los resultados MJV reales.** No presentamos esas evidencias como completadas.
 
-## 1. Introducción y problema social (RA1 · 20%)
+## 1. Problema y diagnóstico de la comunidad (RA1)
 
-Los viajes interurbanos en La Araucanía presentan incertidumbre sobre
-horarios, recorridos, ocupación y atrasos. El equipo aplicó una encuesta
-en línea de 15 preguntas y 17 respuestas entre el 14 y 28 de
-septiembre de 2026 (ver `FUNDAMENTACION-UX-UI.md`).
+Como equipo nos propusimos abordar la falta de información clara y oportuna sobre los buses interurbanos de La Araucanía. Nos interesó especialmente la incertidumbre que enfrentan los pasajeros al consultar un recorrido, saber si la micro viene llena o enterarse de un atraso.
 
-El 71% reportó problemas por buses llenos; el 59% solicitó alertas
-por atrasos y el 76% señaló la ubicación en el mapa como información
-deseada. La muestra es pequeña, mayoritariamente de estudiantes
-jóvenes, por lo que los hallazgos son exploratorios, no representativos
-de toda la región.
+Para fundamentar la idea aplicamos una encuesta en línea de **15 preguntas** y obtuvimos **17 respuestas** entre el **14 y el 28 de septiembre de 2026**. Encontramos que:
 
-**Decisiones de solución:**
-- Mapa de Inicio: consulta visual de localidades y recorridos.
-- Recorridos: acceso centralizado a datos referenciales.
-- Avisos: reportes de ocupación, atrasos y desvíos.
-- Compartir: control explícito del GPS local y consentimiento.
-- Favoritos y notificaciones: acceso rápido a rutas de interés.
+- **71 %** había tenido problemas con buses llenos.
+- **76 %** quería consultar la ubicación del bus en un mapa.
+- **59 %** pidió notificaciones sobre retrasos.
+- **59 %** se informaba por experiencia o memoria y **35 %** preguntaba al conductor.
+- La utilidad esperada de una aplicación de este tipo obtuvo una media de **4,7/5**.
 
-## 2. Solución desarrollada (RA2 · 25%)
+Estos datos explican por qué priorizamos el mapa, el catálogo de recorridos y los avisos sobre ocupación y atrasos. La encuesta fue exploratoria y mayoritariamente respondida por jóvenes; reconocemos que no podemos extrapolar sus porcentajes a toda la región ni utilizarlos como prueba de eficacia del producto.
 
-Se implementó un prototipo en Python, Kivy y KivyMD, con MapView y
-OpenStreetMap. Incluye registro/login, perfiles, favoritos,
-navegación, persistencia JSON, avisos, ajustes y medición MJV App\nexportada fuera de la interfaz del pasajero.
+**Evidencia:** `FUNDAMENTACION-UX-UI.md`.
 
-La estructura separa:
-- Vistas: `root.kv`, `componentes.kv`, `tema.py`.
-- Controladores: `main.py` y sus callbacks de pantalla.
-- Modelo/servicios: rutas, autenticación, persistencia,
-  avisos, GPS, analítica y Firebase opcional.
+## 2. Solución implementada (RA2)
 
-La sincronización de avisos de la comunidad se inicia\nautomáticamente después de acceder mediante correo y contraseña en\nFirebase Authentication. Requiere activar el proveedor y publicar las\nreglas en el proyecto real; está pendiente de validación entre dos\ninstancias. No existe GPS colectivo entre dispositivos ni servidor de
-localización en vivo. Los marcadores de buses y ETA son demos.
+Desarrollamos una aplicación en **Python, Kivy y KivyMD** con un mapa interactivo basado en **Kivy Garden MapView y OpenStreetMap**. Organizamos el trabajo en vistas KV, un controlador principal y servicios para las funciones de negocio y la persistencia.
 
-**Evidencia de demo a adjuntar:** [CAPTURA 1: Login y Inicio],
-[CAPTURA 2: detalle de ruta y favorita],
-[CAPTURA 3: persistencia tras reiniciar],
-[CAPTURA 4: resultados MJV App generados fuera de la interfaz].
+En la versión final integramos **PHP y MySQL como backend**, no Firebase. Nuestro flujo de datos es **app → API PHP → MySQL**. El backend gestiona cuentas por correo, sesiones, rutas, avisos y votaciones; permite que dos instalaciones consulten información del mismo servidor.
 
-## 3. Método MJV App, KPIs y periodo (RA3 · 20%)
+Las funciones principales que construimos son:
 
-Se instrumentaron eventos locales con identificadores de sesión
-aleatorios, marca de tiempo UTC y referencias de intento de búsqueda.
-No se recopilan coordenadas, contraseñas ni nombres de usuarios.\nLa medición está desactivada por defecto y se activa manualmente,\ncon consentimiento, en Ajustes → Privacidad → Ayudar a mejorar la app.
+1. **Registro, login e invitado.** Las cuentas pueden entrar con correo y contraseña; como invitado se pueden realizar consultas limitadas.
+2. **Inicio y Recorridos.** Se elige una localidad, se consultan líneas, sus datos referenciales y el detalle sobre mapa.
+3. **Avisos.** Podemos publicar «Bus lleno», «Hay asientos», «Atrasado» y «Cambio de ruta». Los avisos son de usuarios y se sincronizan mediante la API.
+4. **Votaciones y reputación.** Los usuarios registrados pueden evaluar recorridos y avisos. El servidor administra los puntos y el nivel.
+5. **Compartir viaje.** Podemos elegir línea, indicar patente o agendar el viaje; el GPS se solicita con permiso y se usa localmente.
+6. **Favoritas y preferencias.** Podemos marcar recorridos y personalizar el tema. Esas preferencias se guardan actualmente **en el dispositivo**, no en la base compartida.
+7. **Panel administrativo.** Contamos con herramientas web para revisar usuarios, rutas, avisos y contadores.
+8. **Conexión con caché.** Si falla internet, se muestran los datos guardados y se intenta sincronizar posteriormente.
 
-KPIs implementados:
-1. Éxito de consulta de recorrido = consultas con detalle /
-   búsquedas iniciadas × 100.
-2. Mediana del tiempo de consulta, desde entrar a Recorridos
-   hasta abrir un detalle.
+Nuestra interfaz fue rediseñada conservando la lógica final del equipo. Se comprobó por automatización que las **10 pantallas** abren y permiten navegar en Linux/Xvfb y en varios tamaños. No confundimos esta prueba técnica con usabilidad de personas ni con validación Android.
 
-También se cuentan avisos publicados y favoritas agregadas.
-Ver metodología, escenarios y limitaciones en
-`docs/PROTOCOLO-MJV-APP.md`.
+**Limitación central:** todavía no publicamos posiciones GPS de buses para que otros pasajeros las sigan en vivo. Por eso no afirmamos que el prototipo ofrezca seguimiento en tiempo real ni estimaciones basadas en buses reales.
 
-**Periodo real de pruebas:** [PENDIENTE DE REGISTRAR].
-**Participantes voluntarios:** [PENDIENTE DE REGISTRAR].
-**Contexto y consentimiento:** [PENDIENTE].
+## 3. Metodología MJV App (RA3)
 
-## 4. Resultados, gráficos y mejoras (RA3 · 20%)
+Para evaluar el uso de la aplicación adoptamos el ciclo **Medir → Jugar → Validar**. Primero definimos qué queremos descubrir, luego damos a una persona una tarea concreta y observamos su ejecución, y finalmente analizamos la evidencia para tomar una decisión de mejora.
 
-Los resultados deben salir de la ejecución real de los escenarios.
-Generar con:
+**Hipótesis de trabajo:** un pasajero puede encontrar un recorrido y abrir su detalle sin demasiada dificultad utilizando nuestra pantalla Recorridos.
 
-~~~powershell
-python tools/generar_resultados_mjv.py
-~~~
+**Qué preparamos para medir:** instrumentamos el módulo `servicios/analitica.py`, que registra eventos de uso **solo si activamos previamente el consentimiento en Ajustes**. Los eventos locales se guardan en `data/analitica_eventos.jsonl`, uno por línea, con nombre del evento, identificador aleatorio de sesión y fecha/hora UTC. El intento de búsqueda tiene un ID propio para relacionar el inicio con el detalle abierto. No añadimos nombres, correos, contraseñas ni coordenadas.
 
-**Adjuntar aquí, tras las pruebas:**
-- `docs/resultados_mjv/RESULTADOS.md`
-- Gráfico `docs/resultados_mjv/grafico_eventos.svg`
-- Resultados manuales (persistencia de favoritas, barreras observadas).
+**Prueba de tarea propuesta:** pedir a cada participante que abra Recorridos, identifique una línea y acceda a Detalle. Complementamos con guardar una favorita y publicar un aviso en un entorno controlado, sin confundirlo con información real para otros pasajeros.
 
-**Hallazgo medido 1:** [PENDIENTE]
-**Mejora fundamentada 1:** [PENDIENTE]
-**Hallazgo medido 2:** [PENDIENTE]
-**Mejora fundamentada 2:** [PENDIENTE]
-**Priorización por impacto/esfuerzo:** [PENDIENTE]
+**KPIs que programamos:**
 
-No inventar estadísticas ni afirmar que las hipótesis son resultados.
+- **Éxito de consulta:** `100 × consultas con detalle abierto / búsquedas iniciadas`.
+- **Mediana de tiempo de consulta:** mediana de los segundos transcurridos entre `busqueda_iniciada` y `recorrido_consultado` para un mismo intento.
 
-## 5. Ética, accesibilidad e IA (RA4 · 15%)
+También contamos avisos publicados, favoritas agregadas y sesiones. Estas últimas son ejecuciones de la app, **no personas únicas**.
 
-**Privacidad:** GPS solo tras acción/consentimiento; no se transmite
-posición a Firebase. Los eventos de medición son anónimos por sesión
-de aplicación. Se usan hashes para contraseñas locales. Se evita
-mezclar credenciales de backend con el cliente móvil.
+Con `python tools/generar_resultados_mjv.py` podemos producir el informe `docs/resultados_mjv/RESULTADOS.md` y un gráfico SVG basado únicamente en eventos registrados.
 
-**Accesibilidad:** navegación clara con etiquetas, pantalla diseñada
-para teléfonos, tema claro/oscuro. Pendiente prueba con lector de
-pantalla, distintos tamaños y usuarios mayores; la encuesta original
-tiene sesgo hacia personas jóvenes.
+### Estado de la medición
 
-**Sesgos y confiabilidad:** los horarios y buses son de demostración,
-no oficiales. Avisos comunitarios pueden ser erróneos o
-malintencionados, por lo que para un despliegue real harían falta
-moderación y controles de abuso.
+A fecha de esta revisión, la planilla `docs/REGISTRO-PRUEBAS-USUARIOS.csv` contiene **solo el encabezado**, y no tenemos documentación verificable sobre fecha de inicio/fin, cantidad de participantes del test MJV, tareas efectivamente realizadas ni resultados de campo.
 
-**Uso de IA:** se utilizaron asistentes de programación y diseño;
-declarar con precisión qué utilizó cada integrante, cómo se validó
-el código y cuáles decisiones tomó el equipo. Actualizar `USO_IA.md`.
+Por eso **no declaramos todavía un porcentaje de éxito real, una mediana observada ni una mejora validada**. La encuesta diagnóstica de 17 respuestas es una evidencia de RA1 y **no reemplaza** las pruebas de RA3.
 
-**Reflexión final:** EnRuta Ya! busca reducir la incertidumbre de los
-pasajeros, pero para prestar información confiable a personas
-reales necesita validación, accesibilidad y protección de datos
-superiores a las exigidas a un prototipo de curso.
+## 4. Resultados, análisis y propuestas de mejora
 
-## 6. Conclusiones y trabajo futuro
+La evidencia cuantitativa disponible hoy corresponde al **diagnóstico inicial**; no debemos mezclarla con resultados de uso.
 
-El prototipo demuestra navegación y persistencia locales,
-organización visual y medición de uso. Para producción se requiere
-un backend de ubicación temporal con permisos y vencimiento,
-confirmación de recorridos por operadores y pruebas de campo.
+**Qué obtuvimos del diagnóstico:** la necesidad de consultar ubicación, estados de ocupación y retrasos está justificada por las respuestas de la encuesta. Con esa información priorizamos mapa, reportes y recorridos en la navegación.
+
+**Qué falta medir para concluir sobre el prototipo:** porcentaje de participantes que abren correctamente el detalle, mediana de tiempo de consulta, persistencia de favoritas y obstáculos de navegación detectados durante las pruebas.
+
+Tenemos dos **hipótesis de mejora**, que deberán validarse después de registrar tareas reales:
+
+1. **Acceso más rápido a recorridos.** Si detectamos demoras o búsquedas fallidas, podemos mejorar el selector de destino, la visibilidad del listado y los filtros; luego repetimos la misma tarea y comparamos.
+2. **Claridad de información comunitaria.** Si los participantes confunden los avisos o una duración referencial con una predicción oficial, podemos reforzar etiquetas de origen, vigencia y estado de verificación; luego evaluamos si la confusión disminuye.
+
+Estas propuestas no son conclusiones medidas. Para completar esta sección antes de la defensa necesitamos: periodo, participantes, resultados del generador, gráfico, observaciones por tarea, al menos dos decisiones apoyadas en datos y sus limitaciones.
+
+## 5. Ética, accesibilidad y uso responsable de herramientas (RA4)
+
+Nos preocupamos de que el GPS requiera un permiso del usuario y de que nuestro módulo de medición no registre datos personales directos. Los datos de uso se recopilan solo con consentimiento, y debemos evitar publicar registros crudos sin autorización.
+
+La autenticación remota usa contraseñas hasheadas en PHP y sesiones gestionadas por la API. Sin embargo, **la seguridad de una aplicación real requiere revisión continua**: reglas de acceso, administración de credenciales, protección contra reportes falsos, caducidad y moderación.
+
+Diseñamos pantallas con texto, iconos y modos claro/oscuro para facilitar la navegación. Reconocemos que **no hemos documentado aún pruebas de lector de pantalla, accesibilidad con adultos mayores o barreras concretas observadas por participantes**. La muestra diagnóstica tiene un fuerte sesgo hacia jóvenes.
+
+Durante el desarrollo utilizamos herramientas de apoyo como Claude, ChatGPT/Codex y Figma para obtener ideas, revisar problemas y agilizar tareas. Somos responsables de revisar el resultado, comprobarlo con el código y poder explicarlo en la defensa; dejamos una declaración transparente en `USO_IA.md`.
+
+## 6. Evaluación de nuestro trabajo y límites
+
+Consideramos que el avance principal fue pasar de una interfaz demostrativa y datos locales a una aplicación que separa la interfaz Kivy de una **API PHP conectada a MySQL**, con cuentas, avisos, votos y herramientas administrativas.
+
+Aprendimos que tener una funcionalidad escrita no significa que esté validada. Una pantalla que abre correctamente no prueba que una persona pueda cumplir su tarea; contar reportes no demuestra que sean confiables; y usar GPS local no equivale a compartir un bus en vivo.
+
+**Trabajo pendiente verificable:** completar y documentar las pruebas MJV; obtener gráficos basados en datos; ensayar la defensa individual; finalizar prueba Android por el integrante responsable; y comprobar casos de conectividad/seguridad antes de entregar.
 
 ## 7. Referencias y evidencias
-- `FUNDAMENTACION-UX-UI.md` — encuesta y hallazgos.
-- `README.md` — instalación.
-- `DOCUMENTATION.md` — arquitectura.
-- `docs/PROTOCOLO-MJV-APP.md` — metodología y KPIs.
-- `USO_IA.md` — declaración de asistentes.
-- `firebase/README.md` — sincronización opcional.
-- Código y commits del repositorio GitHub.
+
+- `FUNDAMENTACION-UX-UI.md`: instrumento y resultados exploratorios de 17 respuestas.
+- `main.py`, `root.kv`, `componentes.kv`, `tema.py`: implementación principal.
+- `servicios/api_cliente.py` y `backend/api/index.php`: conexión a backend.
+- `backend/sql/enruta_schema.sql`: modelo MySQL de diez tablas.
+- `servicios/analitica.py` y `tools/generar_resultados_mjv.py`: registro y KPIs.
+- `docs/PROTOCOLO-MJV-APP.md` y `docs/REGISTRO-PRUEBAS-USUARIOS.csv`: protocolo y planilla de evaluación.
+- `USO_IA.md`: declaración del uso de herramientas de apoyo.
+- `docs/GUIA-DEFENSA-84-PREGUNTAS.md`: respuestas y explicaciones para preparar la defensa individual basada en el código.
+
+**Nota de cierre:** el texto narrativo del informe está actualizado; **la sección de resultados experimentales requiere evidencia que solo podemos obtener realizando las pruebas**. No la reemplazamos por cifras ficticias.
