@@ -250,7 +250,7 @@ BoxLayout:
 
             MDIconButton:
                 icon: "share-variant"
-                icon_color: 1, 1, 1, 1
+                icon_color: app.ui.azul
                 pos_hint: {"center_y": 0.5}
                 on_release: app.cambiar_pantalla("compartir")
                 canvas.before:
@@ -416,6 +416,8 @@ BoxLayout:
 # Tarjetas
 # ----------------------------------------------------------
 <LineaCard>:
+    theme_bg_color: "Custom"
+    -md_bg_color: app.ui.tarjeta
     style: "elevated"
     orientation: "horizontal"
     size_hint_y: None
@@ -475,6 +477,8 @@ BoxLayout:
 
 
 <AvisoCard>:
+    theme_bg_color: "Custom"
+    -md_bg_color: app.ui.tarjeta
     style: "outlined"
     orientation: "horizontal"
     size_hint_y: None
@@ -855,7 +859,7 @@ BoxLayout:
 
         BoxLayout:
             orientation: "vertical"
-            padding: dp(12), dp(8), dp(12), dp(4)
+            padding: dp(16), dp(10), dp(16), dp(8)
             spacing: dp(8)
 
             UiJourneyHero:
@@ -899,7 +903,7 @@ BoxLayout:
         ScrollView:
             MDBoxLayout:
                 orientation: "vertical"
-                padding: dp(12), dp(8), dp(12), dp(12)
+                padding: dp(16), dp(10), dp(16), dp(22)
                 spacing: dp(10)
                 adaptive_height: True
 
@@ -938,7 +942,7 @@ BoxLayout:
                     size_hint_y: None
                     height: dp(20)
 
-                MDTextField:
+                UiField:
                     id: patente_field
                     mode: "outlined"
                     size_hint_y: None
@@ -952,7 +956,7 @@ BoxLayout:
                     MDTextFieldHintText:
                         text: "Patente del bus (ej.: AB1234 o BCDF12)"
 
-                MDTextField:
+                UiField:
                     id: agenda_field
                     mode: "outlined"
                     size_hint_y: None
@@ -1083,7 +1087,7 @@ BoxLayout:
 
         BoxLayout:
             orientation: "vertical"
-            padding: dp(12), dp(8), dp(12), dp(4)
+            padding: dp(16), dp(10), dp(16), dp(8)
             spacing: dp(8)
 
             UiJourneyHero:
@@ -1107,7 +1111,7 @@ BoxLayout:
                     font_style: "Body"
                     role: "medium"
 
-                MDSwitch:
+                UiSwitch:
                     pos_hint: {"center_y": 0.5}
                     on_active: app.alternar_solo_favoritas(self.active)
 
@@ -1146,7 +1150,7 @@ BoxLayout:
         ScrollView:
             MDBoxLayout:
                 orientation: "vertical"
-                padding: dp(12), dp(10)
+                padding: dp(16), dp(10), dp(16), dp(22)
                 spacing: dp(10)
                 adaptive_height: True
 
@@ -1171,7 +1175,7 @@ BoxLayout:
                         font_style: "Body"
                         role: "medium"
 
-                    MDSwitch:
+                    UiSwitch:
                         id: switch_tema
                         pos_hint: {"center_y": 0.5}
                         on_active: app.cambiar_tema(self.active)
@@ -1191,7 +1195,7 @@ BoxLayout:
                         font_style: "Body"
                         role: "medium"
 
-                    MDSwitch:
+                    UiSwitch:
                         id: switch_notif
                         active: True
                         pos_hint: {"center_y": 0.5}
@@ -1340,7 +1344,7 @@ BoxLayout:
             MDBoxLayout:
                 orientation: "vertical"
                 spacing: dp(10)
-                padding: dp(12), dp(10), dp(12), dp(8)
+                padding: dp(16), dp(10), dp(16), dp(22)
                 adaptive_height: True
 
                 UiJourneyHero:
@@ -1422,7 +1426,7 @@ BoxLayout:
                     height: dp(112)
                     spacing: dp(8)
 
-                    MDTextField:
+                    UiField:
                         id: nombre_field
                         mode: "outlined"
                         size_hint_y: None
@@ -1510,7 +1514,7 @@ BoxLayout:
                         font_style: "Body"
                         role: "medium"
 
-                    MDSwitch:
+                    UiSwitch:
                         id: switch_consent
                         pos_hint: {"center_y": 0.5}
                         on_active: app.cambiar_consentimiento(self.active)
