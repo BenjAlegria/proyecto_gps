@@ -25,3 +25,8 @@ build/
 dist/
 *.apk
 *.aab
+
+backend/api/config.php
+crash_log.txt
+data/*.json
+__pycache__/
