@@ -739,87 +739,6 @@ BoxLayout:
             -icon_color: app.ui.azul
 
 <AvisoCard>:
-    theme_bg_color: "Custom"
-    -md_bg_color: app.ui.tarjeta
-    style: "outlined"
-    orientation: "horizontal"
-    size_hint_y: None
-    height: dp(112)
-    padding: dp(12), dp(8)
-    spacing: dp(10)
-    radius: [dp(18)]
-
-    MDIcon:
-        icon: root.icono
-        theme_text_color: "Custom"
-        text_color: root.color
-        size_hint_x: None
-        width: dp(32)
-        pos_hint: {"center_y": 0.5}
-
-    BoxLayout:
-        orientation: "vertical"
-
-        MDLabel:
-            text: root.titulo
-            bold: True
-            font_style: "Body"
-            role: "medium"
-            theme_text_color: "Custom"
-            text_color: root.color
-
-        MDLabel:
-            text: root.detalle
-            font_style: "Body"
-            role: "small"
-
-        MDLabel:
-            text: (root.autor + " · " + root.nivel) if root.autor else ""
-            font_style: "Body"
-            role: "small"
-            theme_text_color: "Secondary"
-
-        BoxLayout:
-            size_hint_y: None
-            height: dp(32)
-            spacing: dp(2)
-
-            MDLabel:
-                text: "¿Es correcto?"
-                font_style: "Body"
-                role: "small"
-                size_hint_x: None
-                width: dp(90)
-
-            MDIconButton:
-                icon: "thumb-up" if root.mi_voto == 1 else "thumb-up-outline"
-                style: "standard"
-                size_hint: None, None
-                size: dp(32), dp(32)
-                disabled: root.propio
-                on_release: app.votar_aviso(root.aviso_id, 1)
-
-            MDLabel:
-                text: str(root.votos_ok)
-                size_hint_x: None
-                width: dp(28)
-
-            MDIconButton:
-                icon: "thumb-down" if root.mi_voto == -1 else "thumb-down-outline"
-                style: "standard"
-                size_hint: None, None
-                size: dp(32), dp(32)
-                disabled: root.propio
-                on_release: app.votar_aviso(root.aviso_id, -1)
-
-            MDLabel:
-                text: str(root.votos_mal)
-
-
-<DatoRuta@MDCard>:
-    icono: ""
-    titulo: ""
-    valor: ""
     style: "outlined"
     theme_bg_color: "Custom"
     -md_bg_color: app.ui.tarjeta
@@ -827,34 +746,89 @@ BoxLayout:
     -line_color: app.ui.borde
     orientation: "vertical"
     size_hint_y: None
-    height: dp(88)
-    padding: dp(8)
+    height: dp(162)
+    padding: dp(13), dp(10)
+    spacing: dp(6)
     radius: [dp(18)]
 
-    MDIcon:
-        icon: root.icono
-        halign: "center"
+    BoxLayout:
         size_hint_y: None
-        height: dp(28)
+        height: dp(30)
+        spacing: dp(8)
+        UiSurface:
+            size_hint: None, None
+            size: dp(30), dp(30)
+            corners: [dp(10)]
+            -bg: app.ui.suave
+            -stroke: 0, 0, 0, 0
+            padding: 0
+            AnchorLayout:
+                UiIcon:
+                    icon: root.icono
+                    -icon_color: app.ui.estado(root.color, app.ui.texto)
+                    font_size: "18sp"
+        UiText:
+            text: root.titulo
+            font_size: "13sp"
+            bold: True
+            -color: app.ui.estado(root.color, app.ui.texto)
+        UiText:
+            text: root.antiguedad
+            size_hint_x: None
+            width: dp(72)
+            font_size: "10sp"
+            halign: "right"
+            -color: app.ui.secundario
 
-    MDLabel:
-        text: root.valor
-        halign: "center"
-        bold: True
-        font_style: "Body"
-        role: "small"
+    UiParagraph:
+        text: root.detalle
+        font_size: "11sp"
+        -color: app.ui.texto
 
-    MDLabel:
-        text: root.titulo
-        halign: "center"
-        font_style: "Body"
-        role: "small"
-        theme_text_color: "Secondary"
+    UiText:
+        text: (root.autor + " · " + root.nivel) if root.autor else "Pasajero anónimo"
+        font_size: "10sp"
+        size_hint_y: None
+        height: dp(17)
+        -color: app.ui.secundario
+
+    BoxLayout:
+        size_hint_y: None
+        height: dp(38)
+        spacing: dp(5)
+        UiText:
+            text: "¿Es correcto?"
+            font_size: "10sp"
+            size_hint_x: 1
+            -color: app.ui.secundario
+        MDIconButton:
+            icon: "thumb-up" if root.mi_voto == 1 else "thumb-up-outline"
+            style: "standard"
+            size_hint: None, None
+            size: dp(34), dp(34)
+            disabled: root.propio
+            on_release: app.votar_aviso(root.aviso_id, 1)
+        UiText:
+            text: str(root.votos_ok)
+            size_hint_x: None
+            width: dp(24)
+            font_size: "11sp"
+            bold: True
+        MDIconButton:
+            icon: "thumb-down" if root.mi_voto == -1 else "thumb-down-outline"
+            style: "standard"
+            size_hint: None, None
+            size: dp(34), dp(34)
+            disabled: root.propio
+            on_release: app.votar_aviso(root.aviso_id, -1)
+        UiText:
+            text: str(root.votos_mal)
+            size_hint_x: None
+            width: dp(24)
+            font_size: "11sp"
+            bold: True
 
 
-# ----------------------------------------------------------
-# Detalle de un recorrido
-# ----------------------------------------------------------
 <DetalleScreen>:
     BoxLayout:
         orientation: "vertical"
