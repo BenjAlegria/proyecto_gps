@@ -1,54 +1,36 @@
-# Declaración de uso de inteligencia artificial — EnRuta Ya!
+# Declaración de uso de herramientas de IA — EnRuta Ya!
 
-**Asignatura:** Desarrollo Móvil (A+S), TINF1119. **Etapa:** PIF E4.
+**Asignatura:** Desarrollo Móvil (A+S), TINF1119 · Proyecto Integrado Final E4.
 
-Este archivo sustituye la declaración anterior centrada en E3: en las
-fases posteriores del proyecto también se utilizó ChatGPT/Codex.
+## Cómo trabajamos
 
-## Herramientas que deben declarar los integrantes
-- **Claude (Anthropic):** se utilizó en etapas anteriores para apoyar
-  prototipos, migración a KivyMD, formularios, validaciones,
-  documentación y correcciones de errores.
-- **ChatGPT (OpenAI):** apoyo a revisión de la rúbrica, rediseño,
-  refactorización, documentación de privacidad, generación de pruebas
-  y preparación del cliente Firebase y la instrumentación MJV App.
-- **Codex (OpenAI):** apoyo a generación y revisión de código Kivy,
-  cambios de interfaz y pruebas del repositorio.
-- **Figma:** herramienta de diseño empleada para los mockups; confirmar
-  si se usaron funcionalidades generativas de IA dentro de Figma.
+Durante el desarrollo utilizamos herramientas de apoyo para revisar ideas, proponer código, corregir errores, comparar opciones tecnológicas y preparar documentación. **La decisión de qué incorporar, ejecutar, revisar y presentar corresponde a nuestro equipo.** No consideramos válido un fragmento generado solo porque compila; debemos entenderlo y explicarlo en la defensa.
 
-**Verificación del equipo pendiente:** cada integrante debe
-comprobar si usó otras herramientas (y versiones concretas) para
-incluirlas. No atribuir a una sola persona decisiones del grupo.
+### Herramientas utilizadas
 
-## Ejemplos de solicitudes y contribuciones
-- Diseñar una app KivyMD con registro, login, mapa, favoritos,
-  reportes de viajeros y configuración remota.
-- Mejorar UX/UI para pantallas móviles manteniendo navegación.
-- Identificar errores de permisos GPS, callbacks tardíos y formatos JSON.
-- Probar Google Maps en rama aislada; abandonar el experimento por
-  dificultades de facturación y conservar MapView.
-- Incorporar pruebas, registrar eventos anónimos y generar KPIs
-  trazables para la rúbrica.
-- Preparar una integración opcional de Firebase con seguridad de reglas
-  y modo local de respaldo.
+- **Claude (Anthropic):** lo utilizamos durante etapas anteriores para apoyar prototipos, formularios, validaciones y correcciones.
+- **ChatGPT (OpenAI):** lo utilizamos para analizar requisitos, revisar la rúbrica, estudiar el código, proponer pruebas, apoyar documentación y el rediseño de interfaz.
+- **Codex (OpenAI):** lo utilizamos como asistencia de programación en VS Code para revisar e implementar partes del proyecto y pruebas.
+- **Figma:** lo utilizamos para mockups y decisiones visuales. **Debemos confirmar entre integrantes** si se usó alguna función generativa de la herramienta.
+- **Otros apoyos:** cada integrante debe verificar si utilizó herramientas adicionales antes de cerrar la declaración.
 
-## Validación y responsabilidad humana
-El equipo conserva la responsabilidad por el diseño, la lógica, la
-seguridad, la exactitud de la información y la defensa oral. El código
-generado por IA no se asume correcto sin pruebas; debe revisarse
-con `python -m unittest discover -s tests -v` y demo real.
-La primera prueba de Google Maps presentó errores de sintaxis y API;
-se decidió no incluirla en la versión de evaluación.
+No atribuimos el trabajo del servidor y MySQL a una herramienta particular si no tenemos registro verificable de qué utilizó el integrante que lo implementó.
 
-No se usó IA para inventar encuestas ni resultados MJV App.
-Los indicadores deben derivarse exclusivamente de eventos registrados
-y observaciones con participantes voluntarios.
+## Decisiones y validación
 
-## Limitaciones a explicar al docente
-- Los datos de buses y ETA son simulados, no telemetría oficial.
-- Firebase es opcional y no reemplaza el login local.
-- Los resultados de medición solo serán válidos al registrar un
-  periodo y contexto de prueba reales.
-- Los riesgos de privacidad, accesibilidad y abuso de reportes
-  requieren revisión adicional antes de publicar la app.
+Probamos Google Maps en una rama separada, pero no lo incluimos por dificultades de configuración y facturación; conservamos Kivy Garden MapView y OpenStreetMap. En la versión final **integramos PHP/MySQL para autenticación y datos compartidos**, y conservamos el rediseño de las diez pantallas sobre esa lógica.
+
+Comprobamos mediante una prueba de Kivy en Linux/Xvfb que las diez pantallas abren en distintos tamaños y temas. **Eso no certifica aún el APK, la seguridad del servidor ni la facilidad de uso de personas reales.** Nuestro compañero está encargado de la validación Android y debemos agregar la evidencia cuando exista.
+
+## Qué no hacemos con IA
+
+- No inventamos respuestas de encuestas ni participantes.
+- No atribuimos al sistema KPIs o efectos sociales que no hayamos medido.
+- No presentamos el GPS local como seguimiento colectivo en tiempo real.
+- No usamos el apoyo de IA para sustituir la comprensión individual del código.
+
+Los documentos de entrega se redactan **en primera persona del plural** porque presentan el trabajo del grupo; la redacción no sustituye la revisión y aprobación de los integrantes.
+
+## Responsabilidad antes de entregar
+
+Revisaremos estas declaraciones entre todos, verificaremos las herramientas de cada compañero y citaremos sus usos en la versión de entrega. Podemos mostrar archivos y funciones concretas para explicar qué hace cada parte y por qué la elegimos.
