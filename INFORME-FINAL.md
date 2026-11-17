@@ -109,5 +109,6 @@ Aprendimos que tener una funcionalidad escrita no significa que esté validada. 
 - `servicios/analitica.py` y `tools/generar_resultados_mjv.py`: registro y KPIs.
 - `docs/PROTOCOLO-MJV-APP.md` y `docs/REGISTRO-PRUEBAS-USUARIOS.csv`: protocolo y planilla de evaluación.
 - `USO_IA.md`: declaración del uso de herramientas de apoyo.
+- `docs/GUIA-DEFENSA-84-PREGUNTAS.md`: respuestas y explicaciones para preparar la defensa individual basada en el código.
 
 **Nota de cierre:** el texto narrativo del informe está actualizado; **la sección de resultados experimentales requiere evidencia que solo podemos obtener realizando las pruebas**. No la reemplazamos por cifras ficticias.
