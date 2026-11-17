@@ -829,6 +829,45 @@ BoxLayout:
             bold: True
 
 
+<DatoRuta@MDCard>:
+    icono: ""
+    titulo: ""
+    valor: ""
+    style: "outlined"
+    theme_bg_color: "Custom"
+    -md_bg_color: app.ui.tarjeta
+    theme_line_color: "Custom"
+    -line_color: app.ui.borde
+    orientation: "vertical"
+    size_hint_y: None
+    height: dp(88)
+    padding: dp(8)
+    radius: [14]
+
+    MDIcon:
+        icon: root.icono
+        halign: "center"
+        size_hint_y: None
+        height: dp(28)
+
+    MDLabel:
+        text: root.valor
+        halign: "center"
+        bold: True
+        font_style: "Body"
+        role: "small"
+
+    MDLabel:
+        text: root.titulo
+        halign: "center"
+        font_style: "Body"
+        role: "small"
+        theme_text_color: "Secondary"
+
+
+# ----------------------------------------------------------
+# Detalle de un recorrido
+# ----------------------------------------------------------
 <DetalleScreen>:
     BoxLayout:
         orientation: "vertical"
