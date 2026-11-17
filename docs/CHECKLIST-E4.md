@@ -12,6 +12,7 @@ Esta es nuestra lista de evidencias, separando lo que realmente tenemos de lo qu
 - [x] Conservamos investigación diagnóstica de 17 respuestas en `FUNDAMENTACION-UX-UI.md`.
 - [x] Tenemos código del medidor de eventos y del generador de indicadores.
 - [x] Declaramos el uso de herramientas en `USO_IA.md`; cada integrante debe comprobar su parte.
+- [x] Respondimos las 84 preguntas oficiales en `docs/GUIA-DEFENSA-84-PREGUNTAS.md`, con respuestas, explicación y archivos que podemos mostrar.
 
 ## Evidencia pendiente (no señalar como realizada)
 
@@ -24,7 +25,7 @@ Esta es nuestra lista de evidencias, separando lo que realmente tenemos de lo qu
 - [ ] Interpretar KPIs y observaciones; justificar al menos dos propuestas de mejora.
 - [ ] Comprobar accesibilidad con usuarios/tamaños reales y documentar limitaciones.
 - [ ] Confirmar credenciales/secretos del servidor y corregir cualquier exposición en ramas antiguas.
-- [ ] Ensayar exposición y **defensa individual** del banco de 84 preguntas, mostrando código y cálculos.
+- [ ] Ensayar exposición y **defensa individual** del banco de 84 preguntas, mostrando código y cálculos. La guía escrita existe, pero debemos practicar cada uno por separado.
 
 ## Secuencia que ensayaremos
 
