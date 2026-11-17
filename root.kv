@@ -8,7 +8,7 @@ BoxLayout:
     orientation: "vertical"
     canvas.before:
         Color:
-            rgba: (0.07, 0.08, 0.10, 1) if app.theme_cls.theme_style == "Dark" else (0.96, 0.97, 0.98, 1)
+            rgba: app.ui.fondo
         Rectangle:
             pos: self.pos
             size: self.size
@@ -52,12 +52,19 @@ BoxLayout:
     MDBoxLayout:
         id: nav_bar
         size_hint_y: None
-        height: 0 if sm.current in ("carga", "login", "registro") else dp(64)
+        theme_bg_color: "Custom"
+        height: 0 if sm.current in ("carga", "login", "registro") else dp(64) + app.safe_bottom
         opacity: 0 if sm.current in ("carga", "login", "registro") else 1
         disabled: sm.current in ("carga", "login", "registro")
-        padding: dp(6), dp(6)
+        padding: dp(4), dp(4), dp(4), dp(4) + app.safe_bottom
         spacing: dp(4)
-        md_bg_color: AZUL_OSCURO if app.theme_cls.theme_style == "Dark" else AZUL_CLARO
+        -md_bg_color: app.ui.fondo
+        canvas.after:
+            Color:
+                rgba: app.ui.borde
+            Line:
+                points: self.x, self.top, self.right, self.top
+                width: .7
 
         NavItem:
             icono_activo: "home"
@@ -115,7 +122,7 @@ BoxLayout:
 
             canvas.before:
                 Color:
-                    rgba: (1, 1, 1, 0.22) if root.activo else (0, 0, 0, 0)
+                    rgba: app.ui.suave if root.activo else (0, 0, 0, 0)
                 RoundedRectangle:
                     pos: self.pos
                     size: self.size
@@ -127,7 +134,7 @@ BoxLayout:
 
                 MDIcon:
                     icon: root.icono_activo if root.activo else root.icono_inactivo
-                    icon_color: 1, 1, 1, 1
+                    icon_color: app.ui.azul if root.activo else app.ui.secundario
                     adaptive_size: True
 
     AnchorLayout:
@@ -142,7 +149,7 @@ BoxLayout:
             font_style: "Label"
             role: "small"
             theme_text_color: "Custom"
-            text_color: 1, 1, 1, 1
+            text_color: app.ui.azul if root.activo else app.ui.secundario
             adaptive_size: True
 
 
@@ -151,19 +158,26 @@ BoxLayout:
 # ----------------------------------------------------------
 <TopBar@MDBoxLayout>:
     size_hint_y: None
-    height: dp(58)
-    padding: dp(6), 0
-    spacing: dp(6)
-    md_bg_color: AZUL_OSCURO if app.theme_cls.theme_style == "Dark" else AZUL_CLARO
+    height: dp(72)
+    padding: dp(12), dp(6), dp(16), dp(6)
+    spacing: dp(9)
+    theme_bg_color: "Custom"
+    -md_bg_color: app.ui.fondo
+    canvas.after:
+        Color:
+            rgba: app.ui.borde
+        Line:
+            points: self.x, self.y, self.right, self.y
+            width: .7
 
     MDIconButton:
         icon: "account-circle"
-        icon_color: 1, 1, 1, 1
+        icon_color: app.ui.azul
         pos_hint: {"center_y": 0.5}
         on_release: app.cambiar_pantalla("perfil")
         canvas.before:
             Color:
-                rgba: 1, 1, 1, 0.18
+                rgba: app.ui.suave
             Ellipse:
                 pos: self.pos
                 size: self.size
@@ -179,11 +193,16 @@ BoxLayout:
     spacing: dp(6)
     canvas.before:
         Color:
-            rgba: (0.16, 0.18, 0.24, 1) if app.theme_cls.theme_style == "Dark" else (1, 1, 1, 1)
+            rgba: app.ui.suave
         RoundedRectangle:
             pos: self.pos
             size: self.size
             radius: [dp(20)]
+        Color:
+            rgba: app.ui.borde
+        Line:
+            rounded_rectangle: (self.x, self.y, self.width, self.height, dp(20))
+            width: .7
 
 
 # ----------------------------------------------------------
@@ -321,7 +340,7 @@ BoxLayout:
             y: self.parent.height - home_header.height - home_selectors.height - barra_offline.height - dp(14) - self.height
             canvas.before:
                 Color:
-                    rgba: (0.11, 0.12, 0.15, 0.94) if app.theme_cls.theme_style == "Dark" else (1, 1, 1, 0.94)
+                    rgba: app.ui.tarjeta
                 RoundedRectangle:
                     pos: self.pos
                     size: self.size
@@ -360,11 +379,11 @@ BoxLayout:
 
             canvas.before:
                 Color:
-                    rgba: (0.11, 0.12, 0.15, 0.96) if app.theme_cls.theme_style == "Dark" else (1, 1, 1, 0.94)
+                    rgba: app.ui.tarjeta
                 RoundedRectangle:
                     pos: self.pos
                     size: self.size
-                    radius: [dp(18), dp(18), 0, 0]
+                    radius: [dp(21), dp(21), 0, 0]
 
             PanelHeader:
                 size_hint_y: None
@@ -575,7 +594,7 @@ BoxLayout:
             height: dp(58)
             padding: dp(6), 0
             spacing: dp(6)
-            md_bg_color: AZUL_OSCURO if app.theme_cls.theme_style == "Dark" else AZUL_CLARO
+            md_bg_color: app.ui.marino
 
             MDIconButton:
                 icon: "arrow-left"
@@ -614,7 +633,7 @@ BoxLayout:
                     padding: dp(16)
                     spacing: dp(10)
                     radius: [18]
-                    md_bg_color: AZUL_OSCURO if app.theme_cls.theme_style == "Dark" else AZUL_CLARO
+                    md_bg_color: app.ui.marino
 
                     MDIcon:
                         icon: "bus"
@@ -827,7 +846,7 @@ BoxLayout:
                 text: "Recorridos"
                 bold: True
                 theme_text_color: "Custom"
-                text_color: 1, 1, 1, 1
+                text_color: app.ui.texto
                 pos_hint: {"center_y": 0.5}
 
         BoxLayout:
@@ -864,7 +883,7 @@ BoxLayout:
                 text: "Compartir ubicación"
                 bold: True
                 theme_text_color: "Custom"
-                text_color: 1, 1, 1, 1
+                text_color: app.ui.texto
                 pos_hint: {"center_y": 0.5}
 
         ScrollView:
@@ -1043,7 +1062,7 @@ BoxLayout:
                 text: "Avisos"
                 bold: True
                 theme_text_color: "Custom"
-                text_color: 1, 1, 1, 1
+                text_color: app.ui.texto
                 pos_hint: {"center_y": 0.5}
 
         BoxLayout:
@@ -1097,7 +1116,7 @@ BoxLayout:
                 text: "Ajustes"
                 bold: True
                 theme_text_color: "Custom"
-                text_color: 1, 1, 1, 1
+                text_color: app.ui.texto
                 pos_hint: {"center_y": 0.5}
 
         ScrollView:
@@ -1274,7 +1293,7 @@ BoxLayout:
                 text: "Mi perfil"
                 bold: True
                 theme_text_color: "Custom"
-                text_color: 1, 1, 1, 1
+                text_color: app.ui.texto
                 pos_hint: {"center_y": 0.5}
 
         ScrollView:
