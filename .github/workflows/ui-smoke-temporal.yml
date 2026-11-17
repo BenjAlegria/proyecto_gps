@@ -1,0 +1,59 @@
+name: EnRuta UI smoke temporal
+
+on:
+  push:
+    branches: ["feature/diseno-v3-sobre-backend-final"]
+
+jobs:
+  kivy-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      KIVY_NO_ARGS: "1"
+      KIVY_NO_FILELOG: "1"
+      KIVY_GL_BACKEND: "gl"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+      - name: Preparar pantalla virtual
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y xvfb libgl1 libegl1 libmtdev1 libx11-6 libxext6 libxrender1 libcairo2-dev libgirepository-2.0-dev gir1.2-gtk-3.0 pkg-config libffi-dev libglib2.0-dev
+      - name: Instalar dependencias
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements.txt
+      - name: Compilar código Python
+        run: python -m compileall -q main.py servicios
+      - name: Instanciar 10 pantallas de la app (sin backend)
+        run: |
+          xvfb-run -a python - <<'PY'
+          import os
+          from unittest.mock import patch
+          from kivy.clock import Clock
+          from kivy.core.window import Window
+          from kivy_garden.mapview.downloader import Downloader
+          from main import InterurbanoApp
+          names = ("carga","login","registro","home","recorridos","detalle","compartir","avisos","ajustes","perfil")
+          with patch.object(Downloader, "download_tile"):
+              app = InterurbanoApp()
+              app.root = app.build()
+              Window.add_widget(app.root)
+              sm = app.root.ids.sm
+              assert set(names) == set(sm.screen_names), sm.screen_names
+              for name in names:
+                  app.cambiar_pantalla(name)
+                  for _ in range(3):
+                      Clock.tick()
+                  assert sm.current == name
+                  assert sm.get_screen(name).width > 0
+                  print("OK", name)
+              assert app._pantalla("home").ids.mapa
+              assert app._pantalla("detalle").ids.det_like
+              assert app._pantalla("compartir").ids.patente_field
+              assert app._pantalla("perfil").ids.nivel_label
+              Window.remove_widget(app.root)
+          print("UI smoke exitoso: 10 pantallas y controles nuevos.")
+          PY
