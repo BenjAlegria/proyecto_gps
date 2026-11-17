@@ -54,6 +54,17 @@ jobs:
               assert app._pantalla("detalle").ids.det_like
               assert app._pantalla("compartir").ids.patente_field
               assert app._pantalla("perfil").ids.nivel_label
+              for width, height in [(320, 568), (390, 844), (844, 390)]:
+                  Window.size = (width, height)
+                  for theme in ["Light", "Dark"]:
+                      app.theme_cls.theme_style = theme
+                      for name in names:
+                          app.cambiar_pantalla(name)
+                          for _ in range(3):
+                              Clock.tick()
+                          assert sm.current == name
+                          assert sm.get_screen(name).width > 0
+                      print("OK responsive", width, height, theme)
               Window.remove_widget(app.root)
           print("UI smoke exitoso: 10 pantallas y controles nuevos.")
           PY
