@@ -1611,218 +1611,179 @@ BoxLayout:
 <PerfilScreen>:
     BoxLayout:
         orientation: "vertical"
-
-        TopBar:
-            MDLabel:
-                text: "Mi perfil"
-                bold: True
-                theme_text_color: "Custom"
-                text_color: app.ui.texto
-                pos_hint: {"center_y": 0.5}
-
-        ScrollView:
-            MDBoxLayout:
-                orientation: "vertical"
-                spacing: dp(10)
-                padding: dp(16), dp(10), dp(16), dp(22)
-                adaptive_height: True
-
-                UiJourneyHero:
-                    etiqueta: "TU CUENTA"
-                    titulo: "Tu espacio en EnRuta"
-                    descripcion: "Tus recorridos, aportes y preferencias personales."
-                    icono: "account-circle-outline"
-
-                MDCard:
-                    theme_bg_color: "Custom"
-                    -md_bg_color: app.ui.tarjeta
-                    style: "filled"
-                    orientation: "horizontal"
+        UiHeader:
+            titulo: "Mi perfil"
+            subtitulo: "Tu espacio en EnRuta Ya!"
+        UiScroll:
+            UiBody:
+                # Identidad del pasajero: misma estética azul marino del Login.
+                UiSurface:
+                    orientation: "vertical"
                     size_hint_y: None
-                    height: dp(88)
-                    padding: dp(14)
-                    spacing: dp(14)
-                    radius: [dp(18)]
+                    height: dp(148)
+                    corners: [dp(20)]
+                    -bg: app.ui.marino
+                    -stroke: 0, 0, 0, 0
+                    spacing: dp(9)
+                    UiText:
+                        text: "MI CUENTA  /  VIAJERO"
+                        font_size: "10sp"
+                        bold: True
+                        -color: .71, .84, 1, 1
+                        size_hint_y: None
+                        height: dp(24)
+                    BoxLayout:
+                        spacing: dp(13)
+                        UiAvatar:
+                            size: dp(54), dp(54)
+                            pos_hint: {"center_y": .5}
+                            corners: [dp(17)]
+                        BoxLayout:
+                            orientation: "vertical"
+                            UiText:
+                                id: nombre_label
+                                text: "Usuario"
+                                bold: True
+                                font_size: "21sp"
+                                -color: 1, 1, 1, 1
+                            UiText:
+                                id: usuario_label
+                                text: ""
+                                -color: .76, .87, 1, 1
+                                font_size: "12sp"
+                    UiParagraph:
+                        text: "Tus recorridos y preferencias, en un solo lugar."
+                        -color: .86, .92, 1, 1
+                        font_size: "11sp"
 
-                    MDIcon:
-                        icon: "account-circle"
-                        font_size: "56sp"
-                        size_hint_x: None
-                        width: dp(64)
-                        pos_hint: {"center_y": 0.5}
-
+                UiSurface:
+                    size_hint_y: None
+                    height: dp(84)
+                    corners: [dp(18)]
+                    -bg: app.ui.tarjeta
+                    -stroke: app.ui.borde
+                    UiSurface:
+                        size_hint: None, None
+                        size: dp(44), dp(44)
+                        pos_hint: {"center_y": .5}
+                        corners: [dp(14)]
+                        -bg: app.ui.suave
+                        -stroke: 0, 0, 0, 0
+                        padding: 0
+                        AnchorLayout:
+                            UiIcon:
+                                id: nivel_icono
+                                icon: "account-outline"
+                                font_size: "24sp"
+                                -icon_color: app.ui.azul
                     BoxLayout:
                         orientation: "vertical"
-
-                        MDLabel:
-                            id: nombre_label
-                            text: "Usuario"
-                            bold: True
-                            font_style: "Title"
-                            role: "medium"
-
-                        MDLabel:
-                            id: usuario_label
-                            text: ""
-                            font_style: "Body"
-                            role: "small"
-
-                MDCard:
-                    theme_bg_color: "Custom"
-                    -md_bg_color: app.ui.tarjeta
-                    style: "outlined"
-                    orientation: "horizontal"
-                    size_hint_y: None
-                    height: dp(76)
-                    padding: dp(14)
-                    spacing: dp(12)
-                    radius: [dp(18)]
-
-                    MDIcon:
-                        id: nivel_icono
-                        icon: "account-outline"
-                        size_hint_x: None
-                        width: dp(40)
-                        pos_hint: {"center_y": 0.5}
-
-                    BoxLayout:
-                        orientation: "vertical"
-
-                        MDLabel:
+                        UiText:
                             id: nivel_label
                             text: "Novato · 0 puntos"
                             bold: True
-
-                        MDLabel:
+                            font_size: "14sp"
+                        UiParagraph:
                             id: nivel_falta
                             text: ""
-                            font_style: "Body"
-                            role: "small"
+                            font_size: "11sp"
 
+                UiSection:
+                    text: "Tu actividad"
+                BoxLayout:
+                    size_hint_y: None
+                    height: dp(92)
+                    spacing: dp(11)
+                    UiSurface:
+                        orientation: "vertical"
+                        corners: [dp(17)]
+                        -bg: app.ui.suave
+                        -stroke: 0, 0, 0, 0
+                        padding: dp(13), dp(10)
+                        spacing: dp(2)
+                        UiText:
+                            id: viajes_num
+                            text: "0"
+                            font_size: "25sp"
+                            bold: True
+                            -color: app.ui.azul
+                        UiText:
+                            text: "Viajes compartidos"
+                            font_size: "10sp"
+                            -color: app.ui.secundario
+                    UiSurface:
+                        orientation: "vertical"
+                        corners: [dp(17)]
+                        -bg: app.ui.tarjeta
+                        -stroke: app.ui.borde
+                        padding: dp(13), dp(10)
+                        spacing: dp(2)
+                        UiText:
+                            id: fav_num
+                            text: "0"
+                            font_size: "25sp"
+                            bold: True
+                            -color: app.ui.azul
+                        UiText:
+                            text: "Rutas favoritas"
+                            font_size: "10sp"
+                            -color: app.ui.secundario
+
+                UiSection:
+                    text: "Datos personales"
                 MDBoxLayout:
                     id: perfil_editable
                     orientation: "vertical"
                     size_hint_y: None
                     height: dp(112)
                     spacing: dp(8)
-
                     UiField:
                         id: nombre_field
-                        mode: "outlined"
-                        size_hint_y: None
-                        height: dp(64)
                         on_text_validate: app.guardar_nombre(self)
-
                         MDTextFieldHintText:
-                            text: "Cambiar nombre"
-
+                            text: "Cambiar nombre (máx. 30 caracteres)"
                         MDTextFieldHelperText:
-                            text: "Escribe un nombre (máx. 30 caracteres)"
+                            text: "Nombre de hasta 30 caracteres"
                             mode: "on_error"
-
-                    MDButton:
-                        style: "tonal"
-                        size_hint_y: None
-                        height: dp(40)
-                        pos_hint: {"center_x": 0.5}
+                    UiButton:
+                        primary: False
+                        text: "Guardar nombre"
+                        icon: "content-save-check-outline"
+                        height: dp(44)
                         on_release: app.guardar_nombre(nombre_field)
 
-                        MDButtonText:
-                            text: "GUARDAR NOMBRE"
-
-                MDBoxLayout:
+                UiSection:
+                    text: "Privacidad"
+                UiSurface:
                     size_hint_y: None
-                    height: dp(84)
-                    spacing: dp(10)
-
-                    MDCard:
-                        theme_bg_color: "Custom"
-                        -md_bg_color: app.ui.tarjeta
-                        style: "elevated"
-                        orientation: "vertical"
-                        padding: dp(8)
-                        radius: [dp(18)]
-
-                        MDLabel:
-                            id: viajes_num
-                            text: "0"
-                            halign: "center"
-                            bold: True
-                            font_style: "Headline"
-                            role: "small"
-
-                        MDLabel:
-                            text: "Viajes compartidos"
-                            halign: "center"
-                            font_style: "Body"
-                            role: "small"
-
-                    MDCard:
-                        theme_bg_color: "Custom"
-                        -md_bg_color: app.ui.tarjeta
-                        style: "elevated"
-                        orientation: "vertical"
-                        padding: dp(8)
-                        radius: [dp(18)]
-
-                        MDLabel:
-                            id: fav_num
-                            text: "0"
-                            halign: "center"
-                            bold: True
-                            font_style: "Headline"
-                            role: "small"
-
-                        MDLabel:
-                            text: "Rutas favoritas"
-                            halign: "center"
-                            font_style: "Body"
-                            role: "small"
-
-                MDCard:
-                    theme_bg_color: "Custom"
-                    -md_bg_color: app.ui.tarjeta
-                    style: "outlined"
-                    orientation: "horizontal"
-                    size_hint_y: None
-                    height: dp(64)
-                    padding: dp(12), dp(8)
-                    radius: [dp(18)]
-
-                    MDLabel:
-                        text: "Permitir compartir mi ubicación durante viajes"
-                        font_style: "Body"
-                        role: "medium"
-
+                    height: dp(92)
+                    corners: [dp(17)]
+                    -bg: app.ui.tarjeta
+                    -stroke: app.ui.borde
+                    UiIcon:
+                        icon: "shield-account-outline"
+                        -icon_color: app.ui.azul
+                    UiParagraph:
+                        text: "Permitir ubicación en viajes. Puedes desactivar esta preferencia cuando quieras."
+                        -color: app.ui.texto
+                        font_size: "11sp"
+                        pos_hint: {"center_y": .5}
                     UiSwitch:
                         id: switch_consent
-                        pos_hint: {"center_y": 0.5}
                         on_active: app.cambiar_consentimiento(self.active)
 
-                MDLabel:
-                    text: "Mis rutas favoritas"
-                    bold: True
-                    size_hint_y: None
-                    height: dp(28)
-
-                MDLabel:
+                UiSection:
+                    text: "Rutas que guardaste"
+                UiParagraph:
                     id: fav_vacio
-                    text: "Aún no tienes favoritas. Abre un recorrido y agrégalo."
-                    font_style: "Body"
-                    role: "small"
-                    size_hint_y: None
-                    height: dp(40)
-
+                    -height: dp(40)
+                    text: "Aún no tienes favoritas. Abre un recorrido y guárdalo desde su detalle."
                 MDBoxLayout:
                     id: fav_box
-                    orientation: "vertical"
-                    spacing: dp(6)
                     adaptive_height: True
+                    orientation: "vertical"
+                    spacing: dp(12)
 
-
-# ----------------------------------------------------------
-# Carga, login (con invitado) y registro
-# ----------------------------------------------------------
 <CargaScreen>:
     BoxLayout:
         orientation: "vertical"
