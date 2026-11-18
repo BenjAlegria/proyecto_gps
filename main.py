@@ -58,6 +58,7 @@ def registrar_error(exc):
     texto = "".join(traceback.format_exception(type(exc), exc, exc.__traceback__))
     print(texto)
     try:
+        os.makedirs(os.path.dirname(LOG_ERRORES), exist_ok=True)
         with open(LOG_ERRORES, "a", encoding="utf-8") as f:
             f.write(f"--- {time.strftime('%Y-%m-%d %H:%M:%S')} ---\n{texto}\n")
     except OSError:
@@ -299,25 +300,38 @@ class InterurbanoApp(MDApp):
             self._pantalla("detalle").ids.mapa_detalle.add_layer(self._capa_detalle, mode="window")
         except Exception as e:
             registrar_error(e)
-        # 1) Se muestra de inmediato lo último guardado (funciona sin internet).
-        self._aplicar_datos(self.cliente.recorridos_cache(), self.cliente.avisos_cache())
-        self._aplicar_config(self.config, self.fuente_config)
-        self.actualizar_config_remota()
-        self._marcar_conexion(None)
+        # Un fallo de caché/configuración no debe impedir entrar al login.
+        # Registramos el error en logcat y en el almacenamiento privado.
+        for inicio in (
+            lambda: self._aplicar_datos(self.cliente.recorridos_cache(), self.cliente.avisos_cache()),
+            lambda: self._aplicar_config(self.config, self.fuente_config),
+            self.actualizar_config_remota,
+            lambda: self._marcar_conexion(None),
+        ):
+            try:
+                inicio()
+            except Exception as exc:
+                registrar_error(exc)
         Clock.schedule_interval(lambda dt: self.refrescar_avisos(), 60)
-        # 2) Cada 45 s se reenvía lo pendiente y se recarga desde la base de datos.
         Clock.schedule_interval(lambda dt: self.sincronizar(), 45)
         Clock.schedule_once(self._terminar_inicio, 0.4)
 
     def _terminar_inicio(self, *args):
         if self.root.ids.sm.current != "carga" or self._auth_en_progreso:
             return
-        usuario = self.cliente.usuario_guardado
-        if usuario and self.cliente.token:
-            self._entrar(usuario, restaurada=True)
-        else:
+        try:
+            usuario = self.cliente.usuario_guardado
+            if usuario and self.cliente.token:
+                self._entrar(usuario, restaurada=True)
+            else:
+                self.cambiar_pantalla("login")
+        except Exception as exc:
+            registrar_error(exc)
             self.cambiar_pantalla("login")
-        self.sincronizar(completo=True)
+        try:
+            self.sincronizar(completo=True)
+        except Exception as exc:
+            registrar_error(exc)
 
     def on_pause(self):
         return True  # Android: mantener la app viva en segundo plano
@@ -1578,4 +1592,8 @@ class InterurbanoApp(MDApp):
 
 
 if __name__ == "__main__":
-    InterurbanoApp().run()
+    try:
+        InterurbanoApp().run()
+    except BaseException as exc:
+        registrar_error(exc)
+        raise  # Mantener el traceback completo visible en adb logcat.

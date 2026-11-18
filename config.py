@@ -7,15 +7,27 @@ API_URL = "https://teclab.uct.cl/~fcaullan2022/enruta/api/index.php"
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
-# Carpeta donde se guardan los JSON (usuarios, perfiles, avisos, caché).
-# Se crea sola la primera vez y está en .gitignore (no se sube al repo).
-DATA_DIR = os.path.join(BASE_DIR, "data")
+# En Android los archivos de la app empaquetada no son un lugar fiable
+# para escribir datos. Usamos la carpeta privada persistente de la aplicación.
+# En Windows/Linux mantenemos la ruta habitual de desarrollo.
+def _directorio_datos():
+    try:
+        from kivy.utils import platform
+        if platform == "android":
+            from android.storage import app_storage_path
+            return os.path.join(app_storage_path(), "enrutaya")
+    except (ImportError, OSError):
+        pass
+    return os.path.join(BASE_DIR, "data")
+
+
+DATA_DIR = _directorio_datos()
 ARCHIVO_USUARIOS = os.path.join(DATA_DIR, "usuarios.json")
 ARCHIVO_PERFILES = os.path.join(DATA_DIR, "perfiles.json")
 ARCHIVO_AVISOS = os.path.join(DATA_DIR, "avisos.json")
 ARCHIVO_CACHE_REMOTA = os.path.join(DATA_DIR, "config_remota_cache.json")
 
-LOG_ERRORES = os.path.join(BASE_DIR, "crash_log.txt")
+LOG_ERRORES = os.path.join(DATA_DIR, "crash_log.txt")
 ICONO_BUS = os.path.join(BASE_DIR, "bus_marker.png")
 
 # ------------------------------------------------------------
