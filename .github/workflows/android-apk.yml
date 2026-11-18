@@ -1,0 +1,101 @@
+name: EnRuta Ya! APK Android - intento 8 ajuste66
+on:
+  push:
+    branches:
+      - feature/ajuste66
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-apk:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 90
+    env:
+      PYTHONFORANDROID_PREREQUISITES_INSTALL_INTERACTIVE: "0"
+      BUILDOZER_ALLOW_ORG_TEST_DOMAIN: "1"
+      PYTHONUNBUFFERED: "1"
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Python 3.12.9
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12.9"
+
+      - name: Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Ubuntu build prerequisites
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y git zip unzip autoconf automake libtool pkg-config \
+            zlib1g-dev libncurses5-dev libncursesw5-dev libtinfo5 cmake \
+            libffi-dev libssl-dev ccache libltdl-dev libsqlite3-dev \
+            build-essential patch gettext libcairo2-dev meson ninja-build
+
+      - name: Install Buildozer
+        run: |
+          python -m pip install --upgrade pip setuptools virtualenv
+          python -m pip install buildozer==1.6.0 Cython==0.29.36
+
+      - name: Verify packaging configuration
+        run: |
+          python - <<'PY'
+          import configparser
+          from pathlib import Path
+          config = configparser.ConfigParser(interpolation=None)
+          config.read("buildozer.spec", encoding="utf-8")
+          assert config.has_section("app")
+          assert "kivymd" in config["app"]["requirements"]
+          assert "pycairo" in config["app"]["requirements"]
+          assert "materialyoucolor" in config["app"]["requirements"]
+          assert Path("main.py").exists() and Path("root.kv").exists()
+          print("Buildozer config OK")
+          PY
+
+      - name: Build Android debug APK
+        run: |
+          set -o pipefail
+          # Licenses accepted with android.accept_sdk_license in buildozer.spec.
+          set +e
+          buildozer -v android debug 2>&1 | tee buildozer-output.log
+          status=${PIPESTATUS[0]}
+          set -e
+          if [ "$status" -ne 0 ]; then
+            echo "::error title=Buildozer failed::Buildozer exited with status $status. See error log artifact."
+            {
+              echo "### Buildozer compilation failed"
+              echo "Exit code: $status"
+              echo '~~~text'
+              grep -nEi '(^|[^a-z])(error|exception|traceback|failed|command failed)([^a-z]|$)' buildozer-output.log | tail -n 35 || true
+              echo '~~~'
+              echo "Download the EnRutaYa-compilation-log artifact for full details."
+            } >> "$GITHUB_STEP_SUMMARY"
+            echo "=== LAST 100 LINES OF COMPILATION LOG ==="
+            tail -n 100 buildozer-output.log
+            exit "$status"
+          fi
+
+      - name: Upload APK for installation
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: EnRutaYa-Android-APK-intento8-ajuste66
+          path: bin/*.apk
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Upload error log for diagnosis
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: EnRutaYa-compilation-log-intento8
+          path: buildozer-output.log
+          if-no-files-found: ignore
+          retention-days: 7
