@@ -1,7 +1,7 @@
 # Informe final — Proyecto Integrado EnRuta Ya!
 
 **Instituto Tecnológico UC Temuco · Desarrollo Móvil (A+S) · TINF1119 · E4 · 2026**  
-**Versión del proyecto que presentamos:** interfaz de `feature/diseno-v3-sobre-backend-final` y funcionalidades integradas desde `feature/Ajuste3-PLSFINAL`.
+**Versión del proyecto que presentamos:** interfaz de `feature/diseno-v3-sobre-backend-final`, funcionalidades integradas desde `feature/Ajuste3-PLSFINAL` y preparación Android en `feature/apk-android-buildozer`.
 
 > Redactamos este informe como equipo, usando lo que efectivamente aparece en el proyecto y en nuestra encuesta. **Aún debemos incorporar las pruebas con personas, el periodo de medición y los resultados MJV reales.** No presentamos esas evidencias como completadas.
 
@@ -25,7 +25,7 @@ Estos datos explican por qué priorizamos el mapa, el catálogo de recorridos y 
 
 Desarrollamos una aplicación en **Python, Kivy y KivyMD** con un mapa interactivo basado en **Kivy Garden MapView y OpenStreetMap**. Organizamos el trabajo en vistas KV, un controlador principal y servicios para las funciones de negocio y la persistencia.
 
-En la versión final integramos **PHP y MySQL como backend**, no Firebase. Nuestro flujo de datos es **app → API PHP → MySQL**. El backend gestiona cuentas por correo, sesiones, rutas, avisos y votaciones; permite que dos instalaciones consulten información del mismo servidor.
+En la versión final integramos **PHP y MySQL como backend**. Nuestro flujo de datos es **app → API PHP → MySQL**. El backend gestiona cuentas por correo, sesiones, rutas, avisos y votaciones; permite que dos instalaciones consulten información del mismo servidor.
 
 Las funciones principales que construimos son:
 

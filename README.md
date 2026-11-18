@@ -1,7 +1,7 @@
 # EnRuta Ya! — Proyecto Integrado Final (E4)
 
 **Asignatura:** Desarrollo Móvil (A+S), TINF1119 · Instituto Tecnológico UC Temuco.  
-**Versión de referencia:** `feature/diseno-v3-sobre-backend-final` (interfaz rediseñada sobre `feature/Ajuste3-PLSFINAL`).
+**Versión de trabajo:** `feature/apk-android-buildozer` (integración Kivy/KivyMD + API PHP/MySQL, con empaquetado Android en validación).
 
 ## ¿Qué problema abordamos?
 
@@ -34,7 +34,7 @@ API PHP (backend/api/index.php)
 MySQL / MariaDB (backend/sql/enruta_schema.sql)
 ```
 
-La app móvil **no se conecta directamente a MySQL** ni necesita introducir API keys de Firebase. El servicio remoto está configurado en `config.py` mediante `API_URL`. Conservamos Firebase en archivos históricos de otras ramas, pero **no es el backend de esta versión**.
+La app móvil **no se conecta directamente a MySQL**: utiliza una API PHP cuyo endpoint se configura en `config.py` mediante `API_URL`.
 
 ### Qué datos se guardan
 
@@ -60,20 +60,12 @@ python main.py
 
 Dependencias principales: `kivy==2.3.1`, `kivymd==2.0.0`, `kivy-garden.mapview==1.0.6`, `plyer`, `requests` y `pillow`.
 
-Para probar con el diseño nuevo sin alterar la rama final del equipo:
-
-```powershell
-git fetch origin
-git switch --track origin/feature/diseno-v3-sobre-backend-final
-python main.py
-```
-
-Si ya tenemos esa rama local, usamos `git switch feature/diseno-v3-sobre-backend-final` y `git pull --ff-only`. La API requiere un servidor PHP/MySQL operativo y conexión para las funciones remotas; con fallas de red podemos seguir viendo la información que hubiera quedado en caché.
+Para generar la APK de prueba utilizamos `buildozer.spec` y el workflow `.github/workflows/android-apk.yml` de GitHub Actions. La **compilación Android aún está en validación**; no la presentamos como terminada hasta obtener y probar la APK. La API requiere un servidor PHP/MySQL operativo y conexión para las funciones remotas; con fallas de red podemos seguir viendo la información que hubiera quedado en caché.
 
 ## Pruebas
 
 - Comprobamos mediante un **smoke test Kivy en Linux/Xvfb** que las **10 pantallas** se crean y pueden recorrerse, y repetimos la apertura en resoluciones 320×568, 390×844 y 844×390, en temas claro y oscuro. Esto valida construcción y navegación; no sustituye pruebas manuales de usabilidad.
-- El repositorio incluye pruebas de analítica y servicios. **La batería anterior también contiene tests de Firebase y pantallas antiguas**, así que no afirmamos que el conjunto completo sea válido para la arquitectura final hasta revisarlo.
+- El repositorio incluye pruebas de analítica y servicios. Algunas pruebas heredadas de versiones anteriores requieren actualización y no certifican por sí solas la arquitectura final.
 - El equipo debe confirmar con dos dispositivos reales registro/login, avisos, votos y cola offline, además de la instalación Android. El APK queda a cargo del integrante que realizará esa prueba.
 
 ## Medición y resultados E4
@@ -84,15 +76,16 @@ Con consentimiento activamos **Ajustes → Ayudar a mejorar la app**. La captura
 python tools/generar_resultados_mjv.py
 ```
 
-Obtendremos `docs/resultados_mjv/RESULTADOS.md` y `docs/resultados_mjv/grafico_eventos.svg`. **Sin eventos reales de prueba no hay un KPI observado que podamos presentar.** Las instrucciones para las pruebas están en [docs/PROTOCOLO-MJV-APP.md](docs/PROTOCOLO-MJV-APP.md) y el estado de evidencias en [docs/CHECKLIST-E4.md](docs/CHECKLIST-E4.md).
+Obtendremos `docs/resultados_mjv/RESULTADOS.md` y `docs/resultados_mjv/grafico_eventos.svg`. **Sin eventos reales de prueba no hay un KPI observado que podamos presentar.** Las instrucciones para las pruebas están en [docs/PROTOCOLO-MJV-APP.md](docs/PROTOCOLO-MJV-APP.md).
 
 ## Documentación para la entrega y la defensa
 
-- [DOCUMENTATION.md](DOCUMENTATION.md): arquitectura, módulos, seguridad y eventos.
 - [INFORME-FINAL.md](INFORME-FINAL.md): relato del equipo sobre RA1–RA4 y limitaciones.
+- [FUNDAMENTACION-UX-UI.md](FUNDAMENTACION-UX-UI.md): investigación y decisiones UX/UI.
 - [docs/PROTOCOLO-MJV-APP.md](docs/PROTOCOLO-MJV-APP.md): aplicación del ciclo Medir–Jugar–Validar.
 - [docs/REGISTRO-PRUEBAS-USUARIOS.csv](docs/REGISTRO-PRUEBAS-USUARIOS.csv): registro **todavía vacío** de pruebas con participantes.
 - [USO_IA.md](USO_IA.md): declaración del uso real de herramientas de apoyo.
+- [docs/GUIA-DEFENSA-84-PREGUNTAS.md](docs/GUIA-DEFENSA-84-PREGUNTAS.md): respuestas para estudiar el banco de preguntas entregado por el profesor.
 - [backend/sql/enruta_schema.sql](backend/sql/enruta_schema.sql): estructura de las diez tablas MySQL.
 
 **Antes de presentar:** completar el periodo, los participantes y las observaciones de MJV; ejecutar el generador con las mediciones obtenidas; fundamentar al menos dos mejoras; ensayar las preguntas de defensa. No atribuimos a la app una medición ni un impacto que no hayamos comprobado.
