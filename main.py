@@ -44,7 +44,7 @@ from servicios.api_cliente import (ClienteApi, ErrorApi, normalizar_patente,
                                    patente_valida)
 from servicios.notificaciones import notificar as enviar_notificacion
 from tema import PaletaVisual
-
+from servicios.ruteo import RuteadorCalles
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 ICONOS_NIVEL = {"Novato": "account-outline", "Colaborador": "account-check-outline",
                 "Confiable": "shield-check-outline", "Verificador": "shield-star-outline"}
@@ -225,6 +225,7 @@ class InterurbanoApp(MDApp):
         self._aplicar_tema_visual()
         self.title = "EnRuta Ya!"
         self.cliente = ClienteApi(API_URL, self.user_data_dir)
+        self.ruteador = RuteadorCalles(self.user_data_dir)
         # Datos de la base de datos (llegan por la API; la caché local cubre los cortes).
         self.recorridos = {}          # id -> recorrido normalizado
         self.localidades = {}         # origen -> [recorridos]
@@ -505,6 +506,8 @@ class InterurbanoApp(MDApp):
         self.cerrar_sesion()
 
     def _normalizar(self, x):
+        base = [(float(p[0]), float(p[1])) for p in x.get("linea", [])]
+        calles = self.ruteador.cacheada(base) if len(base) >= 2 else None
         return {
             "id": int(x["id"]), "ruta": x["nombre"], "origen": x["origen"], "destino": x["destino"],
             "parada": x.get("parada") or "Parada no indicada",
@@ -514,7 +517,7 @@ class InterurbanoApp(MDApp):
             "estado": x.get("estado", "pendiente"),
             "votos_ok": int(x.get("votos_ok", 0)), "votos_mal": int(x.get("votos_mal", 0)),
             "mi_voto": int(x.get("mi_voto", 0)),
-            "linea": [(float(p[0]), float(p[1])) for p in x.get("linea", [])],
+            "linea_api": base, "linea": calles or base, "por_calles": bool(calles),
         }
 
     def _aplicar_datos(self, recs, avisos):
@@ -1575,7 +1578,25 @@ class InterurbanoApp(MDApp):
                 self._snack("¡Aviso enviado! Gracias por ayudar a otros pasajeros.")
         self._en_hilo(lambda: self.cliente.crear_aviso(
             aviso["id"], aviso["recorrido_id"], tipo, minutos), listo)
+        def _pedir_calles(self):
+            """Pide a OSRM el trazado por calles de los recorridos que aún no lo tienen."""
+            for r in self.recorridos.values():
+                if r["por_calles"] or len(r["linea_api"]) < 2:
+                    continue
+                self.ruteador.pedir(r["linea_api"], self._al_llegar_calles(r["id"], r["linea_api"]))
 
+        def _al_llegar_calles(self, rid, base):
+            def listo(ruta):   # corre en el hilo de fondo
+                Clock.schedule_once(lambda dt: self._aplicar_calles(rid, base, ruta))
+            return listo
+
+        def _aplicar_calles(self, rid, base, ruta):
+            r = self.recorridos.get(rid)
+            if not r or r["linea_api"] != base:   # la línea cambió mientras tanto
+                return
+            r["linea"], r["por_calles"] = ruta, True
+            if not self.compartiendo:             # en viaje, el progreso usa la línea nueva solo
+                self._restaurar_lineas()
 
 if __name__ == "__main__":
     InterurbanoApp().run()
