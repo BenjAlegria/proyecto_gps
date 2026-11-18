@@ -4,3 +4,4 @@ kivy-garden.mapview==1.0.6
 plyer
 requests
 pillow
+materialyoucolor==3.0.3

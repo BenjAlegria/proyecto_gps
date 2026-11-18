@@ -54,7 +54,7 @@ jobs:
           assert config.has_section("app")
           assert "kivymd" in config["app"]["requirements"]
           assert "pycairo" in config["app"]["requirements"]
-          assert "materialyoucolor" in config["app"]["requirements"]
+          assert "materialyoucolor==3.0.3" in config["app"]["requirements"]
           assert Path("main.py").exists() and Path("root.kv").exists()
           print("Buildozer config OK")
           PY
