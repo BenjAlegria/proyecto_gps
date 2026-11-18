@@ -1,0 +1,81 @@
+name: EnRuta Ya! APK Android
+on:
+  push:
+    branches:
+      - feature/apk-android-buildozer
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-apk:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 55
+    env:
+      PYTHONFORANDROID_PREREQUISITES_INSTALL_INTERACTIVE: "0"
+      BUILDOZER_ALLOW_ORG_TEST_DOMAIN: "1"
+      PYTHONUNBUFFERED: "1"
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Ubuntu build prerequisites
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y git zip unzip autoconf automake libtool pkg-config \
+            zlib1g-dev libncurses5-dev libncursesw5-dev libtinfo5 cmake \
+            libffi-dev libssl-dev ccache libltdl-dev libsqlite3-dev \
+            build-essential patch gettext
+
+      - name: Install Buildozer
+        run: |
+          python -m pip install --upgrade pip setuptools virtualenv
+          python -m pip install buildozer==1.5.0 Cython==0.29.36
+
+      - name: Verify packaging configuration
+        run: |
+          python - <<'PY'
+          import configparser
+          from pathlib import Path
+          config = configparser.ConfigParser(interpolation=None)
+          config.read("buildozer.spec", encoding="utf-8")
+          assert config.has_section("app")
+          assert "kivymd" in config["app"]["requirements"]
+          assert Path("main.py").exists() and Path("root.kv").exists()
+          print("Buildozer config OK")
+          PY
+
+      - name: Build Android debug APK
+        run: |
+          set -o pipefail
+          buildozer -v android debug 2>&1 | tee buildozer-output.log
+
+      - name: Upload APK for installation
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: EnRutaYa-Android-APK
+          path: bin/*.apk
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Upload error log for diagnosis
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: EnRutaYa-compilation-log
+          path: buildozer-output.log
+          if-no-files-found: ignore
+          retention-days: 7
