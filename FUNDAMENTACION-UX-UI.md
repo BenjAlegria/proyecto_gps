@@ -62,23 +62,24 @@
 |---|---|---|
 | 1. Visualización en vivo es la función más pedida (71%) y la ubicación en mapa la información más deseada (76%) | La pantalla de Inicio es el mapa a pantalla completa (no un buscador de texto ni una lista como pantalla principal) | Es literalmente lo que la mayoría dijo que quiere ver primero |
 | 2. Falta de registro de horarios para localidades fuera de Temuco; problema frecuente de retrasos/bus lleno | Modelo de "Compartir ubicación": cualquier usuario que va en la micro puede aportar la posición, sin depender de que la empresa instale GPS | Cubre justo el vacío de información que reportaron los encuestados de localidades más chicas |
-| 3. Se informan hoy por memoria o preguntando al conductor (informal, poco confiable) | Pantalla "Recorridos" centraliza todos los horarios y paradas en un solo lugar dentro de la app | Reemplaza el canal informal por uno consultable en cualquier momento |
+| 3. Se informan hoy por memoria o preguntando al conductor (informal, poco confiable) | Pantalla "Recorridos" centraliza la información de recorridos y paradas en un solo lugar dentro de la app | Reemplaza el canal informal por uno consultable en cualquier momento |
 | 4. 65% quiere ver capacidad de asientos disponibles; 71% ha quedado sin poder subir por bus lleno | Botones "Bus lleno" y "Hay asientos" en Compartir; el estado de ocupación se ve en cada tarjeta de línea y en su detalle | Sin GPS ni sensores en los buses, los propios pasajeros son la fuente del dato, igual que con la ubicación |
 | 2 y 4. 59% pidió notificaciones de retrasos; 41% sufrió buses que no pasaron a la hora; 24% cambios de ruta no informados (y 4 de 17 lo eligieron como la función más importante: "Notificaciones de cambios de horario") | Botones "Atrasado" (con minutos) y "Cambio de ruta", pantalla Avisos y notificación cuando el aviso es de una ruta favorita | Convierte el problema más reclamado en una acción de un toque para quien viaja y en una alerta para quien espera |
 | 5. 71% solo usaría la versión gratuita | La app no tiene ningún esquema de pago ni función bloqueada | Alineado con lo que la mayoría de los encuestados prefiere |
 
 ## d) Justificación de la estructura de la app
-La app tiene 6 pantallas: Inicio, Recorridos, Compartir, Avisos,
-Ajustes y Perfil. El orden y el peso visual de cada una responden directamente
+Las **seis pantallas funcionales principales** son Inicio, Recorridos,
+Compartir, Avisos, Ajustes y Perfil. Además, el proyecto final
+incorpora Login, Registro, Carga y Detalle; en total definimos
+**diez pantallas** en el código. El orden y el peso visual de cada una responden directamente
 a la encuesta: como "visualización en vivo" y "ubicación en el mapa"
 fueron lo más pedido (hallazgo 1), el mapa ocupa toda la pantalla de
 Inicio en vez de compartir espacio con un buscador o una lista larga.
 "Recorridos" existe como pantalla aparte porque buena parte de los
 encuestados hoy se informa por memoria o preguntando al conductor
-(hallazgo 3): centralizar los horarios ahí les da un lugar fijo donde
+(hallazgo 3): centralizar la información referencial ahí les da un lugar fijo donde
 consultarlos. "Compartir" es su propia pantalla y no una función
-escondida, porque sin usuarios dispuestos a compartir su ubicación el
-mapa de Inicio no tiene datos que mostrar (hallazgo 2) — se le da la
+escondida, porque la colaboración de pasajeros es importante para completar la información comunitaria; actualmente el GPS se muestra localmente y no transmitimos ubicaciones en vivo (hallazgo 2) — se le da la
 misma jerarquía de navegación que a Inicio y Recorridos para
 incentivar que la gente la use. "Avisos" entra a la barra principal porque notificaciones de
 retrasos (59%) y capacidad de asientos (65%) fueron de lo más pedido
@@ -101,9 +102,7 @@ con menor familiaridad tecnológica. Esto respalda mantener la interfaz
 simple: pocos pasos para ver el mapa (no hay que buscar ni loguearse
 para ver los buses de una localidad), texto en botones e iconos
 grandes, y un lenguaje directo ("Elegir localidad", "Iniciar viaje")
-en vez de términos técnicos. [COMPLETAR si hicieron alguna prueba de
-uso con esta persona u otro adulto mayor: qué tan fácil le resultó
-navegar la app en la práctica].
+en vez de términos técnicos. **Límite de evidencia:** todavía no hemos documentado una prueba de uso específica con personas mayores o con dificultades de accesibilidad. Por eso no afirmamos que la interfaz ya sea sencilla para esos grupos; debemos evaluarla con participantes reales y registrar sus observaciones.
 
 ---
 **Nota sobre las citas:** las citas textuales de este documento

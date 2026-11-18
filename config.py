@@ -3,6 +3,8 @@
 
 import os
 
+API_URL = "https://teclab.uct.cl/~fcaullan2022/enruta/api/index.php"
+
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 # Carpeta donde se guardan los JSON (usuarios, perfiles, avisos, caché).
@@ -23,7 +25,7 @@ ICONO_BUS = os.path.join(BASE_DIR, "bus_marker.png")
 # servido por GitHub. Si se edita y se hace push, la app muestra el nuevo
 # valor la próxima vez que se abre (o al tocar "Actualizar" en Ajustes).
 URL_CONFIG_REMOTA = (
-    "https://raw.githubusercontent.com/BenjAlegria/proyecto_gps/main/remote_config.json"
+    ""
 )
 TIMEOUT_CONFIG_REMOTA_S = 5
 
@@ -39,3 +41,4 @@ CONFIG_REMOTA_DEFECTO = {
 # ------------------------------------------------------------
 HISTORIAL_S = 2 * 60 * 60   # la pantalla Avisos muestra hasta las últimas 2 h
 OPCIONES_ATRASO = (5, 10, 15, 20)
+
