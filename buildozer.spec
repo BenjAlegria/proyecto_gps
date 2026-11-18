@@ -10,7 +10,8 @@ source.exclude_dirs = .git,.github,.vscode,backend,docs,tests,tools,.venv,venv,m
 
 # Pin Python and host Python to avoid p4a defaulting to 3.14.
 # Kivy 2.3.1 and KivyMD 2.0.0 are compatible with Python 3.12.
-requirements = python3==3.12.9,hostpython3==3.12.9,kivy==2.3.1,kivymd==2.0.0,kivy-garden.mapview==1.0.6,plyer,requests,pillow,pyjnius,certifi
+# Include native/p4a recipes required by KivyMD 2 and SSL for MapView.
+requirements = python3==3.12.9,hostpython3==3.12.9,kivy==2.3.1,kivymd==2.0.0,kivy-garden.mapview==1.0.6,plyer,requests,pillow,pyjnius,certifi,openssl,pycairo,materialyoucolor,materialshapes,asynckivy,asyncgui,exceptiongroup,android
 
 orientation = portrait
 fullscreen = 0
