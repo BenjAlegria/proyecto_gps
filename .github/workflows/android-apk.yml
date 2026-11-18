@@ -60,7 +60,9 @@ jobs:
       - name: Build Android debug APK
         run: |
           set -o pipefail
-          buildozer -v android debug 2>&1 | tee buildozer-output.log
+          # SDK manager pide confirmar licencias también durante la instalación de build-tools.
+          # Aceptar desde stdin sin perder el código de salida real de Buildozer.
+          buildozer -v android debug < <(yes y) 2>&1 | tee buildozer-output.log
 
       - name: Upload APK for installation
         if: success()
